@@ -1,0 +1,1 @@
+For now, I use the YouVersion developer portal to get USFM data. The API key is in the .env file.
