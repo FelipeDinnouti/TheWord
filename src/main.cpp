@@ -1,13 +1,16 @@
 #include "raylib.h"
 
 int main() {
-    InitWindow(800, 450, "Raylib + CMake");
+    const int screenWidth = 450;
+    const int screenHeight = 800;
+
+    InitWindow(screenWidth, screenHeight, "TheWord");
     SetTargetFPS(60);
 
     while (!WindowShouldClose()) {
         BeginDrawing();
         ClearBackground(RAYWHITE);
-        DrawText("Hello from Raylib!", 190, 200, 20, LIGHTGRAY);
+        DrawFPS(10, 10);
         EndDrawing();
     }
 
