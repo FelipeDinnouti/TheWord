@@ -1,37 +1,39 @@
 cmake_minimum_required(VERSION 3.16)
-project(raylib_project)
+project(OrbitalSimulation)
 
 set(CMAKE_CXX_STANDARD 17)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
-# Find Raylib 
-# find_package(raylib REQUIRED) # WINDOWS
+include_directories(${CMAKE_SOURCE_DIR}/include)
+include_directories(${CMAKE_SOURCE_DIR}/libs)
 
-find_package(PkgConfig REQUIRED)
-#  pkg_check_modules(RAYLIB REQUIRED raylib) # LINUX
+include(FetchContent)
 
-# additional dependencies
-include_directories(/libs)
+FetchContent_Declare(
+    raylib
+    URL https://github.com/raysan5/raylib/archive/refs/tags/5.0.tar.gz
+    DOWNLOAD_EXTRACT_TIMESTAMP TRUE
+)
 
-# Create the executable
-add_executable(game src/main.cpp)
+set(BUILD_GAMES OFF)
+set(BUILD_EXAMPLES OFF)
 
-# Copy shaders to build directory
+FetchContent_MakeAvailable(raylib)
+
+add_executable(game
+    src/main.cpp
+)
+
 file(COPY shaders DESTINATION ${CMAKE_BINARY_DIR})
 
-
-## WINDOWS
-
-# Link Raylib and Windows libraries
-target_link_libraries(game PRIVATE raylib opengl32 gdi32 winmm)
-
-## LINUX
-
-# Link Raylib and Linux dependencies
-# target_link_libraries(game PRIVATE 
-#     raylib 
-#     GL       # OpenGL
-#     m        # Math library
-#     pthread  # Threading
-#     dl       # Dynamic linking
-#     rt       # Real-time extensions
-# )
+target_link_libraries(game PRIVATE
+    raylib
+    m
+    pthread
+    dl
+    rt
+    X11
+    Xcursor
+    Xrandr
+    Xi
+)
