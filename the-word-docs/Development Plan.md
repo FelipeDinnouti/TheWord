@@ -1,4 +1,3 @@
-# TheWord Development Plan
 
 > Version 1.0 | Status: Planning
 
@@ -36,13 +35,13 @@ The repository contains a minimal Raylib skeleton with placeholder code and samp
 The system is organized into four conceptual layers, each building on the one below it. The layers are implemented as distinct modules within the `src/` directory, allowing clear separation of concerns while keeping the final binary monolithic.
 
 > **See also:**
-> - [SPEC.md](./SPEC.md) — Project specification with core structures and design goals
-> - [Document.md](./Document.md) — Document manager design notes covering infinite scroll and anchor-fixed behavior
+> - [SPEC.md](Project%20Specification.md) — Project specification with core structures and design goals
+> - [Document.md](Document.md) — Document manager design notes covering infinite scroll and anchor-fixed behavior
 
 ### 2.1 The Four Layers
 
 > **See also:**
-> - [ai-docs/TextRendererReference.md](TextRendererReference.md) — Detailed design walkthrough for the text layout engine, including tokenization, word wrapping, and infinite scroll mechanics
+> - [ai-docs/TextRendererReference.md](TextRenderer.md) — Detailed design walkthrough for the text layout engine, including tokenization, word wrapping, and infinite scroll mechanics
 
 The **Data Layer** sits at the foundation. It handles the raw inputs: parsing USFM Bible files into structured data, managing fonts, and persisting user data to SQLite. Nothing above this layer knows anything about file formats or database queries.
 
@@ -129,8 +128,8 @@ Each module owns a specific part of the system. The public interface of each mod
 **TextEngine** (in `src/text/`) handles tokenization of USFM text, word wrapping using `MeasureTextEx`, and the generation of spans with document-space coordinates. Its main output is a `ChapterLayout`. It caches layouts so that repeated layout operations are instant.
 
 > **See also:**
-> - [ai-docs/TextRendererReference.md](TextRendererReference.md) — Detailed layout engine design with code examples
-> - [SPEC.md](./SPEC.md) — Core data structures (`Word`, `Span`, `Line`)
+> - [ai-docs/TextRendererReference.md](TextRenderer.md) — Detailed layout engine design with code examples
+> - [SPEC.md](Project%20Specification.md) — Core data structures (`Word`, `Span`, `Line`)
 
 **DocumentManager** (in `src/document/`) is responsible for infinite scroll. It tracks which chapters are currently loaded, maintains chapter boundaries in document space, and implements the anchor-fixed prepend behavior. It exposes methods for appending and prepending chapters as the user scrolls.
 
@@ -139,15 +138,15 @@ Each module owns a specific part of the system. The public interface of each mod
 **USFMParser** (in `src/data/`) reads USFM files and produces a tree of Book → Chapter → Verse → Word structures. It is a pure data transformation module with no knowledge of rendering or scrolling.
 
 > **See also:**
-> - [SPEC.md](./SPEC.md) — Core structures (`Book`, `Chapter`, `Verse`)
-> - [ai-docs/TextRendererReference.md](TextRendererReference.md) — USFM tokenization approach
+> - [SPEC.md](Project%20Specification.md) — Core structures (`Book`, `Chapter`, `Verse`)
+> - [ai-docs/TextRendererReference.md](TextRenderer.md) — USFM tokenization approach
 
 **PersistenceManager** (in `src/persistence/`) wraps SQLite operations. It creates the database on first run, manages the schema, and provides CRUD operations for highlights and preferences. It is the only module that knows about SQL.
 
 **InputHandler** (in `src/input/`) translates Raylib input events into document actions. It handles mouse drag selection and touch gestures. It depends on the layout engine to perform hit detection — given a screen position, it asks the engine which word is at that position.
 
 > **See also:**
-> - [ai-docs/TextRendererReference.md](TextRendererReference.md) — Hit detection and selection model
+> - [ai-docs/TextRendererReference.md](TextRenderer.md) — Hit detection and selection model
 > - [ai-docs/WINDOWS_VS_LINUX.md](./ai-docs/WINDOWS_VS_LINUX.md) — Platform-specific input handling considerations
 
 **Renderer** (in `src/renderer/`) is the top-level render coordinator. It draws the visible portion of the document by querying the layout engine, draws highlight rectangles by querying the highlighter, and draws UI elements like the chapter title and font size controls.
@@ -155,8 +154,8 @@ Each module owns a specific part of the system. The public interface of each mod
 ### 2.4 Coordinate Spaces
 
 > **See also:**
-> - [Document.md](./Document.md) — Anchor-fixed behavior and scroll position details
-> - [ai-docs/TextRendererReference.md](TextRendererReference.md) — Document vs. screen coordinate conversion
+> - [Document.md](Document.md) — Anchor-fixed behavior and scroll position details
+> - [ai-docs/TextRendererReference.md](TextRenderer.md) — Document vs. screen coordinate conversion
 
 The system operates in two coordinate spaces. Understanding the distinction is essential for working with any part of the rendering or input handling code.
 
@@ -171,8 +170,8 @@ The anchor-fixed behavior relies on this distinction. When the user scrolls to t
 ## 3. Development Phases
 
 > **See also:**
-> - [SPEC.md](./SPEC.md) — Project specification and core structures
-> - [ai-docs/TextRendererReference.md](TextRendererReference.md) — Detailed implementation guidance for text rendering systems
+> - [SPEC.md](Project%20Specification.md) — Project specification and core structures
+> - [ai-docs/TextRendererReference.md](TextRenderer.md) — Detailed implementation guidance for text rendering systems
 
 The work is organized into eight sequential phases. Each phase builds on the previous one, and each has clear acceptance criteria that must be met before moving on.
 
@@ -194,7 +193,7 @@ This phase should produce a running application that opens a window at the corre
 
 > **See also:**
 > - [ai-docs/TextRendererReference.md](./ai-docs/TextRendererReference.md) — Detailed layout algorithm walkthrough
-> - [SPEC.md](./SPEC.md) — Core structures: `Word`, `Span`, `Line`, `ChapterLayout`
+> - [SPEC.md](Project%20Specification.md) — Core structures: `Word`, `Span`, `Line`, `ChapterLayout`
 
 **Status: Completed**
 
@@ -220,8 +219,8 @@ This phase also includes unit tests for tokenization and word wrapping. The test
 ### Phase 3: Document Manager and Infinite Scroll
 
 > **See also:**
-> - [Document.md](./Document.md) — Document design notes covering infinite scroll
-> - [ai-docs/TextRendererReference.md](TextRendererReference.md) — Anchor-fixed prepend/append mechanics
+> - [Document.md](Document.md) — Document design notes covering infinite scroll
+> - [ai-docs/TextRendererReference.md](TextRenderer.md) — Anchor-fixed prepend/append mechanics
 
 With a working layout engine, the next step is to build the infinite scroll mechanism on top of it.
 
@@ -254,8 +253,8 @@ The highlighter also coordinates with the persistence manager to save new highli
 ### Phase 5: Data Layer — USFM Parser
 
 > **See also:**
-> - [SPEC.md](./SPEC.md) — Core data structures (`Book`, `Chapter`, `Verse`, `Word`)
-> - [ai-docs/TextRendererReference.md](TextRendererReference.md) — USFM tokenization approach
+> - [SPEC.md](Project%20Specification.md) — Core data structures (`Book`, `Chapter`, `Verse`, `Word`)
+> - [ai-docs/TextRendererReference.md](TextRenderer.md) — USFM tokenization approach
 
 The USFM parser reads USFM Bible files and produces structured data. USFM is a plain-text format with markers like `\c` for chapter, `\v` for verse, and `\p` for paragraph.
 
@@ -268,7 +267,7 @@ The document manager uses the parser to obtain chapter text on demand. When a ch
 ### Phase 6: Data Layer — SQLite Persistence
 
 > **See also:**
-> - [SPEC.md](./SPEC.md) — Core structures (`Highlight`, `HighlightType`)
+> - [SPEC.md](Project%20Specification.md) — Core structures (`Highlight`, `HighlightType`)
 > - [ai-docs/WINDOWS_VS_LINUX.md](./ai-docs/WINDOWS_VS_LINUX.md) — Platform-specific SQLite considerations
 
 Highlights must persist between sessions. This phase implements a SQLite-backed persistence layer.
@@ -304,8 +303,8 @@ The high integration point between persistence and the rest of the system is the
 ### Phase 7: UI Layer and Rendering
 
 > **See also:**
-> - [ai-docs/TextRendererReference.md](TextRendererReference.md) — Rendering loop and highlight drawing
-> - [SPEC.md](./SPEC.md) — Project specification and design goals
+> - [ai-docs/TextRendererReference.md](TextRenderer.md) — Rendering loop and highlight drawing
+> - [SPEC.md](Project%20Specification.md) — Project specification and design goals
 
 With all the layers below in place, this phase brings everything together with a clean user interface.
 
@@ -568,8 +567,8 @@ These features are explicitly out of scope for the MVP but are noted here for fu
 
 | Document | Description |
 |----------|-------------|
-| [SPEC.md](./SPEC.md) | Project specification with core structures (`Word`, `Span`, `Line`, `Highlight`) and design goals |
-| [Document.md](./Document.md) | Document manager design notes covering infinite scroll, anchor-fixed behavior, and scroll position management |
-| [ai-docs/TextRendererReference.md](TextRendererReference.md) | Detailed text layout engine design walkthrough with code examples, including tokenization, word wrapping, and hit detection |
+| [SPEC.md](Project%20Specification.md) | Project specification with core structures (`Word`, `Span`, `Line`, `Highlight`) and design goals |
+| [Document.md](Document.md) | Document manager design notes covering infinite scroll, anchor-fixed behavior, and scroll position management |
+| [ai-docs/TextRendererReference.md](TextRenderer.md) | Detailed text layout engine design walkthrough with code examples, including tokenization, word wrapping, and hit detection |
 | [ai-docs/WINDOWS_VS_LINUX.md](./ai-docs/WINDOWS_VS_LINUX.md) | Platform-specific build configuration differences between Linux and Windows for Raylib and CMake |
 | [ai-docs/configuring_environment.md](./ai-docs/configuring_environment.md) | Step-by-step environment setup guide for MSYS2 and Linux build configurations |

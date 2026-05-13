@@ -5,7 +5,7 @@
 
 namespace config {
 
-constexpr int WINDOW_WIDTH = 450;
+constexpr int WINDOW_WIDTH = 950;
 constexpr int WINDOW_HEIGHT = 800;
 constexpr int TARGET_FPS = 60;
 

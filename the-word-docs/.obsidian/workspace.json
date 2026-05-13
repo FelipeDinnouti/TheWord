@@ -13,12 +13,12 @@
             "state": {
               "type": "markdown",
               "state": {
-                "file": "DEVELOPMENT_PLAN.md",
+                "file": "Current Project Progress.md",
                 "mode": "source",
                 "source": false
               },
               "icon": "lucide-file",
-              "title": "DEVELOPMENT_PLAN"
+              "title": "Current Project Progress"
             }
           },
           {
@@ -213,11 +213,13 @@
   },
   "active": "7932b51f09b11a9d",
   "lastOpenFiles": [
-    "Document.md",
-    "DEVELOPMENT_PLAN.md",
-    "USFM Source.md",
-    "TextRendererReference.md",
-    "SPEC.md",
+    "Development Plan.md",
+    "Reference/TextRenderer.md",
+    "Reference/Document.md",
+    "Reference",
+    "Project Specification.md",
+    "Current Project Progress.md",
+    "Reference/USFM Source.md",
     "ai-docs/WINDOWS_VS_LINUX.md",
     "ai-docs/configuring_environment.md"
   ]
