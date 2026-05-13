@@ -6,6 +6,7 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 include_directories(${CMAKE_SOURCE_DIR}/include)
 include_directories(${CMAKE_SOURCE_DIR}/libs)
+include_directories(${CURL_INCLUDE_DIRS})
 
 include(FetchContent)
 
@@ -46,8 +47,10 @@ if(WIN32)
         winmm
     )
 else()
+    find_package(CURL REQUIRED)
     target_link_libraries(theword PRIVATE
         raylib
+        ${CURL_LIBRARIES}
         m
         pthread
         dl

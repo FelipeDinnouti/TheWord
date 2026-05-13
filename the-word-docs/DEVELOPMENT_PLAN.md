@@ -193,11 +193,13 @@ This phase should produce a running application that opens a window at the corre
 ### Phase 2: Text Layout Engine
 
 > **See also:**
-> - [ai-docs/TextRendererReference.md](TextRendererReference.md) — Detailed layout algorithm walkthrough
+> - [ai-docs/TextRendererReference.md](./ai-docs/TextRendererReference.md) — Detailed layout algorithm walkthrough
 > - [SPEC.md](./SPEC.md) — Core structures: `Word`, `Span`, `Line`, `ChapterLayout`
 
+**Status: Completed**
+
 The text layout engine is the heart of the system. This phase implements robust text tokenization, word wrapping, and span generation.
-	
+
 The engine receives raw verse text and a maximum width, and it produces a complete `ChapterLayout`. The process begins with tokenization: the input string is scanned for verse markers (the `\v` marker in USFM), and the text is split into tokens, each associated with a verse number.
 
 After tokenization, the engine performs word wrapping. Each token's words are appended to the current line until adding the next word would exceed the maximum width. The engine measures each word using Raylib's `MeasureTextEx`. A special rule applies to verse numbers: the verse number and the first word are kept together on the same line. If they do not fit together, both move to the next line. This prevents orphaned verse numbers from appearing at the end of a line.
@@ -207,6 +209,13 @@ As words are placed on lines, the engine generates spans. Each span covers a con
 The engine caches `ChapterLayout` objects keyed by chapter ID. When the window is resized, all cached layouts must be invalidated and rebuilt, because the maximum width has changed.
 
 This phase also includes unit tests for tokenization and word wrapping. The tests verify that verse markers are detected correctly, that words wrap at the correct width, and that verse numbers stay attached to their first words.
+
+**Implementation Details:**
+- `src/text/LayoutEngine.h/cpp` — Core layout engine with tokenization and word wrapping
+- `src/core/APIClient.h/cpp` — HTTP client for YouVersion API using libcurl
+- `src/core/EnvLoader.h/cpp` — `.env` file parser for API key management
+- `src/data/BibleClient.h/cpp` — Bible API client with passage fetching
+- Default Bible version: BSB (id 3034)
 
 ### Phase 3: Document Manager and Infinite Scroll
 
