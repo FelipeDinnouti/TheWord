@@ -43,6 +43,7 @@ endif()
 set(CORE_SOURCES
     src/core/APIClient.cpp
     src/core/EnvLoader.cpp
+    src/core/FontHelper.cpp
 )
 
 set(DATA_SOURCES

@@ -2,7 +2,7 @@
 
 > Status: Updated 2026-06-22
 
-Files: `src/core/Config.h`, `src/core/APIClient.h/cpp`, `src/core/EnvLoader.h/cpp`, `src/core/GlobalId.h`
+Files: `src/core/Config.h`, `src/core/APIClient.h/cpp`, `src/core/EnvLoader.h/cpp`, `src/core/GlobalId.h`, `src/core/FontHelper.h/cpp`
 
 ## Config (`Config.h`)
 
@@ -55,6 +55,16 @@ inline int GetNextWordId() {
 ```
 
 Used by all `ChapterProvider` implementations (`USFMParser`, `BibleClient`, `StubChapterProvider`) to assign unique IDs to every word. This guarantees the contract in `Data Structures.md`: "Every word in the Bible has a globally unique ID" — even when `CompositeProvider` falls back between providers.
+
+## FontHelper (`FontHelper.h/cpp`)
+
+Parses the TrueType/OpenType `cmap` table to enumerate all available glyph codepoints in a font file. Eliminates the need for hardcoded codepoint ranges.
+
+```cpp
+std::vector<int> LoadFontCodepoints(const char* fontPath);
+```
+
+Used in `main.cpp` to populate the raylib font atlas with every glyph the font supports (918 codepoints for SourceSerif4-Regular, covering Latin Extended, Greek, Cyrillic, and General Punctuation). The font binary is read once at startup; the cmap format 4 (BMP) and format 12 (supplementary) subtables are enumerated and deduplicated.
 
 ## EnvLoader (`EnvLoader.h/cpp`)
 
