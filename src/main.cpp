@@ -23,6 +23,12 @@ int main() {
     std::vector<int> codepoints;
     for (int i = 32; i < 127; i++) codepoints.push_back(i);
     for (int i = 160; i < 256; i++) codepoints.push_back(i);
+    codepoints.push_back(0x2013);  // EN DASH
+    codepoints.push_back(0x2018);  // LEFT SINGLE QUOTATION MARK
+    codepoints.push_back(0x2019);  // RIGHT SINGLE QUOTATION MARK
+    codepoints.push_back(0x201C);  // LEFT DOUBLE QUOTATION MARK
+    codepoints.push_back(0x201D);  // RIGHT DOUBLE QUOTATION MARK
+    codepoints.push_back(0x2026);  // HORIZONTAL ELLIPSIS
 
     Font bodyFont = LoadFontEx(config::FONT_REGULAR, (int)config::FONT_SIZE,
                                codepoints.data(), (int)codepoints.size());
