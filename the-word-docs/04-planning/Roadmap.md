@@ -1,6 +1,6 @@
 # Roadmap
 
-> Status: Updated 2026-06-22
+> Status: Updated 2026-06-22 (Phase 9 plan finalized)
 
 ## ✅ Completed
 
@@ -25,41 +25,62 @@
 - 14 new unit tests: 8 HTML parsing + 6 CompositeProvider
 - 40/40 tests passing
 
-## Short Term (July 2026)
+### Phase 7: Highlighting System
+- Highlighter class with PersistenceInterface
+- Hit detection (screen → word), drag selection
+- Highlight rectangle rendering in Renderer
+- 9 unit tests (7 Highlighter + 2 InMemoryStorage)
 
-## Immediate (July 2026)
+### Phase 8: SQLite Persistence
+- PersistenceManager implements PersistenceInterface
+- SQLite schema: highlight_types, highlights, preferences
+- 4 unit tests (save/load, remove, types, preferences)
+- 53/53 tests passing
+
+## Phase 9 — MVP Final UI (July 2026)
+
+### Sprint 1: Foundation
 
 | Task | Priority | Est. Effort |
 |------|----------|-------------|
-| Phase 7a: Highlighter + PersistenceInterface | 🔴 High | 2d |
-| Phase 7b: Hit detection | 🔴 High | 1.5d |
-| Phase 7c: Drag selection | 🔴 High | 1.5d |
-| Phase 7d: Highlight rectangle rendering in Renderer | 🔴 High | 1d |
-| Phase 7e: Input event wiring | 🟡 Medium | 1d |
-| Phase 8a: SQLite PersistenceManager | 🟡 Medium | 1d |
-| Phase 8b: Replace in-memory stub, integrate | 🟡 Medium | 1d |
-| Phase 8c: Persistence unit tests | 🟡 Medium | 1d |
+| 9a: InputHandler class (extract from main.cpp) | 🟡 Medium | 1d |
+| 9b: UIManager (top bar, settings, dialogs) | 🟡 Medium | 2d |
+| 9c: Smooth scroll refinements | 🟢 Low | 1d |
+| 9d: Window resize polish | 🟢 Low | 0.5d |
 
-## Medium Term (August 2026)
+### Sprint 2: Highlight UX
 
 | Task | Priority | Est. Effort |
 |------|----------|-------------|
-| Phase 9a: InputHandler class (extract from main.cpp) | 🟡 Medium | 1d |
-| Phase 9b: UIManager (book/chapter navigation UI) | 🟡 Medium | 2d |
-| Phase 9c: Font size controls | 🟢 Low | 1d |
-| Phase 9d: Smooth scroll refinements | 🟢 Low | 1d |
-| Phase 9e: Window resize polish (basic resize already in main.cpp) | 🟢 Low | 0.5d |
-| Phase 9f: Heading differentiation (BookTitle/SectionHeading/ChapterLabel styles) | 🟢 Low | 0.5d |
+| 9e: Highlight hit-testing (`highlightAtWord`) | 🔴 High | 0.5d |
+| 9f: Context menu (trash + 5 pastel color swatches) | 🔴 High | 1.5d |
+| 9g: Multiple highlight colors + seeding | 🟡 Medium | 1d |
+| 9h: Delete highlight flow | 🔴 High | 0.5d |
 
-## Long Term (September+)
+### Sprint 3: Navigation & Settings
+
+| Task | Priority | Est. Effort |
+|------|----------|-------------|
+| 9i: Book/chapter navigation dialog | 🟡 Medium | 2d |
+| 9j: Font size controls (live update + persist) | 🟢 Low | 1d |
+| 9k: Bible version switching (settings toggle) | 🟡 Medium | 1d |
+| 9l: Preferences persistence (font, version, color) | 🟢 Low | 0.5d |
+
+### Sprint 4: Polish
+
+| Task | Priority | Est. Effort |
+|------|----------|-------------|
+| 9m: Heading differentiation (3 styles) | 🟢 Low | 0.5d |
+| 9n: Splash screen (text-only) | 🟢 Low | 0.5d |
+| 9o: About/credits overlay | 🟢 Low | 0.5d |
+
+## Phase 10 — Mobile (September+)
 
 | Task | Priority | Est. Effort |
 |------|----------|-------------|
 | Phase 10a: WebAssembly build (Emscripten) | 🟢 Low | 2d |
 | Phase 10b: Touch gesture system | 🟢 Low | 2d |
 | Phase 10c: Android NDK + lifecycle | 🟢 Low | 3d |
-| Multiple highlight colors | 🟢 Low | 2d |
-| Bible version switching | 🟢 Low | 3d |
 
 ## Dependency Notes
 
