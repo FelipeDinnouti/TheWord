@@ -5,19 +5,23 @@
 
 namespace config {
 
-constexpr int WINDOW_WIDTH = 950;
+constexpr int WINDOW_WIDTH = 450;
 constexpr int WINDOW_HEIGHT = 800;
 constexpr int TARGET_FPS = 60;
 
-constexpr float FONT_SIZE = 20.0f;
+constexpr float FONT_SIZE = 24.0f;
+constexpr float FONT_HEADING_SIZE = FONT_SIZE * 1.3f;
 constexpr float LINE_SPACING = 1.2f;
 
-constexpr const char* API_BASE_URL = "https://api.youversion.com/v1";
-constexpr int DEFAULT_BIBLE_ID = 3034;
-constexpr const char* DEFAULT_VERSE = "JHN.3.16";
+constexpr const char* USFM_DIR = "assets/usfm";
+constexpr const char* FONT_REGULAR = "assets/fonts/source_serif_4/SourceSerif4-Regular.ttf";
+constexpr const char* FONT_BOLD = "assets/fonts/source_serif_4/SourceSerif4-Bold.ttf";
 
 constexpr const char* ENV_FILE = ".env";
 constexpr const char* YVP_APP_KEY = "YVP_APP_KEY";
+
+constexpr const char* DB_DIR = ".theword";
+constexpr const char* DB_FILE = "highlights.db";
 
 } // namespace config
 

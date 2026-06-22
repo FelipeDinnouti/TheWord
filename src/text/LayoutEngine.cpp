@@ -1,6 +1,6 @@
 #include "LayoutEngine.h"
-#include <sstream>
 #include <algorithm>
+#include <cmath>
 
 LayoutEngine::LayoutEngine(float maxWidth, const Font& font, float fontSize, float lineSpacing)
     : maxWidth(maxWidth), font(font), fontSize(fontSize), lineSpacing(lineSpacing) {}
@@ -18,116 +18,20 @@ void LayoutEngine::invalidateCache() {
     cachedLayouts.clear();
 }
 
-std::vector<Word> LayoutEngine::tokenize(const std::string& text) {
-    std::vector<Word> words;
-    int globalWordId = 0;
-
-    std::istringstream stream(text);
-    std::string line;
-    int verseId = 1;
-
-    while (std::getline(stream, line)) {
-        std::istringstream lineStream(line);
-        std::string word;
-
-        while (lineStream >> word) {
-            Word w;
-            w.id = globalWordId++;
-            w.verseId = verseId;
-            w.text = word;
-            words.push_back(w);
-        }
-
-        if (!line.empty()) {
-            verseId++;
-        }
-    }
-
-    return words;
-}
-
-std::vector<Line> LayoutEngine::wrapText(const std::vector<Word>& words) {
-    std::vector<Line> lines;
-    float lineHeight = fontSize * lineSpacing;
-    float currentY = 0.0f;
-    float x = 10.0f;
-
-    Line currentLine;
-    currentLine.y = currentY;
-    currentLine.height = lineHeight;
-
-    for (size_t i = 0; i < words.size(); ++i) {
-        const Word& word = words[i];
-
-        float wordWidth = MeasureTextEx(font, word.text.c_str(), fontSize, 1).x;
-
-        float spaceWidth = MeasureTextEx(font, " ", fontSize, 1).x;
-
-        if (x + wordWidth > maxWidth - 10 && !currentLine.spans.empty()) {
-            lines.push_back(currentLine);
-
-            currentY += lineHeight;
-            currentLine = Line();
-            currentLine.y = currentY;
-            currentLine.height = lineHeight;
-            x = 10.0f;
-        }
-
-        if (!currentLine.spans.empty()) {
-            x += spaceWidth;
-        }
-
-        Span span;
-        span.text = word.text;
-        span.x = x;
-        span.y = currentY;
-        span.width = wordWidth;
-        span.height = fontSize;
-        span.verseId = word.verseId;
-        span.startWord = word.id;
-        span.endWord = word.id;
-
-        currentLine.spans.push_back(span);
-        x += wordWidth;
-    }
-
-    if (!currentLine.spans.empty()) {
-        lines.push_back(currentLine);
-    }
-
-    return lines;
-}
-
-std::vector<Span> LayoutEngine::createSpansForLine(const Line& line, const std::vector<Word>& words) {
-    (void)words;
-    return line.spans;
-}
-
-std::string LayoutEngine::getWordAtPosition(float x, float y, float scrollY) {
-    float documentY = y + scrollY;
-
-    for (const auto& line : [&]() {
-        std::vector<Line> allLines;
-        for (const auto& layout : cachedLayouts) {
-            for (const auto& l : layout.lines) {
-                allLines.push_back(l);
-            }
-        }
-        return allLines;
-    }()) {
-        if (documentY >= line.y && documentY < line.y + line.height) {
+int LayoutEngine::hitTestLine(const ChapterLayout& layout, float chapterRelativeY, float screenX) const {
+    for (const auto& line : layout.lines) {
+        if (chapterRelativeY >= line.y && chapterRelativeY < line.y + line.height) {
             for (const auto& span : line.spans) {
-                if (x >= span.x && x <= span.x + span.width) {
-                    return span.text;
+                if (screenX >= span.x && screenX <= span.x + span.width) {
+                    return span.startWord >= 0 ? span.startWord : -1;
                 }
             }
         }
     }
-
-    return "";
+    return -1;
 }
 
-ChapterLayout LayoutEngine::layoutChapter(const std::string& chapterId, const std::string& text) {
+ChapterLayout LayoutEngine::layoutChapter(const std::string& chapterId, const ChapterData& data) {
     ChapterLayout layout;
     layout.chapterId = chapterId;
 
@@ -138,16 +42,182 @@ ChapterLayout LayoutEngine::layoutChapter(const std::string& chapterId, const st
         return *existing;
     }
 
-    std::vector<Word> words = tokenize(text);
-    layout.lines = wrapText(words);
+    float currentY = 0.0f;
 
-    float totalHeight = 0.0f;
-    for (const auto& line : layout.lines) {
-        totalHeight += line.height;
+    for (const auto& seg : data.segments) {
+        switch (seg.type) {
+            case SegmentType::ParagraphBreak:
+                currentY += PARAGRAPH_GAP;
+                break;
+
+            case SegmentType::SectionHeading:
+                currentY += layoutHeading(seg, currentY, layout.lines);
+                break;
+
+            case SegmentType::VerseText:
+                currentY += layoutVerseText(seg, data, currentY, layout.lines);
+                break;
+
+            case SegmentType::PoetryLine:
+                currentY += layoutPoetryLine(seg, data, currentY, layout.lines);
+                break;
+
+            case SegmentType::ChapterLabel:
+            case SegmentType::BookTitle:
+                currentY += layoutHeading(seg, currentY, layout.lines);
+                break;
+        }
     }
-    layout.totalHeight = totalHeight;
+
+    layout.totalHeight = currentY;
 
     cachedLayouts.push_back(layout);
 
     return layout;
+}
+
+float LayoutEngine::layoutVerseText(const Segment& seg, const ChapterData& data, float startY, std::vector<Line>& lines) {
+    float lineHeight = fontSize * lineSpacing;
+    float availableWidth = maxWidth - LEFT_MARGIN - RIGHT_MARGIN;
+    float spaceWidth = MeasureTextEx(font, " ", fontSize, 1).x;
+    float y = startY;
+    float x = LEFT_MARGIN;
+
+    Line currentLine;
+    currentLine.y = y;
+    currentLine.height = lineHeight;
+
+    size_t endIndex = seg.startWordIndex + seg.wordCount;
+    for (size_t i = seg.startWordIndex; i < endIndex; ++i) {
+        const Word& word = data.words[i];
+
+        float wordWidth = MeasureTextEx(font, word.text.c_str(), fontSize, 1).x;
+        float spaceAfterWord = wordWidth;
+
+        if (!currentLine.spans.empty()) {
+            spaceAfterWord += spaceWidth;
+        }
+
+        if (x + spaceAfterWord > LEFT_MARGIN + availableWidth && !currentLine.spans.empty()) {
+            lines.push_back(currentLine);
+            y += lineHeight;
+            currentLine = Line();
+            currentLine.y = y;
+            currentLine.height = lineHeight;
+            x = LEFT_MARGIN;
+        }
+
+        if (!currentLine.spans.empty()) {
+            x += spaceWidth;
+        }
+
+        Span span;
+        span.text = word.text;
+        span.x = x;
+        span.y = y;
+        span.width = wordWidth;
+        span.height = fontSize;
+        span.verseId = word.verseId;
+        span.startWord = word.id;
+        span.endWord = word.id;
+        span.type = SegmentType::VerseText;
+
+        currentLine.spans.push_back(span);
+        x += wordWidth;
+    }
+
+    if (!currentLine.spans.empty()) {
+        lines.push_back(currentLine);
+        y += lineHeight;
+    }
+
+    return y - startY;
+}
+
+float LayoutEngine::layoutHeading(const Segment& seg, float startY, std::vector<Line>& lines) {
+    float lineHeight = fontSize * lineSpacing * 1.3f;
+    float y = startY;
+
+    y += HEADING_TOP_GAP;
+
+    float headingWidth = MeasureTextEx(font, seg.text.c_str(), fontSize, 1).x;
+    float x = (maxWidth - headingWidth) / 2.0f;
+
+    Line headingLine;
+    headingLine.y = y;
+    headingLine.height = lineHeight;
+
+    Span span;
+    span.text = seg.text;
+    span.x = x;
+    span.y = y;
+    span.width = headingWidth;
+    span.height = fontSize;
+    span.verseId = 0;
+    span.startWord = -1;
+    span.endWord = -1;
+    span.type = seg.type;
+
+    headingLine.spans.push_back(span);
+    lines.push_back(headingLine);
+
+    y += lineHeight;
+    y += HEADING_BOTTOM_GAP;
+
+    return y - startY;
+}
+
+float LayoutEngine::layoutPoetryLine(const Segment& seg, const ChapterData& data, float startY, std::vector<Line>& lines) {
+    float lineHeight = fontSize * lineSpacing;
+    float indent = seg.level * POETRY_INDENT;
+    float availableWidth = maxWidth - LEFT_MARGIN - RIGHT_MARGIN - indent;
+    float spaceWidth = MeasureTextEx(font, " ", fontSize, 1).x;
+    float y = startY;
+    float startX = LEFT_MARGIN + indent;
+    float x = startX;
+
+    Line currentLine;
+    currentLine.y = y;
+    currentLine.height = lineHeight;
+
+    size_t endIndex = seg.startWordIndex + seg.wordCount;
+    for (size_t i = seg.startWordIndex; i < endIndex; ++i) {
+        const Word& word = data.words[i];
+
+        float wordWidth = MeasureTextEx(font, word.text.c_str(), fontSize, 1).x;
+
+        if (x + wordWidth > startX + availableWidth && !currentLine.spans.empty()) {
+            lines.push_back(currentLine);
+            y += lineHeight;
+            currentLine = Line();
+            currentLine.y = y;
+            currentLine.height = lineHeight;
+            x = startX;
+        }
+
+        if (!currentLine.spans.empty()) {
+            x += spaceWidth;
+        }
+
+        Span span;
+        span.text = word.text;
+        span.x = x;
+        span.y = y;
+        span.width = wordWidth;
+        span.height = fontSize;
+        span.verseId = word.verseId;
+        span.startWord = word.id;
+        span.endWord = word.id;
+        span.type = SegmentType::PoetryLine;
+
+        currentLine.spans.push_back(span);
+        x += wordWidth;
+    }
+
+    if (!currentLine.spans.empty()) {
+        lines.push_back(currentLine);
+        y += lineHeight;
+    }
+
+    return y - startY;
 }

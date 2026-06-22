@@ -1,74 +1,81 @@
 #include "raylib.h"
 #include "core/Config.h"
-#include "core/EnvLoader.h"
+#include "core/BibleBooks.h"
 #include "core/APIClient.h"
+#include "core/EnvLoader.h"
+#include "data/USFMParser.h"
 #include "data/BibleClient.h"
+#include "data/CompositeProvider.h"
 #include "text/LayoutEngine.h"
+#include "document/DocumentManager.h"
+#include "renderer/Renderer.h"
+#include "highlight/Highlighter.h"
+#include "persistence/PersistenceManager.h"
 #include <cstdlib>
-#include <iostream>
+#include <memory>
 #include <string>
-
-std::string stripHtmlTags(const std::string& html) {
-    std::string result;
-    bool inTag = false;
-    for (char c : html) {
-        if (c == '<') {
-            inTag = true;
-        } else if (c == '>') {
-            inTag = false;
-        } else if (!inTag) {
-            result += c;
-        }
-    }
-    std::string cleaned;
-    for (char c : result) {
-        if (c != '\n' && c != '\r' && c != '\t') {
-            if (c != ' ' || (cleaned.empty() || cleaned.back() != ' ')) {
-                cleaned += c;
-            }
-        }
-    }
-    return cleaned;
-}
+#include <vector>
 
 int main() {
-    EnvLoader::load(config::ENV_FILE);
-    std::string appKey = EnvLoader::get(config::YVP_APP_KEY);
-
     InitWindow(config::WINDOW_WIDTH, config::WINDOW_HEIGHT, "TheWord");
     SetTargetFPS(config::TARGET_FPS);
 
-    // Font font = GetFontDefault();
-    Font font = LoadFontEx("data/source_serif_4/SourceSerif4-Regular.ttf", 64, NULL, 0);
+    std::vector<int> codepoints;
+    for (int i = 32; i < 127; i++) codepoints.push_back(i);
+    for (int i = 160; i < 256; i++) codepoints.push_back(i);
 
-    LayoutEngine layoutEngine(config::WINDOW_WIDTH - 40.0f, font, config::FONT_SIZE, config::LINE_SPACING);
+    Font bodyFont = LoadFontEx(config::FONT_REGULAR, (int)config::FONT_SIZE,
+                               codepoints.data(), (int)codepoints.size());
+    SetTextureFilter(bodyFont.texture, TEXTURE_FILTER_POINT);
 
-    std::string verseText;
-    std::string verseReference = "John 3:16";
+    Font headingFont = LoadFontEx(config::FONT_REGULAR, (int)config::FONT_HEADING_SIZE,
+                                  codepoints.data(), (int)codepoints.size());
+    SetTextureFilter(headingFont.texture, TEXTURE_FILTER_POINT);
 
-    if (!appKey.empty()) {
-        BibleClient client(appKey);
-        BiblePassage passage = client.getPassage(config::DEFAULT_BIBLE_ID, config::DEFAULT_VERSE, "text");
+    float contentTop = 60.0f;
+    float contentWidth = config::WINDOW_WIDTH - 40.0f;
+    float viewportHeight = config::WINDOW_HEIGHT - contentTop;
 
-        if (!passage.content.empty()) {
-            verseText = stripHtmlTags(passage.content);
-            verseReference = passage.reference.empty() ? verseReference : passage.reference;
-        } else {
-            verseText = "(PLACEHOLDER) For God so loved the world that he gave his one and only Son, that whoever believes in him shall not perish but have eternal life.";
-        }
-    } else {
-        verseText = "(PLACEHOLDER) For God so loved the world that he gave his one and only Son, that whoever believes in him shall not perish but have eternal life.";
+    LayoutEngine layoutEngine(contentWidth, bodyFont, config::FONT_SIZE, config::LINE_SPACING);
+    Renderer renderer(bodyFont, headingFont, contentTop, config::FONT_SIZE);
+    USFMParser usfmParser(config::USFM_DIR);
+
+    EnvLoader::load(config::ENV_FILE);
+    std::string apiKey = EnvLoader::get(config::YVP_APP_KEY);
+
+    std::unique_ptr<APIClient> apiClient;
+    std::unique_ptr<BibleClient> bibleClient;
+    std::unique_ptr<CompositeProvider> compositeProvider;
+    ChapterProvider* activeProvider = &usfmParser;
+
+    if (!apiKey.empty()) {
+        apiClient = std::make_unique<APIClient>();
+        apiClient->setAppKey(apiKey);
+        bibleClient = std::make_unique<BibleClient>(*apiClient, 3034);
+        compositeProvider = std::make_unique<CompositeProvider>(*bibleClient, usfmParser);
+        activeProvider = compositeProvider.get();
     }
 
-    ChapterLayout layout = layoutEngine.layoutChapter(config::DEFAULT_VERSE, verseText);
+    std::string home = getenv("HOME") ? getenv("HOME") : ".";
+    std::string dbPath = home + "/" + config::DB_DIR + "/" + config::DB_FILE;
+    DocumentManager documentManager(layoutEngine, viewportHeight, *activeProvider, contentTop);
+    PersistenceManager storage(dbPath);
+    Highlighter highlighter(storage);
 
-    float scrollY = 0.0f;
+    documentManager.loadInitialChapter("GEN.1");
+
     float scrollVelocity = 0.0f;
     const float scrollSensitivity = 30.0f;
     const float friction = 0.92f;
     const float minVelocity = 0.1f;
 
+    double lastTime = GetTime();
+
     while (!WindowShouldClose()) {
+        double currentTime = GetTime();
+        float deltaTime = (float)(currentTime - lastTime);
+        lastTime = currentTime;
+
         float wheel = GetMouseWheelMove();
         if (wheel != 0) {
             scrollVelocity -= wheel * scrollSensitivity;
@@ -86,64 +93,59 @@ int main() {
             scrollVelocity = 0.0f;
         }
 
-        float maxScroll = layout.totalHeight - GetScreenHeight();
-        if (maxScroll < 0) maxScroll = 0;
+        documentManager.scrollBy(scrollVelocity);
+        documentManager.update(deltaTime);
 
-        scrollY += scrollVelocity;
-        if (scrollY < 0) {
-            scrollY = 0;
-            scrollVelocity = 0;
+        if (IsMouseButtonPressed(MOUSE_LEFT_BUTTON)) {
+            Vector2 m = GetMousePosition();
+            int wordId = documentManager.hitTestWord(m.x, m.y, documentManager.getScrollY());
+            if (wordId >= 0) highlighter.startSelection(wordId);
         }
-        if (scrollY > maxScroll) {
-            scrollY = maxScroll;
-            scrollVelocity = 0;
+        if (IsMouseButtonDown(MOUSE_LEFT_BUTTON)) {
+            Vector2 m = GetMousePosition();
+            int wordId = documentManager.hitTestWord(m.x, m.y, documentManager.getScrollY());
+            if (wordId >= 0) highlighter.updateSelection(wordId);
+        }
+        if (IsMouseButtonReleased(MOUSE_LEFT_BUTTON)) {
+            highlighter.endSelection();
+        }
+
+        if (IsWindowResized()) {
+            float newContentWidth = GetScreenWidth() - 40.0f;
+            layoutEngine.setMaxWidth(newContentWidth);
+            layoutEngine.invalidateCache();
+            documentManager.invalidateLayouts();
+            documentManager.setViewportHeight(GetScreenHeight() - contentTop);
         }
 
         BeginDrawing();
         ClearBackground(RAYWHITE);
 
-        if (!verseReference.empty()) {
-            DrawText(verseReference.c_str(), 20, 20, 18, DARKGRAY);
-        }
+        float scrollY = documentManager.getScrollY();
+        float totalHeight = documentManager.getTotalHeight();
+        float viewHeight = documentManager.getViewportHeight();
 
-        float contentTop = 60.0f;
-        float viewHeight = (float)GetScreenHeight() - contentTop;
+        std::vector<std::pair<Span, float>> docSpans;
+        documentManager.getVisibleSpans(docSpans);
 
-        for (size_t lineIdx = 0; lineIdx < layout.lines.size(); ++lineIdx) {
-            const Line& line = layout.lines[lineIdx];
-
-            float screenY = line.y - scrollY + contentTop;
-            if (screenY < -line.height || screenY > GetScreenHeight()) {
-                continue;
-            }
-
-            for (const auto& span : line.spans) {
-                float textX = span.x;
-                float textY = screenY + (line.height - span.height) / 2;
-
-                DrawTextEx(font, span.text.c_str(), {textX, textY}, config::FONT_SIZE, 1, BLACK);
+        std::vector<HighlightRect> hlRects;
+        for (const auto& [span, docY] : docSpans) {
+            if (span.startWord >= 0 && highlighter.isWordHighlighted(span.startWord)) {
+                float screenY = docY - scrollY + contentTop;
+                hlRects.push_back({span.x, screenY, span.width, span.height,
+                                   highlighter.getHighlightForWord(span.startWord)});
             }
         }
 
-        float scrollBarHeight = viewHeight * (viewHeight / layout.totalHeight);
-        if (scrollBarHeight < 20) scrollBarHeight = 20;
-
-        float scrollBarY = contentTop + (scrollY / layout.totalHeight) * (viewHeight - scrollBarHeight);
-
-        DrawRectangle(GetScreenWidth() - 6, (int)scrollBarY, 4, (int)scrollBarHeight, LIGHTGRAY);
-
-        DrawFPS(10, GetScreenHeight() - 30);
-
-        if (appKey.empty()) {
-            const char* warning = "Set YVP_APP_KEY env var for live API";
-            DrawText(warning, 10, GetScreenHeight() - 30, 14, LIGHTGRAY);
-        }
+        renderer.drawFrame(scrollY, totalHeight, viewHeight, docSpans,
+                           documentManager.getChapterTitle(), hlRects);
+        renderer.drawFpsCounter(10, GetScreenHeight() - 30);
 
         EndDrawing();
     }
 
-    UnloadFont(font);
-
+    UnloadFont(bodyFont);
+    UnloadFont(headingFont);
     CloseWindow();
     return 0;
 }

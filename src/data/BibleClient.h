@@ -2,21 +2,30 @@
 #define BibleClient_h
 
 #include <string>
+#include <optional>
 #include "../core/APIClient.h"
-#include "BibleVerse.h"
+#include "ChapterProvider.h"
 
-class BibleClient {
+class BibleClient : public ChapterProvider {
 public:
-    BibleClient(const std::string& appKey);
+    BibleClient(APIClient& apiClient, int bibleId);
 
-    BiblePassage getPassage(int bibleId, const std::string& usfmReference, const std::string& format = "text");
+    bool HasChapter(const std::string& bookId, int chapter) const override;
+    std::optional<ChapterData> LoadChapter(
+        const std::string& bookId, int chapter) override;
+    const char* ProviderName() const override;
 
 private:
-    APIClient apiClient;
+    friend class BibleClientTest;
+
+    APIClient& apiClient;
+    int bibleId;
     std::string baseUrl;
 
-    BiblePassage parsePassageResponse(const std::string& json);
-    std::string extractTextFromJson(const std::string& json, const std::string& key);
+    std::string extractJsonString(const std::string& json, const std::string& key);
+    std::optional<ChapterData> parseHtmlChapter(const std::string& html,
+                                                  const std::string& bookId, int chapter);
+    std::string stripHtml(const std::string& html);
 };
 
-#endif // BibleClient_h
+#endif
