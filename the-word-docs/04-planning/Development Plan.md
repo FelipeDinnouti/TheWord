@@ -12,9 +12,9 @@
 | 4. Architecture Foundation | ✅ Complete | Renderer extraction, ChapterProvider, Segment model |
 | 5. USFM Parser | ✅ Complete | Offline Bible data source |
 | 6. BibleClient (HTML API) | ✅ Complete | Online data source |
-| 7. Highlighting System | ⬜ Planned | Per-word selection, highlight rendering |
-| 8. SQLite Persistence | ⬜ Planned | Save/load highlights and preferences |
-| 9. UI Layer | ⬜ Planned | Navigation, font controls, smooth scroll |
+| 7. Highlighting System | ✅ Complete | Per-word selection, highlight rendering |
+| 8. SQLite Persistence | ✅ Complete | Save/load highlights and preferences |
+| 9. UI Layer | ⬜ Planned | Navigation, font controls, smooth scroll, heading differentiation |
 | 10. Mobile Preparation | ⬜ Planned | Android build, touch input, lifecycle |
 
 ## Detailed Phase Descriptions
@@ -90,37 +90,45 @@
 
 **See:** `03-modules/Bible API.md`
 
-### Phase 7: Highlighting System ⬜
+### Phase 7: Highlighting System ✅
 
 **Goal:** Select words, highlight them with yellow.
+
+**Status:** Complete.
 
 - Highlighter class with PersistenceInterface
 - Hit detection (screen → word)
 - Drag selection
 - Highlight rectangle rendering
 - Wire input events
+- 9 unit tests (7 Highlighter + 2 InMemoryStorage)
 
 **See:** `03-modules/Highlighting System.md`
 
-### Phase 8: SQLite Persistence ⬜
+### Phase 8: SQLite Persistence ✅
 
 **Goal:** Highlights survive app restart.
 
+**Status:** Complete.
+
 - PersistenceManager implementing PersistenceInterface
 - SQLite schema for highlights and preferences
-- Replace in-memory stub
+- Replace in-memory stub with SQLite-backed persistence
+- 4 unit tests (save/load, remove, types, preferences)
+- 53/53 tests passing
 
 **See:** `03-modules/Persistence.md`
 
 ### Phase 9: UI Layer ⬜
 
-**Goal:** Navigation, font controls, smooth scrolling polish.
+**Goal:** Navigation, font controls, smooth scrolling polish, heading differentiation.
 
-- InputHandler class
-- UIManager (chapter title, font controls)
+- InputHandler class (extract mouse/keyboard/wheel from main.cpp)
+- UIManager (chapter title, font controls, navigation UI)
 - Book/chapter navigation
 - Smooth scroll refinements
-- Window resize handling
+- Window resize polish
+- Heading differentiation — split BookTitle, SectionHeading, ChapterLabel into distinct render styles
 
 **See:** `03-modules/UI Layer.md`
 

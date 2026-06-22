@@ -114,7 +114,27 @@
 - [x] 53/53 tests passing
 - [x] Highlights survive app restart (SQLite-backed)
 
-## Remaining Phases
+## Phase 9 — UI Layer Polish ⬜
 
-- [ ] Phase 9: UI Layer polish
-- [ ] Phase 10: Mobile/Android
+- [ ] InputHandler class (extract mouse/keyboard/wheel logic from main.cpp)
+- [ ] UIManager — book/chapter navigation UI
+- [ ] Font size controls
+- [ ] Smooth scroll refinements
+- [ ] Window resize polish
+- [ ] Heading differentiation — split BookTitle, SectionHeading, ChapterLabel into distinct render styles
+  - BookTitle: headingFont at 1.6×, BLACK, centered
+  - SectionHeading: headingFont at 1.3×, DARKGRAY, centered (as-is)
+  - ChapterLabel: headingFont at 1.6×, gray (80,80,80), centered
+
+## Phase 10 — Mobile/Android ⬜
+
+- [ ] WebAssembly build (Emscripten)
+- [ ] Touch gesture system (swipe, tap, pinch)
+- [ ] Android NDK build + lifecycle
+
+## Remaining Phases (summary)
+
+| Phase | Status |
+|-------|--------|
+| Phase 9: UI Layer polish | ⬜ Planned |
+| Phase 10: Mobile/Android | ⬜ Planned |

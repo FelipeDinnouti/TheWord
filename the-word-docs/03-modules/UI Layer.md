@@ -1,6 +1,7 @@
 # UI Layer
 
-> Status: Implemented (extracted in Phase 4) | Last Updated: 2026-06-22
+> Status: Implemented (extracted in Phase 4) | Last Updated: 2026-06-22 (Phase 9 checklist)
+> Phase 9 plan: See `04-planning/Progress Tracking.md`
 
 ## Overview
 
@@ -67,11 +68,20 @@ When the window width changes:
 The Renderer handles each `Span` differently based on its originating segment type:
 
 - **VerseText spans**: Drawn left-aligned with `DrawTextEx()`
-- **SectionHeading spans**: Drawn centered, bold font (or larger size)
 - **PoetryLine spans**: Drawn at the pre-computed indent position
 - **ParagraphBreak**: Only affects positioning (vertical gap), no draw
 
-This logic lives in the Renderer's draw loop. The `Span` struct does not currently carry segment type information — this may be added in Phase 9 if needed for mixed rendering.
+**Current (Phase 8):** SectionHeading, ChapterLabel, and BookTitle all render identically — centered, headingFont at 1.3×, DARKGRAY.
+
+**Planned for Phase 9:** Heading differentiation — each heading type gets its own distinct style:
+
+| Type | Font | Size | Color | Alignment |
+|------|------|------|-------|-----------|
+| **BookTitle** | `headingFont` | `fontSize × 1.6` | `BLACK` | Centered |
+| **SectionHeading** | `headingFont` | `fontSize × 1.3` | `DARKGRAY` | Centered |
+| **ChapterLabel** | `headingFont` | `fontSize × 1.6` | `(80, 80, 80)` | Centered |
+
+This requires splitting the grouped `case` in `Renderer::drawSpan()` into three separate branches. No layout engine changes needed — all three are already positioned as centered headings by the LayoutEngine.
 
 ## Design Note: Renderer Extraction from main.cpp
 

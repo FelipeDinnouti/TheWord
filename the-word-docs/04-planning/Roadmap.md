@@ -49,6 +49,7 @@
 | Phase 9c: Font size controls | 🟢 Low | 1d |
 | Phase 9d: Smooth scroll refinements | 🟢 Low | 1d |
 | Phase 9e: Window resize polish (basic resize already in main.cpp) | 🟢 Low | 0.5d |
+| Phase 9f: Heading differentiation (BookTitle/SectionHeading/ChapterLabel styles) | 🟢 Low | 0.5d |
 
 ## Long Term (September+)
 
