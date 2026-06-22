@@ -12,6 +12,9 @@ public:
 
     ChapterLayout layoutChapter(const std::string& chapterId, const ChapterData& data);
 
+    float getFontSize() const;
+    void setFontSize(float size);
+
     float getMaxWidth() const;
     void setMaxWidth(float width);
     void invalidateCache();

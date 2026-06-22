@@ -14,7 +14,7 @@
 | Phase 6: BibleClient (HTML API) | ✅ Complete | 2026-07 |
 | Phase 7: Highlighting System | ✅ Complete | 2026-08 |
 | Phase 8: SQLite Persistence | ✅ Complete | 2026-08 |
-| Phase 9: UI Layer | ⬜ Planned | 2026-08 |
+| Phase 9: UI Layer | 🏃 In Progress | 2026-08 |
 | Phase 10: Mobile Preparation | ⬜ Planned | 2026-09 |
 
 ## Phase A — Documentation Restructure ✅
@@ -114,17 +114,62 @@
 - [x] 53/53 tests passing
 - [x] Highlights survive app restart (SQLite-backed)
 
-## Phase 9 — UI Layer Polish ⬜
+## Phase 9 — UI Layer Polish
 
-- [ ] InputHandler class (extract mouse/keyboard/wheel logic from main.cpp)
-- [ ] UIManager — book/chapter navigation UI
-- [ ] Font size controls
-- [ ] Smooth scroll refinements
-- [ ] Window resize polish
+### Sprint 1: Foundation ✅
+
+- [x] InputHandler class — extracted mouse/keyboard/wheel/highlight/resize from main.cpp into `src/input/InputHandler.h/cpp`
+- [x] UIManager class — created `src/renderer/UIManager.h/cpp` with top bar, settings/context menu stubs
+- [x] Smooth scroll refinements — frame-rate-independent exponential ease (`1 - exp(-k * dt)`)
+- [x] Window resize polish — scroll-fraction anchor to keep content stable on resize
+- [x] 53/53 tests still passing
+
+### Sprint 2: Highlight UX ✅
+
+- [x] Highlight hit-testing (`Highlighter::highlightAtWord`) — returns `const Highlight*` for context menu
+- [x] Context menu widget — side-by-side "Del" button + 5 pastel color swatches, triggered by long-press (500ms) or right-click
+- [x] Multiple highlight colors — 5 pastel types seeded in DB (Yellow, Pink, Green, Blue, Orange), `Highlighter::activeTypeId` controls new highlight color
+- [x] Delete highlight — "Del" in context menu → `Highlighter::removeHighlight(id)` → `persistence.removeHighlight(id)`
+- [x] Recolor highlight — swatch click → `Highlighter::recolorHighlight(id, typeId)` → `persistence.saveHighlight()` (INSERT OR REPLACE)
+- [x] Long-press FSM in InputHandler (Idle→Pending→Dragging/LongPress) coexists with drag selection; right-click immediate trigger
+- [x] Escape dismisses context menu
+- [x] 62/62 tests passing (+9 new tests)
+
+### Sprint 3: Navigation & Settings ✅
+
+- [x] Book/chapter navigation dialog — go-to dialog with text input, auto-complete (book code/full name prefix match, up to 5 suggestions), keyboard handling (Enter navigates, Tab auto-completes, Up/Down cycle, Backspace/Escape)
+- [x] Font size controls — A–/A+ buttons (12–36 range, clamped), live update via layoutEngine.setFontSize + invalidateCache + renderer.setFontSize + docManager.invalidateLayouts, persisted
+- [x] Bible version switching — settings toggle via CompositeProvider::setPrimary with USFM/Online buttons, reloads current chapter after switch, persisted
+- [x] Color swatch selector in settings — black border highlight on active color, persisted
+- [x] Keyboard shortcuts — 'G' toggles go-to dialog, 'S' toggles settings, Escape dismisses any active dialog
+- [x] Dialog routing in InputHandler — when go-to or settings active, suppresses normal input and routes keyboard/mouse to dialog handlers
+- [x] Preference loading on startup — font_size, active_version, active_color loaded from DB and applied before initial chapter load
+- [x] Dual provider creation in main.cpp — always creates both USFMParser and BibleClient+CompositeProvider (when API key present); no-API-key fallback uses USFMParser for both
+- [x] CompositeProvider setPrimary tests (2 new tests)
+- [x] 64/64 tests passing
+
+### Sprint 3.5: Bug Fixes & UX Polish ✅
+
+- [x] **Bug 1** — Stale context menu when G/S opens go-to/settings: `hideContextMenu()` now called before toggling dialogs (`InputHandler.cpp:47-54`)
+- [x] **Bug 2** — Outside-click on context menu creates spurious highlight: early `return` after `handleContextMenuClick()` prevents FSM from processing same click (`InputHandler.cpp:41-45`)
+- [x] **Bug 3** — `dismissActiveDialog()` dead code: unified Escape handler in `InputHandler.cpp` now calls `dismissActiveDialog()` for all dialogs
+- [x] **Bug 5** — Highlight orphaning on version switch: `provider_name` column added to `highlights` DB table; `Highlighter` filters by current provider; new highlights tagged with provider name; schema migration via ALTER TABLE
+- [x] **Labels**: `"Src:"` → `"Source:"`, `"Clr:"` → `"Color:"` in settings panel
+- [x] **Close buttons**: "X" buttons added to go-to dialog and settings panel (top-right corner)
+- [x] **Font limit feedback**: A–/A+ buttons visually gray out at min(12)/max(36)
+- [x] **Settings gap**: Color row offset adjusts dynamically when Source row is hidden (no API key)
+- [x] **Context menu overflow**: Menu flips to left of cursor when it would overhang right edge
+- [x] **FPS counter**: Gated behind `#ifndef NDEBUG` (hidden in release builds)
+- [x] 64/64 tests still passing
+
+### Sprint 4: Polish ⬜
+
 - [ ] Heading differentiation — split BookTitle, SectionHeading, ChapterLabel into distinct render styles
   - BookTitle: headingFont at 1.6×, BLACK, centered
   - SectionHeading: headingFont at 1.3×, DARKGRAY, centered (as-is)
   - ChapterLabel: headingFont at 1.6×, gray (80,80,80), centered
+- [ ] Splash screen (text-only "TheWord" + "Loading...")
+- [ ] About/credits overlay
 
 ## Phase 10 — Mobile/Android ⬜
 
@@ -136,5 +181,5 @@
 
 | Phase | Status |
 |-------|--------|
-| Phase 9: UI Layer polish | ⬜ Planned |
+| Phase 9: UI Layer polish | 🏃 In Progress |
 | Phase 10: Mobile/Android | ⬜ Planned |

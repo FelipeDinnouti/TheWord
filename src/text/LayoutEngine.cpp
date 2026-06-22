@@ -5,6 +5,15 @@
 LayoutEngine::LayoutEngine(float maxWidth, const Font& font, float fontSize, float lineSpacing)
     : maxWidth(maxWidth), font(font), fontSize(fontSize), lineSpacing(lineSpacing) {}
 
+float LayoutEngine::getFontSize() const {
+    return fontSize;
+}
+
+void LayoutEngine::setFontSize(float size) {
+    fontSize = size;
+    invalidateCache();
+}
+
 void LayoutEngine::setMaxWidth(float width) {
     maxWidth = width;
     invalidateCache();

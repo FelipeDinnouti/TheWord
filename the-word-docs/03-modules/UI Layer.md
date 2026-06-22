@@ -1,7 +1,8 @@
 # UI Layer
 
-> Status: Implemented (extracted in Phase 4) | Last Updated: 2026-06-22 (Phase 9 checklist)
+> Status: Updated for Phase 9 Sprint 3 | Last Updated: 2026-06-22
 > Phase 9 plan: See `04-planning/Progress Tracking.md`
+> Sprint 3 (Navigation & Settings) complete — 64/64 tests passing
 
 ## Overview
 
@@ -83,7 +84,96 @@ The Renderer handles each `Span` differently based on its originating segment ty
 
 This requires splitting the grouped `case` in `Renderer::drawSpan()` into three separate branches. No layout engine changes needed — all three are already positioned as centered headings by the LayoutEngine.
 
-## Design Note: Renderer Extraction from main.cpp
+## InputHandler
+
+Extracted in Phase 9 Sprint 1 from `main.cpp`. Lives in `src/input/InputHandler.h/cpp`.
+
+### Responsibilities
+- Mouse wheel input → scroll velocity with friction decay
+- Keyboard (Up/Down) → scroll velocity
+- Left-click finite state machine: **Idle → Pending → Dragging/LongPress** (500ms hold → context menu)
+  - Hold < 500ms + release → single-word highlight
+  - Move > 10px while held → drag selection
+  - Hold > 500ms without significant move → long-press context menu
+- Right-click → immediate context menu on highlighted word (no pending state)
+- Keyboard shortcuts: `G` toggles go-to dialog, `S` toggles settings, `Escape` dismisses any active dialog
+- Dialog routing: when go-to or settings dialog is active, normal input (scroll, click, selection) is suppressed and input is routed to the active dialog handler
+- When go-to dialog active: routes `GetCharPressed()` / Enter / Tab / Backspace / Up / Down to `UIManager::handleGoToKeyboardInput()`
+- When settings active: routes left-click to `UIManager::handleSettingsClick()`
+- Window resize → re-layout via `LayoutEngine` and `DocumentManager`, with scroll-fraction anchoring
+
+### Interface
+```cpp
+class InputHandler {
+public:
+    InputHandler(DocumentManager& docManager, Highlighter& highlighter,
+                 LayoutEngine& layoutEngine, UIManager& uiManager, float contentTop);
+    void handleInput(float deltaTime);
+};
+```
+
+### Dependencies
+- `DocumentManager` (scroll, hit-test)
+- `Highlighter` (selection lifecycle)
+- `UIManager` (dialog routing, keyboard shortcut dispatch)
+- `LayoutEngine` (width change on resize)
+- Raylib (`GetMouseWheelMove`, `IsKeyDown`, `IsMouseButton*`, `IsWindowResized`)
+
+## UIManager
+
+Extracted in Phase 9 Sprint 1. Lives in `src/renderer/UIManager.h/cpp`.
+
+### Responsibilities
+- Draw top bar with chapter title (`drawTopBar`)
+- `getContentTop()` returns the top bar height (60px) used by Renderer for document offset
+- Context menu on long-press/right-click: single-row popup with "Del" button (red) + 5 pastel color swatches (side-by-side)
+- Context menu click handling: delete highlight, recolor highlight, or dismiss on outside/Escape
+- Go-to dialog: text input field with auto-complete (matches book code or full name, case-insensitive, up to 5 suggestions), keyboard navigation (Enter loads chapter, Tab auto-completes selected, Up/Down cycle, Backspace deletes, Escape dismisses)
+- Settings panel: modal overlay with font size A–/A+ buttons (12–36 range), USFM/Online version toggle (hidden when no CompositeProvider), active color swatch selector with black border on selected
+- Settings apply: font size → `LayoutEngine::setFontSize` + `invalidateCache` + `Renderer::setFontSize` + `DocumentManager::invalidateLayouts` + persist; version toggle → `CompositeProvider::setPrimary` + reload current chapter + persist; color swatch → `Highlighter::setActiveTypeId` + persist
+
+### Interface
+```cpp
+class UIManager {
+public:
+    UIManager(const Font& headingFont, float headingSize, Highlighter& highlighter,
+              DocumentManager& docManager, LayoutEngine& layoutEngine,
+              Renderer& renderer, PersistenceManager& persistence,
+              ChapterProvider& onlineProv, ChapterProvider& offlineProv,
+              CompositeProvider* compositeProv, float initialFontSize = 24.0f,
+              bool initialVersionOnline = false);
+    float getContentTop() const;
+    float getFontSize() const;
+    void drawTopBar(const std::string& chapterTitle);
+    void drawContextMenu();
+    void drawSettingsPanel();
+    void drawGoToDialog();
+    void showContextMenu(Vector2 position, int highlightId, int typeId);
+    void hideContextMenu();
+    bool isContextMenuActive() const;
+    bool handleContextMenuClick(Vector2 pos);
+    void toggleGoToDialog();
+    void dismissGoToDialog();
+    bool isGoToDialogActive() const;
+    void handleGoToKeyboardInput();
+    void toggleSettings();
+    void dismissSettings();
+    bool isSettingsActive() const;
+    void handleSettingsClick(Vector2 pos);
+    void dismissActiveDialog();
+};
+```
+
+### Dependencies
+- `Highlighter` (active color, highlight manipulation)
+- `DocumentManager` (load chapter on go-to, invalidate layouts on font change)
+- `LayoutEngine` (set font size, cache invalidation)
+- `Renderer` (set font size)
+- `PersistenceManager` (save/load preferences)
+- `ChapterProvider` (online + offline refs for version toggle)
+- `CompositeProvider` (setPrimary for version switching; null when no online API available)
+
+### Design Note: Renderer Extraction from main.cpp
 
 The current render loop lives entirely in `main.cpp`. Before adding highlight rendering or UI controls, the renderer should be extracted into its own module.
 
@@ -109,6 +199,21 @@ private:
 ```
 
 Renderer uses **two font atlases**: `bodyFont` (24px atlas, 1:1 for verse text) and `headingFont` (31px atlas, 1:1 for section headings, chapter labels, book titles). Both use `TEXTURE_FILTER_POINT` for pixel-sharp rendering. `drawSpan` selects the appropriate font by `span.type`.
+
+## Keyboard Shortcuts
+
+| Key | Context | Action |
+|-----|---------|--------|
+| `G` | Any (no dialog active) | Open go-to dialog |
+| `S` | Any (no dialog active) | Open settings panel |
+| `Escape` | Go-to dialog active | Dismiss go-to dialog |
+| `Escape` | Settings active | Dismiss settings |
+| `Escape` | Context menu active | Dismiss context menu |
+| `Enter` | Go-to dialog | Parse input and navigate to chapter |
+| `Tab` | Go-to dialog | Auto-complete selected suggestion |
+| `Up` / `Down` | Go-to dialog | Cycle through suggestions |
+| `Backspace` | Go-to dialog | Delete last character |
+| Arrow keys | Any | Scroll text |
 
 ## Android Considerations
 

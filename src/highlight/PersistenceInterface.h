@@ -13,6 +13,7 @@ struct Highlight {
     int startWord;
     int endWord;
     int typeId;
+    std::string providerName;
 };
 
 struct HighlightType {
@@ -27,6 +28,7 @@ public:
     virtual std::vector<Highlight> loadHighlights() = 0;
     virtual void saveHighlight(const Highlight& h) = 0;
     virtual void removeHighlight(int id) = 0;
+    virtual std::vector<HighlightType> loadHighlightTypes() = 0;
 };
 
 #endif

@@ -489,6 +489,37 @@ TEST_CASE("CompositeProvider HasChapter returns false when neither has it") {
     CHECK_FALSE(composite.HasChapter("GEN", 999));
 }
 
+TEST_CASE("CompositeProvider setPrimary switches primary provider") {
+    AlwaysGenesisProvider ag;
+    FailingProvider fail;
+
+    // Start with primary=AlwaysGenesis, fallback=FailingProvider
+    CompositeProvider composite(ag, fail);
+    auto r1 = composite.LoadChapter("GEN", 1);
+    REQUIRE(r1.has_value());
+    CHECK(r1->words[0].text == "Genesis");
+
+    // After setPrimary to fail, LoadChapter should fail (both primary and fallback fail)
+    composite.setPrimary(fail);
+    auto r2 = composite.LoadChapter("GEN", 1);
+    CHECK_FALSE(r2.has_value());
+}
+
+TEST_CASE("CompositeProvider setPrimary switches to working provider") {
+    AlwaysGenesisProvider ag;
+    FailingProvider fail;
+
+    CompositeProvider composite(fail, ag);
+    auto r1 = composite.LoadChapter("GEN", 1);
+    REQUIRE(r1.has_value());
+
+    // After setPrimary to ag, primary succeeds directly
+    composite.setPrimary(ag);
+    auto r2 = composite.LoadChapter("GEN", 1);
+    REQUIRE(r2.has_value());
+    CHECK(r2->words[0].text == "Genesis");
+}
+
 TEST_CASE("CompositeProvider ProviderName") {
     AlwaysGenesisProvider p;
     FailingProvider f;
@@ -593,6 +624,99 @@ TEST_CASE("InMemoryStorage remove highlight") {
     CHECK(highlights[0].id == 2);
 }
 
+TEST_CASE("InMemoryStorage saveHighlight replaces existing by ID") {
+    InMemoryStorage store;
+    store.saveHighlight({1, 10, 20, 1});
+    store.saveHighlight({1, 15, 25, 2});
+    auto highlights = store.loadHighlights();
+    REQUIRE(highlights.size() == 1);
+    CHECK(highlights[0].startWord == 15);
+    CHECK(highlights[0].typeId == 2);
+}
+
+TEST_CASE("InMemoryStorage loadHighlightTypes returns empty") {
+    InMemoryStorage store;
+    auto types = store.loadHighlightTypes();
+    CHECK(types.empty());
+}
+
+// ── New Highlighter Tests ──────────────────────────────────────────────
+
+TEST_CASE("Highlighter highlightAtWord returns pointer for highlighted word") {
+    InMemoryStorage store;
+    Highlighter h(store);
+    h.startSelection(5);
+    h.updateSelection(10);
+    h.endSelection();
+    const Highlight* hl = h.highlightAtWord(7);
+    REQUIRE(hl != nullptr);
+    CHECK(hl->startWord == 5);
+    CHECK(hl->endWord == 10);
+}
+
+TEST_CASE("Highlighter highlightAtWord returns nullptr for unhighlighted word") {
+    InMemoryStorage store;
+    Highlighter h(store);
+    h.startSelection(5);
+    h.updateSelection(10);
+    h.endSelection();
+    const Highlight* hl = h.highlightAtWord(4);
+    CHECK(hl == nullptr);
+    hl = h.highlightAtWord(11);
+    CHECK(hl == nullptr);
+}
+
+TEST_CASE("Highlighter removeHighlight removes from internal vector") {
+    InMemoryStorage store;
+    Highlighter h(store);
+    h.startSelection(5);
+    h.updateSelection(10);
+    h.endSelection();
+    REQUIRE(h.getHighlights().size() == 1);
+    h.removeHighlight(h.getHighlights()[0].id);
+    CHECK(h.getHighlights().empty());
+    CHECK_FALSE(h.isWordHighlighted(7));
+}
+
+TEST_CASE("Highlighter recolorHighlight changes typeId") {
+    InMemoryStorage store;
+    Highlighter h(store);
+    h.startSelection(5);
+    h.updateSelection(10);
+    h.endSelection();
+    int hlId = h.getHighlights()[0].id;
+    int oldType = h.getHighlights()[0].typeId;
+    int newType = (oldType == 1) ? 2 : 1;
+    h.recolorHighlight(hlId, newType);
+    CHECK(h.getHighlights()[0].typeId == newType);
+}
+
+TEST_CASE("Highlighter activeTypeId used by endSelection") {
+    InMemoryStorage store;
+    Highlighter h(store);
+    h.setActiveTypeId(99);
+    h.startSelection(1);
+    h.updateSelection(5);
+    h.endSelection();
+    CHECK(h.getHighlights()[0].typeId == 99);
+}
+
+TEST_CASE("Highlighter getActiveTypeId returns current") {
+    InMemoryStorage store;
+    Highlighter h(store);
+    CHECK(h.getActiveTypeId() == 1);
+    h.setActiveTypeId(5);
+    CHECK(h.getActiveTypeId() == 5);
+}
+
+TEST_CASE("Highlighter getTypes returns available types") {
+    InMemoryStorage store;
+    Highlighter h(store);
+    const auto& types = h.getTypes();
+    CHECK_FALSE(types.empty());
+    CHECK(types[0].id == 1);
+}
+
 // ── PersistenceManager Tests ──────────────────────────────────────────
 
 TEST_CASE("PersistenceManager save and load round-trip") {
@@ -619,15 +743,15 @@ TEST_CASE("PersistenceManager remove highlight") {
 
 TEST_CASE("PersistenceManager highlight types") {
     PersistenceManager pm(":memory:");
-    HighlightType t{1, "Pink", {255, 192, 203, 100}};
-    pm.saveHighlightType(t);
     auto types = pm.loadHighlightTypes();
-    REQUIRE(types.size() == 1);
+    REQUIRE(types.size() == 5);
     CHECK(types[0].id == 1);
-    CHECK(types[0].name == "Pink");
+    CHECK(types[0].name == "Yellow");
     CHECK(types[0].color.r == 255);
-    CHECK(types[0].color.g == 192);
-    CHECK(types[0].color.b == 203);
+    CHECK(types[0].color.g == 235);
+    CHECK(types[0].color.b == 59);
+    CHECK(types[4].id == 5);
+    CHECK(types[4].name == "Orange");
 }
 
 TEST_CASE("PersistenceManager preferences") {

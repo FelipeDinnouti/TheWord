@@ -65,8 +65,14 @@ set(HIGHLIGHT_SOURCES
     src/highlight/Highlighter.cpp
     src/highlight/InMemoryStorage.cpp
 )
+
+set(INPUT_SOURCES
+    src/input/InputHandler.cpp
+)
+
 set(RENDERER_SOURCES
     src/renderer/Renderer.cpp
+    src/renderer/UIManager.cpp
 )
 
 # ── SQLite object library (compiled once, linked to both targets) ─────────
@@ -84,6 +90,7 @@ add_executable(theword
     ${TEXT_SOURCES}
     ${DOCUMENT_SOURCES}
     ${HIGHLIGHT_SOURCES}
+    ${INPUT_SOURCES}
     ${PERSISTENCE_SOURCES}
     ${RENDERER_SOURCES}
     $<TARGET_OBJECTS:sqlite3_obj>
@@ -96,6 +103,7 @@ add_executable(theword_test
     ${TEXT_SOURCES}
     ${DOCUMENT_SOURCES}
     ${HIGHLIGHT_SOURCES}
+    ${INPUT_SOURCES}
     ${PERSISTENCE_SOURCES}
     ${RENDERER_SOURCES}
     $<TARGET_OBJECTS:sqlite3_obj>

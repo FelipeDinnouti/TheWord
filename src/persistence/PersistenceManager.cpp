@@ -64,16 +64,24 @@ void PersistenceManager::initSchema() {
 
     if (count == 0) {
         sqlite3_exec(db,
-            "INSERT INTO highlight_types (id, name, color_r, color_g, color_b) "
-            "VALUES (1, 'Yellow', 255, 255, 0)",
+            "INSERT INTO highlight_types (id, name, color_r, color_g, color_b) VALUES "
+            "(1, 'Yellow', 255, 235, 59),"
+            "(2, 'Pink', 244, 143, 177),"
+            "(3, 'Green', 165, 214, 167),"
+            "(4, 'Blue', 144, 202, 249),"
+            "(5, 'Orange', 255, 204, 128)",
             nullptr, nullptr, nullptr);
     }
+
+    sqlite3_exec(db,
+        "ALTER TABLE highlights ADD COLUMN provider_name TEXT NOT NULL DEFAULT ''",
+        nullptr, nullptr, nullptr);
 }
 
 std::vector<Highlight> PersistenceManager::loadHighlights() {
     std::vector<Highlight> results;
     sqlite3_stmt* stmt = nullptr;
-    if (sqlite3_prepare_v2(db, "SELECT id, start_word, end_word, type_id FROM highlights", -1, &stmt, nullptr) != SQLITE_OK) {
+    if (sqlite3_prepare_v2(db, "SELECT id, start_word, end_word, type_id, provider_name FROM highlights", -1, &stmt, nullptr) != SQLITE_OK) {
         sqlite3_finalize(stmt);
         return results;
     }
@@ -83,6 +91,8 @@ std::vector<Highlight> PersistenceManager::loadHighlights() {
         h.startWord = sqlite3_column_int(stmt, 1);
         h.endWord = sqlite3_column_int(stmt, 2);
         h.typeId = sqlite3_column_int(stmt, 3);
+        const char* prov = (const char*)sqlite3_column_text(stmt, 4);
+        if (prov) h.providerName = prov;
         results.push_back(h);
     }
     sqlite3_finalize(stmt);
@@ -92,7 +102,7 @@ std::vector<Highlight> PersistenceManager::loadHighlights() {
 void PersistenceManager::saveHighlight(const Highlight& h) {
     sqlite3_stmt* stmt = nullptr;
     if (sqlite3_prepare_v2(db,
-        "INSERT INTO highlights (id, start_word, end_word, type_id) VALUES (?, ?, ?, ?)",
+        "INSERT OR REPLACE INTO highlights (id, start_word, end_word, type_id, provider_name) VALUES (?, ?, ?, ?, ?)",
         -1, &stmt, nullptr) != SQLITE_OK) {
         sqlite3_finalize(stmt);
         return;
@@ -101,6 +111,7 @@ void PersistenceManager::saveHighlight(const Highlight& h) {
     sqlite3_bind_int(stmt, 2, h.startWord);
     sqlite3_bind_int(stmt, 3, h.endWord);
     sqlite3_bind_int(stmt, 4, h.typeId);
+    sqlite3_bind_text(stmt, 5, h.providerName.c_str(), -1, SQLITE_TRANSIENT);
     sqlite3_step(stmt);
     sqlite3_finalize(stmt);
 }

@@ -10,6 +10,8 @@
 #include "text/LayoutEngine.h"
 #include "document/DocumentManager.h"
 #include "renderer/Renderer.h"
+#include "renderer/UIManager.h"
+#include "input/InputHandler.h"
 #include "highlight/Highlighter.h"
 #include "persistence/PersistenceManager.h"
 #include <cstdlib>
@@ -17,6 +19,7 @@
 #include <memory>
 #include <string>
 #include <vector>
+#include <algorithm>
 
 int main() {
     InitWindow(config::WINDOW_WIDTH, config::WINDOW_HEIGHT, "TheWord");
@@ -32,42 +35,76 @@ int main() {
                                   codepoints.data(), (int)codepoints.size());
     SetTextureFilter(headingFont.texture, TEXTURE_FILTER_POINT);
 
-    float contentTop = 60.0f;
+    float headingSize = config::FONT_SIZE * 1.3f;
     float contentWidth = config::WINDOW_WIDTH - 40.0f;
-    float viewportHeight = config::WINDOW_HEIGHT - contentTop;
-
-    LayoutEngine layoutEngine(contentWidth, bodyFont, config::FONT_SIZE, config::LINE_SPACING);
-    Renderer renderer(bodyFont, headingFont, contentTop, config::FONT_SIZE);
-    USFMParser usfmParser(config::USFM_DIR);
 
     EnvLoader::load(config::ENV_FILE);
     std::string apiKey = EnvLoader::get(config::YVP_APP_KEY);
 
+    USFMParser usfmParser(config::USFM_DIR);
+
     std::unique_ptr<APIClient> apiClient;
     std::unique_ptr<BibleClient> bibleClient;
     std::unique_ptr<CompositeProvider> compositeProvider;
-    ChapterProvider* activeProvider = &usfmParser;
+
+    ChapterProvider* onlineProv = &usfmParser;
+    ChapterProvider* offlineProv = &usfmParser;
+    ChapterProvider* activeProv = &usfmParser;
 
     if (!apiKey.empty()) {
         apiClient = std::make_unique<APIClient>();
         apiClient->setAppKey(apiKey);
         bibleClient = std::make_unique<BibleClient>(*apiClient, 3034);
         compositeProvider = std::make_unique<CompositeProvider>(*bibleClient, usfmParser);
-        activeProvider = compositeProvider.get();
+        onlineProv = bibleClient.get();
+        offlineProv = &usfmParser;
+        activeProv = compositeProvider.get();
     }
 
     std::string home = getenv("HOME") ? getenv("HOME") : ".";
     std::string dbPath = home + "/" + config::DB_DIR + "/" + config::DB_FILE;
-    DocumentManager documentManager(layoutEngine, viewportHeight, *activeProvider, contentTop);
     PersistenceManager storage(dbPath);
     Highlighter highlighter(storage);
 
-    documentManager.loadInitialChapter("GEN.1");
+    float fontSize = config::FONT_SIZE;
+    std::string savedFontSize = storage.getPreference("font_size", "");
+    if (!savedFontSize.empty()) {
+        fontSize = std::max(12.0f, std::min(36.0f, (float)std::atoi(savedFontSize.c_str())));
+    }
 
-    float scrollVelocity = 0.0f;
-    const float scrollSensitivity = 30.0f;
-    const float friction = 0.92f;
-    const float minVelocity = 0.1f;
+    LayoutEngine layoutEngine(contentWidth, bodyFont, fontSize, config::LINE_SPACING);
+    Renderer renderer(bodyFont, headingFont, 60.0f, fontSize);
+
+    float viewportHeight = config::WINDOW_HEIGHT - 60.0f;
+    DocumentManager documentManager(layoutEngine, viewportHeight, *activeProv, 60.0f);
+
+    bool versionOnline = false;
+    if (compositeProvider) {
+        std::string savedVersion = storage.getPreference("active_version", "online");
+        if (savedVersion == "offline") {
+            compositeProvider->setPrimary(*offlineProv);
+            versionOnline = false;
+        } else {
+            compositeProvider->setPrimary(*onlineProv);
+            versionOnline = true;
+        }
+    }
+
+    highlighter.setProvider(versionOnline ? "BibleClient" : "USFMParser");
+
+    UIManager uiManager(headingFont, headingSize, highlighter,
+                        documentManager, layoutEngine, renderer, storage,
+                        *onlineProv, *offlineProv, compositeProvider.get(),
+                        fontSize, versionOnline);
+
+    std::string savedColor = storage.getPreference("active_color", "");
+    if (!savedColor.empty()) {
+        highlighter.setActiveTypeId(std::atoi(savedColor.c_str()));
+    }
+
+    InputHandler inputHandler(documentManager, highlighter, layoutEngine, uiManager, uiManager.getContentTop());
+
+    documentManager.loadInitialChapter("GEN.1");
 
     double lastTime = GetTime();
 
@@ -76,47 +113,8 @@ int main() {
         float deltaTime = (float)(currentTime - lastTime);
         lastTime = currentTime;
 
-        float wheel = GetMouseWheelMove();
-        if (wheel != 0) {
-            scrollVelocity -= wheel * scrollSensitivity;
-        }
-
-        if (IsKeyDown(KEY_DOWN) || IsKeyDown(KEY_S)) {
-            scrollVelocity += scrollSensitivity * 0.16f;
-        }
-        if (IsKeyDown(KEY_UP) || IsKeyDown(KEY_W)) {
-            scrollVelocity -= scrollSensitivity * 0.16f;
-        }
-
-        scrollVelocity *= friction;
-        if (std::abs(scrollVelocity) < minVelocity) {
-            scrollVelocity = 0.0f;
-        }
-
-        documentManager.scrollBy(scrollVelocity);
+        inputHandler.handleInput(deltaTime);
         documentManager.update(deltaTime);
-
-        if (IsMouseButtonPressed(MOUSE_LEFT_BUTTON)) {
-            Vector2 m = GetMousePosition();
-            int wordId = documentManager.hitTestWord(m.x, m.y, documentManager.getScrollY());
-            if (wordId >= 0) highlighter.startSelection(wordId);
-        }
-        if (IsMouseButtonDown(MOUSE_LEFT_BUTTON)) {
-            Vector2 m = GetMousePosition();
-            int wordId = documentManager.hitTestWord(m.x, m.y, documentManager.getScrollY());
-            if (wordId >= 0) highlighter.updateSelection(wordId);
-        }
-        if (IsMouseButtonReleased(MOUSE_LEFT_BUTTON)) {
-            highlighter.endSelection();
-        }
-
-        if (IsWindowResized()) {
-            float newContentWidth = GetScreenWidth() - 40.0f;
-            layoutEngine.setMaxWidth(newContentWidth);
-            layoutEngine.invalidateCache();
-            documentManager.invalidateLayouts();
-            documentManager.setViewportHeight(GetScreenHeight() - contentTop);
-        }
 
         BeginDrawing();
         ClearBackground(RAYWHITE);
@@ -125,21 +123,27 @@ int main() {
         float totalHeight = documentManager.getTotalHeight();
         float viewHeight = documentManager.getViewportHeight();
 
+        uiManager.drawTopBar(documentManager.getChapterTitle());
+
         std::vector<std::pair<Span, float>> docSpans;
         documentManager.getVisibleSpans(docSpans);
 
         std::vector<HighlightRect> hlRects;
         for (const auto& [span, docY] : docSpans) {
             if (span.startWord >= 0 && highlighter.isWordHighlighted(span.startWord)) {
-                float screenY = docY - scrollY + contentTop;
+                float screenY = docY - scrollY + uiManager.getContentTop();
                 hlRects.push_back({span.x, screenY, span.width, span.height,
                                    highlighter.getHighlightForWord(span.startWord)});
             }
         }
 
-        renderer.drawFrame(scrollY, totalHeight, viewHeight, docSpans,
-                           documentManager.getChapterTitle(), hlRects);
+        renderer.drawFrame(scrollY, totalHeight, viewHeight, docSpans, hlRects);
+        uiManager.drawContextMenu();
+        uiManager.drawGoToDialog();
+        uiManager.drawSettingsPanel();
+#ifndef NDEBUG
         renderer.drawFpsCounter(10, GetScreenHeight() - 30);
+#endif
 
         EndDrawing();
     }

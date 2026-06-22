@@ -40,7 +40,7 @@ void DocumentManager::loadInitialChapter(const std::string& chapterId) {
 void DocumentManager::update(float deltaTime) {
     float diff = targetScrollY - scrollY;
     if (std::abs(diff) > 0.5f) {
-        scrollY += diff * SMOOTH_SPEED * deltaTime;
+        scrollY += diff * (1.0f - std::exp(-SMOOTH_SPEED * deltaTime));
     } else {
         scrollY = targetScrollY;
     }
@@ -65,6 +65,11 @@ void DocumentManager::scrollBy(float delta) {
     if (newTarget > maxScroll) newTarget = maxScroll;
 
     targetScrollY = newTarget;
+}
+
+void DocumentManager::scrollTo(float y) {
+    scrollY = y;
+    targetScrollY = y;
 }
 
 float DocumentManager::getScrollY() const {

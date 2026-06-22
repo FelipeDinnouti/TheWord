@@ -26,6 +26,7 @@ public:
 
     void update(float deltaTime);
     void scrollBy(float delta);
+    void scrollTo(float y);
 
     float getScrollY() const;
     float getTotalHeight() const;

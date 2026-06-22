@@ -7,13 +7,15 @@ class CompositeProvider : public ChapterProvider {
 public:
     CompositeProvider(ChapterProvider& primary, ChapterProvider& fallback);
 
+    void setPrimary(ChapterProvider& provider);
+
     bool HasChapter(const std::string& bookId, int chapter) const override;
     std::optional<ChapterData> LoadChapter(
         const std::string& bookId, int chapter) override;
     const char* ProviderName() const override;
 
 private:
-    ChapterProvider& primary;
+    ChapterProvider* primary;
     ChapterProvider& fallback;
 };
 

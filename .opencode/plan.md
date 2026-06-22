@@ -1,86 +1,72 @@
-# TheWord — Phase 9: MVP Final UI
+# TheWord — Sprint 3.5 Complete
 
-## Goal
+## Done
 
-Polish the app into a complete MVP: highlight management (multiple colors, deletion), navigation (book/chapter picker, version switching, font controls), and visual polish (splash screen, heading differentiation).
+### Bug Fixes (5 critical)
+- **Bug 1** — Stale context menu on G/S: `hideContextMenu()` before toggle
+- **Bug 2** — Outside-click leaks into selection: early return after context menu click
+- **Bug 3** — Dead `dismissActiveDialog()`: unified Escape handler now calls it
+- **Bug 4** — Context menu clicks leak through: fixed by Bug 2's early return
+- **Bug 5** — Highlight orphaning on version switch: `provider_name` column, Highlighter filters by provider
 
-## Design Decisions
+### UX Polish
+- Labels: `"Src:"`→`"Source:"`, `"Clr:"`→`"Color:"`
+- Close buttons ("X") on go-to and settings dialogs
+- Font buttons gray out at min(12)/max(36)
+- Settings panel height adjusts dynamically when Source row hidden
+- Context menu flips left on right-edge overflow
+- FPS counter gated behind `#ifndef NDEBUG`
 
-1. **Tap-and-hold / right-click** on highlighted word shows context menu with trash icon + pastel color swatches
-2. **5 pastel colors** seeded in DB: Yellow `#FFEB3B`, Pink `#F48FB1`, Green `#A5D6A7`, Blue `#90CAF9`, Orange `#FFCC80`
-3. **Bible version switching** via settings toggle (offline USFM ↔ online API), not per-chapter auto-detect
-4. **Splash screen** is text-only: "TheWord" centered + "Loading..." subtitle
-5. **Preferences** (font size, active version, active color) persisted to `preferences` table
+### Clean Code Refactors
+- Magic numbers → named constants (`BACKDROP_ALPHA`, `CLOSE_SIZE`, `CULL_MARGIN`, `MIN_SCROLLBAR_HEIGHT`, `KEYBOARD_SCROLL_FACTOR`, `LABEL_SWATCH_GAP`, `GO_TO_DIALOG_HEIGHT`)
+- Variable renames: `sw/sh`→`screenW/H`, `dx/dy`→`dlgX/Y`, `sx/sy`→`panelX/Y`, `m`→`mousePos`, `csx`→`swatchX`, `c`(char)→`ch`
+- Extracted helpers: `drawBackdrop()`, `applyFontSize(float)`, `getGoToDialogRect()`, `getSettingsPanelRect()`, `getCloseButtonRect()`
+- Fixed variable shadowing in `parseGoToInput` inner loop
 
-## Execution Order
+## Pending Function Rewrites
 
-### Sprint 1: Foundation
+These functions are too large or have too many responsibilities. They should be split in a future sprint.
 
-1. **InputHandler class** — Extract mouse/keyboard/wheel from `main.cpp` into `src/input/InputHandler.h/cpp`
-2. **UIManager class** — `src/renderer/UIManager.h/cpp` — top bar, settings panel overlays, context menu
-3. **Smooth scroll refinements** — `DocumentManager.cpp` ease curve tweaks
-4. **Window resize polish** — `main.cpp` improve reflow anchor on resize
+### 1. `InputHandler::handleInput()` — 159 lines
+**Problem**: Handles 6+ responsibilities: dialog routing, keyboard shortcuts, scroll, right-click, press FSM, window resize.
+**Plan**: Extract into sub-methods:
+- `handleDialogInput()` — routes to active dialog handler
+- `handleKeyboardShortcuts()` — G/S keys
+- `handleScroll()` — wheel + arrow keys + friction
+- `handleRightClick()` — context menu on highlighted word
+- `handlePressFSM()` — the Idle/Pending/Dragging/LongPress state machine
+- `handleWindowResize()` — reflow on resize
 
-### Sprint 2: Highlight UX
+### 2. `UIManager::handleSettingsClick()` — 80 lines
+**Problem**: Handles 5 different click targets in one function (close, font−, font+, version toggle, color swatch).
+**Plan**: Extract per-target handlers:
+- `handleFontMinusClick()`, `handleFontPlusClick()`
+- `handleVersionToggleClick(Vector2)`
+- `handleColorSwatchClick(Vector2)`
 
-5. **Highlight hit-testing** — `Highlighter::highlightAtWord(wordId)` returning `const Highlight*`
-6. **Context menu widget** — Popup at word position with trash + 5 color swatches
-7. **Multiple highlight colors** — Seed 5 types in DB, `Highlighter::activeTypeId` set by UI, `endSelection()` uses it
-8. **Delete highlight** — Wire trash button → `Highlighter::removeHighlight(id)` → `persistence.removeHighlight(id)`
+### 3. `UIManager::drawSettingsPanel()` — 57 lines
+**Problem**: Draws 4 distinct sections (title+close, font row, source row, color row).
+**Plan**: Extract per-section draw methods:
+- `drawSettingsTitleAndClose(Rectangle panel)`
+- `drawSettingsFontRow(Rectangle panel, float rowY)`
+- `drawSettingsSourceRow(Rectangle panel, float rowY)`
+- `drawSettingsColorRow(Rectangle panel, float rowY)`
 
-### Sprint 3: Navigation & Settings
+### 4. `UIManager::drawGoToDialog()` — 38 lines
+**Problem**: Draws backdrop + title + close button + input box + blinking cursor + suggestion list.
+**Plan**: Extract `drawGoToSuggestions(Rectangle dlg)` and `drawGoToInput(Rectangle dlg)`.
 
-9. **Book/chapter navigation** — Go-to dialog in UIManager with book code auto-complete
-10. **Font size controls** — +/- buttons, live update LayoutEngine + Renderer, persist to preferences
-11. **Bible version switching** — `CompositeProvider::setPrimary(ChapterProvider&)`, settings toggle in UIManager
-12. **Preferences persistence** — Read/write font size, active version, active color from `preferences` table
+### 5. `UIManager::parseGoToInput()` — 38 lines
+**Problem**: Contains 3 distinct parsing strategies (book.code+chapter, fullName+chapter, space-separated) in one function.
+**Plan**: Split into testable helpers returning `std::optional<std::string>`:
+- `tryParseBookDotChapter(const std::string& input)`
+- `tryParseFullNameThenChapter(const std::string& input)`
+- `tryParseSpaceSeparated(const std::string& input)`
 
-### Sprint 4: Polish
+### 6. `UIManager::handleGoToKeyboardInput()` — 38 lines
+**Problem**: Handles 6 different keys: char input, Backspace, Up, Down, Tab, Enter.
+**Plan**: Each key could be a small handler, or the method could delegate to per-key lambdas.
 
-13. **Heading differentiation** — Split `drawSpan` case: BookTitle (1.6× BLACK), SectionHeading (1.3× DARKGRAY), ChapterLabel (1.6× gray)
-14. **Splash screen** — "TheWord" + "Loading..." until USFM + DB ready
-15. **About/credits overlay** — Modal with version, Bíblia Livre (CC BY 4.0), Raylib, SQLite credits
-
-## File Changes
-
-### New Files
-
-| File | Purpose |
-|------|---------|
-| `src/input/InputHandler.h/cpp` | Extracted mouse/keyboard/wheel handling |
-| `src/renderer/UIManager.h/cpp` | Top bar, settings, context menu, dialogs |
-
-### Modified Files
-
-| File | Changes |
-|------|---------|
-| `src/main.cpp` | Thin orchestrator — init subsystems, loop, cleanup. Input and UI moved to classes |
-| `src/highlight/Highlighter.h/cpp` | Add `highlightAtWord()`, `removeHighlight()`, `activeTypeId` |
-| `src/persistence/PersistenceManager.cpp` | Seed 5 highlight types instead of 1 |
-| `src/data/CompositeProvider.h/cpp` | Add `setPrimary(ChapterProvider&)` for runtime switching |
-| `src/renderer/Renderer.cpp` | Split heading case in `drawSpan` |
-| `src/document/DocumentManager.cpp` | Smooth scroll tweaks |
-| `CMakeLists.txt` | Add `INPUT_SOURCES` and new files |
-
-### Files NOT needing changes
-
-- `LayoutEngine.h/cpp` — no layout logic changes for heading differentiation
-- `PersistenceInterface.h` — stable contract
-- `InMemoryStorage.h/cpp` — still used by Phase 7 tests
-- `BibleBooks.h` — stable data
-- `ChapterProvider.h` — stable interface
-
-## Database Schema Updates
-
-On first run (new installs), seed 5 pastel types:
-
-```sql
-INSERT INTO highlight_types (id, name, color_r, color_g, color_b)
-VALUES (1, 'Yellow', 255, 235, 59),
-       (2, 'Pink', 244, 143, 177),
-       (3, 'Green', 165, 214, 167),
-       (4, 'Blue', 144, 202, 249),
-       (5, 'Orange', 255, 204, 128);
-```
-
-Existing databases keep their single Yellow entry — new colors will be inserted with `INSERT OR IGNORE` on next migration.
+## DB Schema
+- `highlights` table now has `provider_name TEXT NOT NULL DEFAULT ''`
+- Migration via `ALTER TABLE` on startup (error-ignored if exists)

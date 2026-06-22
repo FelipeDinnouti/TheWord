@@ -18,8 +18,7 @@ public:
     std::vector<Highlight> loadHighlights() override;
     void saveHighlight(const Highlight& h) override;
     void removeHighlight(int id) override;
-
-    std::vector<HighlightType> loadHighlightTypes();
+    std::vector<HighlightType> loadHighlightTypes() override;
     void saveHighlightType(const HighlightType& t);
 
     std::string getPreference(const std::string& key, const std::string& defaultValue);

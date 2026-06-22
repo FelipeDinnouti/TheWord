@@ -9,9 +9,11 @@ public:
     std::vector<Highlight> loadHighlights() override;
     void saveHighlight(const Highlight& h) override;
     void removeHighlight(int id) override;
+    std::vector<HighlightType> loadHighlightTypes() override;
 
 private:
     std::vector<Highlight> highlights;
+    std::vector<HighlightType> types;
 };
 
 #endif

@@ -32,18 +32,17 @@ The system is organized into four conceptual layers. Each layer builds on the on
 
 ```
 main.cpp
-  └── Renderer
-        ├── UIManager     → Config
-        ├── InputHandler  → LayoutEngine (for hit detection)
-        └── DocumentManager
-              ├── LayoutEngine
-              │     └── Data Structures (Word, Span, Line, Segment, ChapterData)
-              └── ChapterProvider (interface)
-                    ├── USFMParser
-                    └── BibleClient → Config
+  ├── Renderer
+  │     └── UIManager      → Config
+  ├── InputHandler        → DocumentManager, Highlighter, LayoutEngine
+  └── DocumentManager
+        ├── LayoutEngine
+        │     └── Data Structures (Word, Span, Line, Segment, ChapterData)
+        └── ChapterProvider (interface)
+              ├── USFMParser
+              └── BibleClient → Config
 
 Highlighter
-  ├── LayoutEngine (for word-to-pixel mapping)
   └── PersistenceInterface → PersistenceManager → Config
 ```
 
@@ -63,9 +62,9 @@ All dependencies flow downward. No module depends on a higher layer.
 | DocumentManager | `document/` | Infinite scroll, chapter lifecycle (talks to ChapterProvider) |
 | Highlighter | `highlight/` | Per-word highlight management |
 | PersistenceManager | `persistence/` | SQLite operations |
-| InputHandler | `input/` | Input event translation |
+| InputHandler | `input/` | Input event translation (scroll, highlight selection, window resize) |
 | Renderer | `renderer/` | Top-level render coordinator |
-| UIManager | `renderer/` | UI elements |
+| UIManager | `renderer/` | Top bar, settings, context menu, dialogs |
 
 ## Key Design Properties
 
