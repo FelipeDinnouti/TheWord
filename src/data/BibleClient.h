@@ -1,5 +1,5 @@
-#ifndef BibleClient_h
-#define BibleClient_h
+#ifndef BIBLECLIENT_H
+#define BIBLECLIENT_H
 
 #include <string>
 #include <optional>
@@ -20,12 +20,12 @@ private:
 
     APIClient& apiClient;
     int bibleId;
-    std::string baseUrl;
+    const std::string baseUrl;
 
-    std::string extractJsonString(const std::string& json, const std::string& key);
+    static std::string extractJsonString(const std::string& json, const std::string& key);
     std::optional<ChapterData> parseHtmlChapter(const std::string& html,
                                                   const std::string& bookId, int chapter);
-    std::string stripHtml(const std::string& html);
+    static std::string stripHtml(const std::string& html);
 };
 
-#endif
+#endif // BIBLECLIENT_H

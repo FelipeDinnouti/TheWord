@@ -1,8 +1,10 @@
 #ifndef GLOBAL_ID_H
 #define GLOBAL_ID_H
 
+#include <atomic>
+
 inline int GetNextWordId() {
-    static int id = 0;
+    static std::atomic<int> id{0};
     return id++;
 }
 

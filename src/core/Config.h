@@ -1,8 +1,6 @@
 #ifndef CONFIG_H
 #define CONFIG_H
 
-#include <string>
-
 namespace config {
 
 constexpr int WINDOW_WIDTH = 450;

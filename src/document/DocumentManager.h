@@ -1,5 +1,5 @@
-#ifndef DocumentManager_h
-#define DocumentManager_h
+#ifndef DOCUMENTMANAGER_H
+#define DOCUMENTMANAGER_H
 
 #include <string>
 #include <vector>
@@ -56,10 +56,9 @@ private:
     static constexpr float AUTO_LOAD_MARGIN = 50.0f;
 
     void recalculateChapterPositions();
-    bool tryPrepend();
-    bool tryAppend();
+    bool tryLoadAdjacent(bool prepend);
     void prependChapter(const std::string& chapterId, ChapterData&& data);
     void appendChapter(const std::string& chapterId, ChapterData&& data);
 };
 
-#endif
+#endif // DOCUMENTMANAGER_H

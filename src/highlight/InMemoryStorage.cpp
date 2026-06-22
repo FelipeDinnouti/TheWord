@@ -16,6 +16,4 @@ void InMemoryStorage::removeHighlight(int id) {
         highlights.end());
 }
 
-int InMemoryStorage::nextId() const {
-    return nextIdValue;
-}
+

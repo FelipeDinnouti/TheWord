@@ -5,7 +5,11 @@
 
 PersistenceManager::PersistenceManager(const std::string& dbPath) : db(nullptr) {
     ensureDirectory(dbPath);
-    sqlite3_open(dbPath.c_str(), &db);
+    if (sqlite3_open(dbPath.c_str(), &db) != SQLITE_OK) {
+        sqlite3_close(db);
+        db = nullptr;
+        return;
+    }
     initSchema();
 }
 
@@ -42,16 +46,20 @@ void PersistenceManager::initSchema() {
         );
     )";
     char* err = nullptr;
-    sqlite3_exec(db, sql, nullptr, nullptr, &err);
-    if (err) {
+    if (sqlite3_exec(db, sql, nullptr, nullptr, &err) != SQLITE_OK) {
         sqlite3_free(err);
         return;
     }
 
-    sqlite3_stmt* stmt;
-    sqlite3_prepare_v2(db, "SELECT COUNT(*) FROM highlight_types", -1, &stmt, nullptr);
-    sqlite3_step(stmt);
-    int count = sqlite3_column_int(stmt, 0);
+    sqlite3_stmt* stmt = nullptr;
+    if (sqlite3_prepare_v2(db, "SELECT COUNT(*) FROM highlight_types", -1, &stmt, nullptr) != SQLITE_OK) {
+        sqlite3_finalize(stmt);
+        return;
+    }
+    int count = 0;
+    if (sqlite3_step(stmt) == SQLITE_ROW) {
+        count = sqlite3_column_int(stmt, 0);
+    }
     sqlite3_finalize(stmt);
 
     if (count == 0) {
@@ -64,8 +72,11 @@ void PersistenceManager::initSchema() {
 
 std::vector<Highlight> PersistenceManager::loadHighlights() {
     std::vector<Highlight> results;
-    sqlite3_stmt* stmt;
-    sqlite3_prepare_v2(db, "SELECT id, start_word, end_word, type_id FROM highlights", -1, &stmt, nullptr);
+    sqlite3_stmt* stmt = nullptr;
+    if (sqlite3_prepare_v2(db, "SELECT id, start_word, end_word, type_id FROM highlights", -1, &stmt, nullptr) != SQLITE_OK) {
+        sqlite3_finalize(stmt);
+        return results;
+    }
     while (sqlite3_step(stmt) == SQLITE_ROW) {
         Highlight h;
         h.id = sqlite3_column_int(stmt, 0);
@@ -79,10 +90,13 @@ std::vector<Highlight> PersistenceManager::loadHighlights() {
 }
 
 void PersistenceManager::saveHighlight(const Highlight& h) {
-    sqlite3_stmt* stmt;
-    sqlite3_prepare_v2(db,
+    sqlite3_stmt* stmt = nullptr;
+    if (sqlite3_prepare_v2(db,
         "INSERT INTO highlights (id, start_word, end_word, type_id) VALUES (?, ?, ?, ?)",
-        -1, &stmt, nullptr);
+        -1, &stmt, nullptr) != SQLITE_OK) {
+        sqlite3_finalize(stmt);
+        return;
+    }
     sqlite3_bind_int(stmt, 1, h.id);
     sqlite3_bind_int(stmt, 2, h.startWord);
     sqlite3_bind_int(stmt, 3, h.endWord);
@@ -92,8 +106,11 @@ void PersistenceManager::saveHighlight(const Highlight& h) {
 }
 
 void PersistenceManager::removeHighlight(int id) {
-    sqlite3_stmt* stmt;
-    sqlite3_prepare_v2(db, "DELETE FROM highlights WHERE id = ?", -1, &stmt, nullptr);
+    sqlite3_stmt* stmt = nullptr;
+    if (sqlite3_prepare_v2(db, "DELETE FROM highlights WHERE id = ?", -1, &stmt, nullptr) != SQLITE_OK) {
+        sqlite3_finalize(stmt);
+        return;
+    }
     sqlite3_bind_int(stmt, 1, id);
     sqlite3_step(stmt);
     sqlite3_finalize(stmt);
@@ -101,8 +118,11 @@ void PersistenceManager::removeHighlight(int id) {
 
 std::vector<HighlightType> PersistenceManager::loadHighlightTypes() {
     std::vector<HighlightType> results;
-    sqlite3_stmt* stmt;
-    sqlite3_prepare_v2(db, "SELECT id, name, color_r, color_g, color_b FROM highlight_types", -1, &stmt, nullptr);
+    sqlite3_stmt* stmt = nullptr;
+    if (sqlite3_prepare_v2(db, "SELECT id, name, color_r, color_g, color_b FROM highlight_types", -1, &stmt, nullptr) != SQLITE_OK) {
+        sqlite3_finalize(stmt);
+        return results;
+    }
     while (sqlite3_step(stmt) == SQLITE_ROW) {
         HighlightType t;
         t.id = sqlite3_column_int(stmt, 0);
@@ -118,10 +138,13 @@ std::vector<HighlightType> PersistenceManager::loadHighlightTypes() {
 }
 
 void PersistenceManager::saveHighlightType(const HighlightType& t) {
-    sqlite3_stmt* stmt;
-    sqlite3_prepare_v2(db,
+    sqlite3_stmt* stmt = nullptr;
+    if (sqlite3_prepare_v2(db,
         "INSERT OR REPLACE INTO highlight_types (id, name, color_r, color_g, color_b) VALUES (?, ?, ?, ?, ?)",
-        -1, &stmt, nullptr);
+        -1, &stmt, nullptr) != SQLITE_OK) {
+        sqlite3_finalize(stmt);
+        return;
+    }
     sqlite3_bind_int(stmt, 1, t.id);
     sqlite3_bind_text(stmt, 2, t.name.c_str(), -1, SQLITE_TRANSIENT);
     sqlite3_bind_int(stmt, 3, t.color.r);
@@ -132,8 +155,11 @@ void PersistenceManager::saveHighlightType(const HighlightType& t) {
 }
 
 std::string PersistenceManager::getPreference(const std::string& key, const std::string& defaultValue) {
-    sqlite3_stmt* stmt;
-    sqlite3_prepare_v2(db, "SELECT value FROM preferences WHERE key = ?", -1, &stmt, nullptr);
+    sqlite3_stmt* stmt = nullptr;
+    if (sqlite3_prepare_v2(db, "SELECT value FROM preferences WHERE key = ?", -1, &stmt, nullptr) != SQLITE_OK) {
+        sqlite3_finalize(stmt);
+        return defaultValue;
+    }
     sqlite3_bind_text(stmt, 1, key.c_str(), -1, SQLITE_TRANSIENT);
     if (sqlite3_step(stmt) == SQLITE_ROW) {
         std::string val = reinterpret_cast<const char*>(sqlite3_column_text(stmt, 0));
@@ -145,10 +171,13 @@ std::string PersistenceManager::getPreference(const std::string& key, const std:
 }
 
 void PersistenceManager::setPreference(const std::string& key, const std::string& value) {
-    sqlite3_stmt* stmt;
-    sqlite3_prepare_v2(db,
+    sqlite3_stmt* stmt = nullptr;
+    if (sqlite3_prepare_v2(db,
         "INSERT OR REPLACE INTO preferences (key, value) VALUES (?, ?)",
-        -1, &stmt, nullptr);
+        -1, &stmt, nullptr) != SQLITE_OK) {
+        sqlite3_finalize(stmt);
+        return;
+    }
     sqlite3_bind_text(stmt, 1, key.c_str(), -1, SQLITE_TRANSIENT);
     sqlite3_bind_text(stmt, 2, value.c_str(), -1, SQLITE_TRANSIENT);
     sqlite3_step(stmt);

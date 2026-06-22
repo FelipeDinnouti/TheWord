@@ -1,5 +1,5 @@
-#ifndef LayoutEngine_h
-#define LayoutEngine_h
+#ifndef LAYOUTENGINE_H
+#define LAYOUTENGINE_H
 
 #include <string>
 #include <vector>
@@ -20,15 +20,15 @@ public:
 
 private:
     float maxWidth;
-    Font font;
+    const Font& font;
     float fontSize;
     float lineSpacing;
 
     std::vector<ChapterLayout> cachedLayouts;
 
-    float layoutVerseText(const Segment& seg, const ChapterData& data, float startY, std::vector<Line>& lines);
+    float layoutWords(const Segment& seg, const ChapterData& data, float startY,
+                      std::vector<Line>& lines, float indent, SegmentType spanType);
     float layoutHeading(const Segment& seg, float startY, std::vector<Line>& lines);
-    float layoutPoetryLine(const Segment& seg, const ChapterData& data, float startY, std::vector<Line>& lines);
 
     static constexpr float PARAGRAPH_GAP = 8.0f;
     static constexpr float HEADING_TOP_GAP = 12.0f;
@@ -38,4 +38,4 @@ private:
     static constexpr float RIGHT_MARGIN = 10.0f;
 };
 
-#endif // LayoutEngine_h
+#endif // LAYOUTENGINE_H

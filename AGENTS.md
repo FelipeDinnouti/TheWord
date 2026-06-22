@@ -35,6 +35,7 @@ cmake --build build --parallel
 - **Files**: One class per file (`ClassName.h` + `ClassName.cpp`), include guards (`#ifndef NAME_H`)
 - **Dependencies**: Acyclic: `core → data → text → document → renderer`
 - **No comments** unless explaining non-obvious logic
+- **Commits**: Always use [Conventional Commits](https://www.conventionalcommits.org/) — `feat:`, `fix:`, `refactor:`, `docs:`, `test:`, `chore:`, etc.
 
 ## Build Commands
 

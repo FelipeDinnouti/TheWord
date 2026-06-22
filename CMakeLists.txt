@@ -65,7 +65,6 @@ set(HIGHLIGHT_SOURCES
     src/highlight/Highlighter.cpp
     src/highlight/InMemoryStorage.cpp
 )
-set(INPUT_SOURCES "")
 set(RENDERER_SOURCES
     src/renderer/Renderer.cpp
 )

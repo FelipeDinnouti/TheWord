@@ -1,7 +1,6 @@
 #include "USFMParser.h"
-#include "core/GlobalId.h"
+#include "DataUtils.h"
 #include <fstream>
-#include <sstream>
 #include <algorithm>
 #include <cctype>
 #include <iostream>
@@ -299,17 +298,7 @@ std::vector<ChapterData> USFMParser::parseBook(const std::string& bookId) const 
                 inDescription = false;
 
                 if (!verseText.empty()) {
-                    // Tokenize verse text into words
-                    std::istringstream wordStream(verseText);
-                    std::string word;
-                    while (wordStream >> word) {
-                        Word w;
-                        w.id = GetNextWordId();
-                        w.verseId = currentVerse;
-                        w.text = word;
-                        currentChapter.words.push_back(w);
-                        currentWords.push_back(w);
-                    }
+                    TokenizeToWords(verseText, currentVerse, currentChapter.words, currentWords);
                 }
                 continue;
             }
@@ -324,22 +313,12 @@ std::vector<ChapterData> USFMParser::parseBook(const std::string& bookId) const 
                 pb.level = 0;
                 currentChapter.segments.push_back(pb);
 
-                // Text after \p on the same line
                 if (!rest.empty()) {
-                    std::istringstream wordStream(rest);
-                    std::string word;
                     segmentStartWordIndex = currentChapter.words.size();
                     segmentVerseStart = currentVerse;
                     currentSegType = SegmentType::VerseText;
                     currentSegLevel = 0;
-                    while (wordStream >> word) {
-                        Word w;
-                        w.id = GetNextWordId();
-                        w.verseId = currentVerse;
-                        w.text = word;
-                        currentChapter.words.push_back(w);
-                        currentWords.push_back(w);
-                    }
+                    TokenizeToWords(rest, currentVerse, currentChapter.words, currentWords);
                 }
                 continue;
             }
@@ -399,16 +378,7 @@ std::vector<ChapterData> USFMParser::parseBook(const std::string& bookId) const 
                 currentSegLevel = level;
 
                 if (!rest.empty()) {
-                    std::istringstream wordStream(rest);
-                    std::string word;
-                    while (wordStream >> word) {
-                        Word w;
-                        w.id = GetNextWordId();
-                        w.verseId = currentVerse;
-                        w.text = word;
-                        currentChapter.words.push_back(w);
-                        currentWords.push_back(w);
-                    }
+                    TokenizeToWords(rest, currentVerse, currentChapter.words, currentWords);
                 }
                 continue;
             }
@@ -433,16 +403,7 @@ std::vector<ChapterData> USFMParser::parseBook(const std::string& bookId) const 
 
         // Plain text line (continuation of current segment)
         if (!inDescription && currentChapter.chapterNum > 0 && currentVerse > 0) {
-            std::istringstream wordStream(line);
-            std::string word;
-            while (wordStream >> word) {
-                Word w;
-                w.id = GetNextWordId();
-                w.verseId = currentVerse;
-                w.text = word;
-                currentChapter.words.push_back(w);
-                currentWords.push_back(w);
-            }
+            TokenizeToWords(line, currentVerse, currentChapter.words, currentWords);
         }
     }
 

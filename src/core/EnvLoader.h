@@ -1,5 +1,5 @@
-#ifndef EnvLoader_h
-#define EnvLoader_h
+#ifndef ENVLOADER_H
+#define ENVLOADER_H
 
 #include <string>
 #include <map>
@@ -14,4 +14,4 @@ private:
     static std::map<std::string, std::string> variables;
 };
 
-#endif // EnvLoader_h
+#endif // ENVLOADER_H

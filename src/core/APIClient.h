@@ -1,5 +1,5 @@
-#ifndef APIClient_h
-#define APIClient_h
+#ifndef APICLIENT_H
+#define APICLIENT_H
 
 #include <string>
 #include <curl/curl.h>
@@ -8,6 +8,10 @@ class APIClient {
 public:
     APIClient();
     ~APIClient();
+    APIClient(const APIClient&) = delete;
+    APIClient& operator=(const APIClient&) = delete;
+    APIClient(APIClient&&) = default;
+    APIClient& operator=(APIClient&&) = default;
 
     std::string get(const std::string& url);
 
@@ -21,4 +25,4 @@ private:
     static size_t WriteCallback(void* contents, size_t size, size_t nmemb, void* userp);
 };
 
-#endif // APIClient_h
+#endif // APICLIENT_H

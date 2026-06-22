@@ -1,6 +1,6 @@
 # Progress Tracking
 
-> Status: Phase 6 Complete | Last Updated: 2026-06-22
+> Status: Phase 8 Complete | Last Updated: 2026-06-22
 
 ## Overall Progress
 
@@ -12,8 +12,8 @@
 | Phase 4: Architecture Foundation | ✅ Complete | 2026-06 |
 | Phase 5: USFM Parser | ✅ Complete | 2026-06 |
 | Phase 6: BibleClient (HTML API) | ✅ Complete | 2026-07 |
-| Phase 7: Highlighting System | ⬜ Planned | 2026-08 |
-| Phase 8: SQLite Persistence | ⬜ Planned | 2026-08 |
+| Phase 7: Highlighting System | ✅ Complete | 2026-08 |
+| Phase 8: SQLite Persistence | ✅ Complete | 2026-08 |
 | Phase 9: UI Layer | ⬜ Planned | 2026-08 |
 | Phase 10: Mobile Preparation | ⬜ Planned | 2026-09 |
 
@@ -93,9 +93,28 @@
 - [x] CompositeProvider unit tests (6 tests: primary success, fallback, both fail, HasChapter)
 - [x] 40/40 tests passing
 
+## Phase 7 — Highlighting System ✅
+
+- [x] PersistenceInterface abstract base class defined
+- [x] InMemoryStorage implements PersistenceInterface for lightweight testing
+- [x] Highlighter class — startSelection, updateSelection, endSelection with word-to-word range
+- [x] Highlight highlighting in renderer via HighlightRect
+- [x] 7 Highlighter unit tests + 2 InMemoryStorage tests
+- [x] Highlights persist within session (in-memory)
+
+## Phase 8 — SQLite Persistence ✅
+
+- [x] PersistenceManager implements PersistenceInterface — same contract as InMemoryStorage
+- [x] SQLite amalgamation via FetchContent (no system dependency)
+- [x] sqlite3.c compiled as OBJECT library, linked to both theword and theword_test
+- [x] DB schema: highlight_types, highlights, preferences tables
+- [x] Yellow highlight type seeded on first run
+- [x] ~/.theword/ directory auto-created; :memory: support for tests
+- [x] 4 PersistenceManager tests (save/load, remove, types, preferences)
+- [x] 53/53 tests passing
+- [x] Highlights survive app restart (SQLite-backed)
+
 ## Remaining Phases
 
-- [ ] Phase 7: Highlighting System
-- [ ] Phase 8: SQLite Persistence
 - [ ] Phase 9: UI Layer polish
 - [ ] Phase 10: Mobile/Android

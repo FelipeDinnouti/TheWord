@@ -10,6 +10,10 @@ class PersistenceManager : public PersistenceInterface {
 public:
     explicit PersistenceManager(const std::string& dbPath);
     ~PersistenceManager() override;
+    PersistenceManager(const PersistenceManager&) = delete;
+    PersistenceManager& operator=(const PersistenceManager&) = delete;
+    PersistenceManager(PersistenceManager&&) = delete;
+    PersistenceManager& operator=(PersistenceManager&&) = delete;
 
     std::vector<Highlight> loadHighlights() override;
     void saveHighlight(const Highlight& h) override;

@@ -3,7 +3,10 @@
 
 #include <string>
 #include <vector>
-#include <raylib.h>
+
+struct SimpleColor {
+    unsigned char r, g, b, a;
+};
 
 struct Highlight {
     int id;
@@ -15,7 +18,7 @@ struct Highlight {
 struct HighlightType {
     int id;
     std::string name;
-    Color color;
+    SimpleColor color;
 };
 
 class PersistenceInterface {

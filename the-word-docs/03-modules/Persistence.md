@@ -1,6 +1,6 @@
 # Persistence Module
 
-> Status: Planned (Phase 8) | Last Updated: 2026-06-22
+> Status: Complete (Phase 8) | Last Updated: 2026-06-22
 
 ## Overview
 
@@ -76,4 +76,4 @@ class PersistenceManager : public PersistenceInterface {
 
 - `src/persistence/PersistenceManager.h/cpp`
 - `src/highlight/PersistenceInterface.h` (interface to implement)
-- Database file: `~/.theword/highlights.db` or `./data/theword.db` (TBD)
+- Database file: `~/.theword/highlights.db`

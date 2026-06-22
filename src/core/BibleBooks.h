@@ -1,9 +1,8 @@
-#ifndef BibleBooks_h
-#define BibleBooks_h
+#ifndef BIBLEBOOKS_H
+#define BIBLEBOOKS_H
 
 #include <string>
 #include <array>
-#include <cstdlib>
 
 struct BookInfo {
     const char* code;

@@ -28,8 +28,8 @@ public:
     float getContentTop() const;
 
 private:
-    Font bodyFont;
-    Font headingFont;
+    const Font& bodyFont;
+    const Font& headingFont;
     float contentTop;
     float fontSize;
     float headingSize;

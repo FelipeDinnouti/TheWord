@@ -10,11 +10,8 @@ public:
     void saveHighlight(const Highlight& h) override;
     void removeHighlight(int id) override;
 
-    int nextId() const;
-
 private:
     std::vector<Highlight> highlights;
-    int nextIdValue = 1;
 };
 
 #endif

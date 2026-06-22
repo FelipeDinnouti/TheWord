@@ -46,13 +46,13 @@ void DocumentManager::update(float deltaTime) {
     }
 
     if (scrollY <= 0.0f) {
-        tryPrepend();
+        tryLoadAdjacent(true);
     }
 
     float maxScroll = getTotalHeight() - viewportHeight;
     if (maxScroll < 0.0f) maxScroll = 0.0f;
     if (scrollY >= maxScroll - AUTO_LOAD_MARGIN) {
-        tryAppend();
+        tryLoadAdjacent(false);
     }
 }
 
@@ -149,39 +149,25 @@ void DocumentManager::recalculateChapterPositions() {
     }
 }
 
-bool DocumentManager::tryPrepend() {
+bool DocumentManager::tryLoadAdjacent(bool prepend) {
     if (chapters.empty()) return false;
 
-    const std::string& firstId = chapters.front().chapterId;
-    std::string prev = GetPreviousChapter(firstId);
-    if (prev.empty()) return false;
+    const std::string& currentId = prepend ? chapters.front().chapterId : chapters.back().chapterId;
+    std::string adjacent = prepend ? GetPreviousChapter(currentId) : GetNextChapter(currentId);
+    if (adjacent.empty()) return false;
 
     std::string book;
     int chapter;
-    if (!ParseChapterRef(prev, book, chapter)) return false;
+    if (!ParseChapterRef(adjacent, book, chapter)) return false;
 
     auto result = primaryProvider.LoadChapter(book, chapter);
     if (!result) return false;
 
-    prependChapter(prev, std::move(*result));
-    return true;
-}
-
-bool DocumentManager::tryAppend() {
-    if (chapters.empty()) return false;
-
-    const std::string& lastId = chapters.back().chapterId;
-    std::string next = GetNextChapter(lastId);
-    if (next.empty()) return false;
-
-    std::string book;
-    int chapter;
-    if (!ParseChapterRef(next, book, chapter)) return false;
-
-    auto result = primaryProvider.LoadChapter(book, chapter);
-    if (!result) return false;
-
-    appendChapter(next, std::move(*result));
+    if (prepend) {
+        prependChapter(adjacent, std::move(*result));
+    } else {
+        appendChapter(adjacent, std::move(*result));
+    }
     return true;
 }
 

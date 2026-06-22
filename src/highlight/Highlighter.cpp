@@ -2,6 +2,7 @@
 #include <algorithm>
 
 static const HighlightType DEFAULT_HIGHLIGHT_TYPE { 1, "Yellow", {255, 255, 0, 100} };
+static Color ToColor(const SimpleColor& c) { return {c.r, c.g, c.b, c.a}; }
 
 Highlighter::Highlighter(PersistenceInterface& persistence)
     : persistence(persistence)
@@ -60,9 +61,9 @@ Color Highlighter::getHighlightForWord(int wordId) const {
     for (const auto& h : highlights) {
         if (wordId >= h.startWord && wordId <= h.endWord) {
             for (const auto& t : types) {
-                if (t.id == h.typeId) return t.color;
+                if (t.id == h.typeId) return ToColor(t.color);
             }
-            return DEFAULT_HIGHLIGHT_TYPE.color;
+            return ToColor(DEFAULT_HIGHLIGHT_TYPE.color);
         }
     }
     return {0, 0, 0, 0};

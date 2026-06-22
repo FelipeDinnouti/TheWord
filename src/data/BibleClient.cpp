@@ -1,18 +1,14 @@
 #include "BibleClient.h"
-#include "core/GlobalId.h"
+#include "DataUtils.h"
 #include <iostream>
 #include <algorithm>
-#include <sstream>
 #include <cctype>
 
 BibleClient::BibleClient(APIClient& client, int bibleId)
-    : apiClient(client), bibleId(bibleId) {
-    baseUrl = "https://api.youversion.com/v1";
+    : apiClient(client), bibleId(bibleId), baseUrl("https://api.youversion.com/v1") {
 }
 
-bool BibleClient::HasChapter(const std::string& bookId, int chapter) const {
-    (void)bookId;
-    (void)chapter;
+bool BibleClient::HasChapter(const std::string& /*bookId*/, int /*chapter*/) const {
     return true;
 }
 
@@ -249,43 +245,8 @@ std::optional<ChapterData> BibleClient::parseHtmlChapter(const std::string& html
                         innerPos = nextTag;
                     }
 
-                    // Decode HTML entities
-                    std::string decoded;
-                    for (size_t ci = 0; ci < textChunk.size(); ++ci) {
-                if (textChunk[ci] == '&' && textChunk.substr(ci, 5) == "&amp;") {
-                    decoded += '&';
-                    ci += 4;
-                        } else if (textChunk[ci] == '&' && textChunk.substr(ci, 4) == "&lt;") {
-                            decoded += '<';
-                            ci += 3;
-                        } else if (textChunk[ci] == '&' && textChunk.substr(ci, 4) == "&gt;") {
-                            decoded += '>';
-                            ci += 3;
-                        } else if (textChunk[ci] == '&' && textChunk.substr(ci, 6) == "&quot;") {
-                            decoded += '\"';
-                            ci += 5;
-                        } else if (textChunk[ci] == '&' && textChunk.substr(ci, 3) == "&#") {
-                            // Skip numeric entities (rare)
-                            size_t semi = textChunk.find(';', ci);
-                            if (semi != std::string::npos) {
-                                ci = semi;
-                            }
-                        } else {
-                            decoded += textChunk[ci];
-                        }
-                    }
-
-                    // Tokenize the text chunk into words
-                    std::istringstream stream(decoded);
-                    std::string word;
-                    while (stream >> word) {
-                        Word w;
-                        w.id = GetNextWordId();
-                        w.verseId = currentVerse;
-                        w.text = word;
-                        data.words.push_back(w);
-                        currentWords.push_back(w);
-                    }
+                    std::string decoded = DecodeHtmlEntities(textChunk);
+                    TokenizeToWords(decoded, currentVerse, data.words, currentWords);
                 }
             }
 
@@ -374,17 +335,7 @@ std::optional<ChapterData> BibleClient::parseHtmlChapter(const std::string& html
                 }
             }
 
-            // Tokenize poetry text
-            std::istringstream stream(poetryText);
-            std::string word;
-            while (stream >> word) {
-                Word w;
-                w.id = GetNextWordId();
-                w.verseId = currentVerse;
-                w.text = word;
-                data.words.push_back(w);
-                currentWords.push_back(w);
-            }
+            TokenizeToWords(poetryText, currentVerse, data.words, currentWords);
 
             if (!currentWords.empty()) {
                 Segment seg;
@@ -412,23 +363,8 @@ std::string BibleClient::stripHtml(const std::string& html) {
         } else if (html[i] == '>') {
             inTag = false;
         } else if (!inTag) {
-            // Decode entities
-            if (html[i] == '&' && html.substr(i, 5) == "&amp;") {
-                result += '&';
-                i += 4;
-            } else if (html[i] == '&' && html.substr(i, 4) == "&lt;") {
-                result += '<';
-                i += 3;
-            } else if (html[i] == '&' && html.substr(i, 4) == "&gt;") {
-                result += '>';
-                i += 3;
-            } else if (html[i] == '&' && html.substr(i, 6) == "&quot;") {
-                result += '\"';
-                i += 5;
-            } else {
-                result += html[i];
-            }
+            result += html[i];
         }
     }
-    return result;
+    return DecodeHtmlEntities(result);
 }
