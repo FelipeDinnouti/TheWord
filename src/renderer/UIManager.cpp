@@ -52,6 +52,14 @@ void UIManager::applyFontSize(float newSize) {
     persistence.setPreference("font_size", std::to_string((int)newSize));
 }
 
+void UIManager::changeFontSize(float delta) {
+    float newSize = currentFontSize + delta;
+    newSize = std::max(config::FONT_SIZE_MIN, std::min(config::FONT_SIZE_MAX, newSize));
+    if (newSize != currentFontSize) {
+        applyFontSize(newSize);
+    }
+}
+
 Rectangle UIManager::getGoToDialogRect() const {
     float screenW = (float)GetScreenWidth();
     float screenH = (float)GetScreenHeight();

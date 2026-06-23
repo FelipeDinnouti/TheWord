@@ -58,6 +58,7 @@ public:
     bool isSettingsActive() const;
     void handleSettingsClick(Vector2 pos);
 
+    void changeFontSize(float delta);
     void dismissActiveDialog();
 
 private:

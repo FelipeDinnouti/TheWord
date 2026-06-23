@@ -236,7 +236,7 @@ Browser input maps automatically via Raylib:
 ### Build & Serve
 
 ```bash
-emcmake cmake -B build-wasm -DCMAKE_BUILD_TYPE=Release -G "Ninja"
+emcmake cmake -B build-wasm -DPLATFORM=Web -DCMAKE_BUILD_TYPE=Release -G "Ninja"
 cmake --build build-wasm --parallel
 # Serve (Emscripten generates .html + .wasm + .js)
 emrun build-wasm/theword.html

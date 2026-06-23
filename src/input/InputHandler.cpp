@@ -1,4 +1,5 @@
 #include "InputHandler.h"
+#include "core/Config.h"
 #include "document/DocumentManager.h"
 #include "highlight/Highlighter.h"
 #include "renderer/UIManager.h"
@@ -11,7 +12,8 @@ InputHandler::InputHandler(DocumentManager& docManager, Highlighter& highlighter
     : docManager(docManager), highlighter(highlighter), layoutEngine(layoutEngine),
       uiManager(uiManager), contentTop(contentTop), scrollVelocity(0.0f),
       pressState(PressState::Idle), pressStartTime(0.0),
-      pressStartPos{0, 0}, pressStartWord(-1) {}
+      pressStartPos{0, 0}, pressStartWord(-1),
+      touchActive(false), touchLastY(0.0f), lastTouchDelta(0.0f), lastPinchDist(0.0f) {}
 
 void InputHandler::handleInput(float deltaTime) {
     if (IsKeyPressed(KEY_ESCAPE)) {
@@ -64,20 +66,15 @@ void InputHandler::handleInput(float deltaTime) {
         return;
     }
 
+#ifdef __EMSCRIPTEN__
+    handlePinch();
+    handleTouchScroll();
+    handleTouchPressFSM();
+#else
     handleScroll();
-
-    if (IsMouseButtonPressed(MOUSE_BUTTON_RIGHT)) {
-        Vector2 mousePos = GetMousePosition();
-        int wordId = docManager.hitTestWord(mousePos.x, mousePos.y, docManager.getScrollY());
-        if (wordId >= 0) {
-            const Highlight* hl = highlighter.highlightAtWord(wordId);
-            if (hl) {
-                uiManager.showContextMenu(mousePos, hl->id, hl->typeId);
-            }
-        }
-    }
-
+    handleRightClick();
     handlePressFSM();
+#endif
 
     handleWindowResize();
 }
@@ -160,6 +157,119 @@ void InputHandler::handlePressFSM() {
                 pressState = PressState::Idle;
             }
             break;
+    }
+}
+
+void InputHandler::handleRightClick() {
+    if (IsMouseButtonPressed(MOUSE_BUTTON_RIGHT)) {
+        Vector2 mousePos = GetMousePosition();
+        int wordId = docManager.hitTestWord(mousePos.x, mousePos.y, docManager.getScrollY());
+        if (wordId >= 0) {
+            const Highlight* hl = highlighter.highlightAtWord(wordId);
+            if (hl) {
+                uiManager.showContextMenu(mousePos, hl->id, hl->typeId);
+            }
+        }
+    }
+}
+
+void InputHandler::handleTouchScroll() {
+    int touchCount = GetTouchPointCount();
+    if (touchCount == 1) {
+        Vector2 pos = GetTouchPosition(0);
+        if (!touchActive) {
+            touchActive = true;
+            touchLastY = pos.y;
+            lastTouchDelta = 0.0f;
+        } else {
+            float deltaY = pos.y - touchLastY;
+            touchLastY = pos.y;
+            lastTouchDelta = deltaY;
+            docManager.scrollBy(deltaY);
+        }
+    } else {
+        if (touchActive) {
+            touchActive = false;
+            scrollVelocity = lastTouchDelta * 10.0f;
+        }
+    }
+
+    scrollVelocity *= FRICTION;
+    if (std::abs(scrollVelocity) < MIN_VELOCITY) {
+        scrollVelocity = 0.0f;
+    }
+    docManager.scrollBy(scrollVelocity);
+}
+
+void InputHandler::handleTouchPressFSM() {
+    int touchCount = GetTouchPointCount();
+    Vector2 touchPos = {};
+    if (touchCount >= 1) {
+        touchPos = GetTouchPosition(0);
+    }
+
+    switch (pressState) {
+        case PressState::Idle:
+            if (touchCount == 1 && !touchActive) {
+                pressStartTime = GetTime();
+                pressStartPos = touchPos;
+                pressStartWord = docManager.hitTestWord(
+                    pressStartPos.x, pressStartPos.y, docManager.getScrollY());
+                pressState = PressState::Pending;
+            }
+            break;
+
+        case PressState::Pending:
+            if (touchCount == 0) {
+                if (pressStartWord >= 0) {
+                    highlighter.startSelection(pressStartWord);
+                    highlighter.endSelection();
+                }
+                pressState = PressState::Idle;
+            } else if (GetTime() - pressStartTime > LONG_PRESS_TIME) {
+                pressState = PressState::LongPress;
+                if (pressStartWord >= 0) {
+                    const Highlight* hl = highlighter.highlightAtWord(pressStartWord);
+                    if (hl) {
+                        uiManager.showContextMenu(pressStartPos, hl->id, hl->typeId);
+                    }
+                }
+            } else {
+                float dy = touchPos.y - pressStartPos.y;
+                if (std::abs(dy) > LONG_PRESS_MOVE_THRESHOLD) {
+                    pressState = PressState::Idle;
+                }
+            }
+            break;
+
+        case PressState::LongPress:
+            if (touchCount == 0) {
+                pressState = PressState::Idle;
+            }
+            break;
+
+        default:
+            break;
+    }
+}
+
+void InputHandler::handlePinch() {
+    int touchCount = GetTouchPointCount();
+    if (touchCount >= 2) {
+        Vector2 t1 = GetTouchPosition(0);
+        Vector2 t2 = GetTouchPosition(1);
+        float dx = t2.x - t1.x;
+        float dy = t2.y - t1.y;
+        float dist = std::sqrt(dx * dx + dy * dy);
+        if (lastPinchDist > 0.0f) {
+            float delta = dist - lastPinchDist;
+            if (delta > 5.0f) uiManager.changeFontSize(config::FONT_SIZE_STEP);
+            if (delta < -5.0f) uiManager.changeFontSize(-config::FONT_SIZE_STEP);
+        }
+        lastPinchDist = dist;
+        touchActive = false;
+    } else {
+        lastPinchDist = 0.0f;
     }
 }
 

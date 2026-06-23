@@ -36,10 +36,18 @@ private:
     double pressStartTime;
     Vector2 pressStartPos;
     int pressStartWord;
+    bool touchActive;
+    float touchLastY;
+    float lastTouchDelta;
+    float lastPinchDist;
 
     void handleScroll();
     void handlePressFSM();
     void handleWindowResize();
+    void handleRightClick();
+    void handleTouchScroll();
+    void handleTouchPressFSM();
+    void handlePinch();
 };
 
 #endif
