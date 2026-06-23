@@ -7,6 +7,11 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 include(FetchContent)
 
 # ── Raylib ─────────────────────────────────────────────────────────────────
+if(EMSCRIPTEN)
+    set(GLFW_BUILD_X11 OFF CACHE BOOL "" FORCE)
+    set(GLFW_USE_WAYLAND OFF CACHE BOOL "" FORCE)
+endif()
+
 FetchContent_Declare(
     raylib
     URL https://github.com/raysan5/raylib/archive/refs/tags/5.0.tar.gz
@@ -40,11 +45,19 @@ if(NOT sqlite3_POPULATED)
 endif()
 
 # ── Source files (explicit list — no GLOB_RECURSE) ────────────────────────
-set(CORE_SOURCES
-    src/core/CurlHttpClient.cpp
-    src/core/EnvLoader.cpp
-    src/core/FontHelper.cpp
-)
+if(EMSCRIPTEN)
+    set(CORE_SOURCES
+        src/core/EmscriptenClient.cpp
+        src/core/EnvLoader.cpp
+        src/core/FontHelper.cpp
+    )
+else()
+    set(CORE_SOURCES
+        src/core/CurlHttpClient.cpp
+        src/core/EnvLoader.cpp
+        src/core/FontHelper.cpp
+    )
+endif()
 
 set(DATA_SOURCES
     src/data/BibleClient.cpp
@@ -96,28 +109,43 @@ add_executable(theword
     $<TARGET_OBJECTS:sqlite3_obj>
 )
 
-add_executable(theword_test
-    tests/test_main.cpp
-    ${CORE_SOURCES}
-    ${DATA_SOURCES}
-    ${TEXT_SOURCES}
-    ${DOCUMENT_SOURCES}
-    ${HIGHLIGHT_SOURCES}
-    ${INPUT_SOURCES}
-    ${PERSISTENCE_SOURCES}
-    ${RENDERER_SOURCES}
-    $<TARGET_OBJECTS:sqlite3_obj>
-)
-
 target_include_directories(theword PRIVATE src ${sqlite3_SOURCE_DIR})
-target_include_directories(theword_test PRIVATE src ${doctest_SOURCE_DIR} ${sqlite3_SOURCE_DIR})
+
+if(NOT EMSCRIPTEN)
+    add_executable(theword_test
+        tests/test_main.cpp
+        ${CORE_SOURCES}
+        ${DATA_SOURCES}
+        ${TEXT_SOURCES}
+        ${DOCUMENT_SOURCES}
+        ${HIGHLIGHT_SOURCES}
+        ${INPUT_SOURCES}
+        ${PERSISTENCE_SOURCES}
+        ${RENDERER_SOURCES}
+        $<TARGET_OBJECTS:sqlite3_obj>
+    )
+    target_include_directories(theword_test PRIVATE src ${doctest_SOURCE_DIR} ${sqlite3_SOURCE_DIR})
+endif()
 
 # ── Asset copying ─────────────────────────────────────────────────────────
 file(COPY assets DESTINATION ${CMAKE_BINARY_DIR})
 file(COPY shaders DESTINATION ${CMAKE_BINARY_DIR})
 
 # ── Linking ───────────────────────────────────────────────────────────────
-if(WIN32)
+if(EMSCRIPTEN)
+    target_link_options(theword PRIVATE
+        "-sUSE_GLFW=3"
+        "-sASYNCIFY=1"
+        "-sTOTAL_MEMORY=64MB"
+        "-sMAX_WEBGL_VERSION=2"
+        "-sFORCE_FILESYSTEM=1"
+        "-sFETCH=1"
+        "--preload-file" "assets"
+        "--shell-file" "${CMAKE_SOURCE_DIR}/wasm_shell.html"
+    )
+    set_target_properties(theword PROPERTIES SUFFIX ".html")
+    target_link_libraries(theword PRIVATE raylib)
+elseif(WIN32)
     target_link_libraries(theword PRIVATE
         raylib
         opengl32

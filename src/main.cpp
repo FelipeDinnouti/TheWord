@@ -2,8 +2,12 @@
 #include "core/Config.h"
 #include "core/FontHelper.h"
 #include "core/BibleBooks.h"
-#include "core/CurlHttpClient.h"
 #include "core/IHttpClient.h"
+#ifdef __EMSCRIPTEN__
+#include "core/EmscriptenClient.h"
+#else
+#include "core/CurlHttpClient.h"
+#endif
 #include "core/EnvLoader.h"
 #include "data/USFMParser.h"
 #include "data/BibleClient.h"
@@ -74,7 +78,11 @@ int main() {
     ChapterProvider* activeProv = &usfmParser;
 
     if (!apiKey.empty()) {
+#ifdef __EMSCRIPTEN__
+        apiClient = std::make_unique<EmscriptenClient>();
+#else
         apiClient = std::make_unique<CurlHttpClient>();
+#endif
         apiClient->setAppKey(apiKey);
         bibleClient = std::make_unique<BibleClient>(*apiClient, 3034);
         compositeProvider = std::make_unique<CompositeProvider>(*bibleClient, usfmParser);
