@@ -2,7 +2,8 @@
 #include "core/Config.h"
 #include "core/FontHelper.h"
 #include "core/BibleBooks.h"
-#include "core/APIClient.h"
+#include "core/CurlHttpClient.h"
+#include "core/IHttpClient.h"
 #include "core/EnvLoader.h"
 #include "data/USFMParser.h"
 #include "data/BibleClient.h"
@@ -12,6 +13,7 @@
 #include "renderer/Renderer.h"
 #include "renderer/UIManager.h"
 #include "input/InputHandler.h"
+#include "core/Theme.h"
 #include "highlight/Highlighter.h"
 #include "persistence/PersistenceManager.h"
 #include <cstdlib>
@@ -24,6 +26,26 @@
 int main() {
     InitWindow(config::WINDOW_WIDTH, config::WINDOW_HEIGHT, "TheWord");
     SetTargetFPS(config::TARGET_FPS);
+
+    {
+        const char* title = "TheWord";
+        const char* subtitle = "Loading...";
+        float titleSize = 48.0f;
+        float subSize = 20.0f;
+        Vector2 titleDims = MeasureTextEx(GetFontDefault(), title, titleSize, 1);
+        Vector2 subDims = MeasureTextEx(GetFontDefault(), subtitle, subSize, 1);
+        BeginDrawing();
+        ClearBackground(theme::WINDOW_BG);
+        DrawTextEx(GetFontDefault(), title,
+                   {(config::WINDOW_WIDTH - titleDims.x) / 2.0f,
+                    (config::WINDOW_HEIGHT - titleDims.y) / 2.0f - 20},
+                   titleSize, 1, theme::SPLASH_TITLE);
+        DrawTextEx(GetFontDefault(), subtitle,
+                   {(config::WINDOW_WIDTH - subDims.x) / 2.0f,
+                    (config::WINDOW_HEIGHT - subDims.y) / 2.0f + 20},
+                   subSize, 1, theme::SPLASH_SUBTITLE);
+        EndDrawing();
+    }
 
     std::vector<int> codepoints = LoadFontCodepoints(config::FONT_REGULAR);
 
@@ -43,7 +65,7 @@ int main() {
 
     USFMParser usfmParser(config::USFM_DIR);
 
-    std::unique_ptr<APIClient> apiClient;
+    std::unique_ptr<IHttpClient> apiClient;
     std::unique_ptr<BibleClient> bibleClient;
     std::unique_ptr<CompositeProvider> compositeProvider;
 
@@ -52,7 +74,7 @@ int main() {
     ChapterProvider* activeProv = &usfmParser;
 
     if (!apiKey.empty()) {
-        apiClient = std::make_unique<APIClient>();
+        apiClient = std::make_unique<CurlHttpClient>();
         apiClient->setAppKey(apiKey);
         bibleClient = std::make_unique<BibleClient>(*apiClient, 3034);
         compositeProvider = std::make_unique<CompositeProvider>(*bibleClient, usfmParser);
@@ -69,7 +91,7 @@ int main() {
     float fontSize = config::FONT_SIZE;
     std::string savedFontSize = storage.getPreference("font_size", "");
     if (!savedFontSize.empty()) {
-        fontSize = std::max(12.0f, std::min(36.0f, (float)std::atoi(savedFontSize.c_str())));
+        fontSize = std::max(config::FONT_SIZE_MIN, std::min(config::FONT_SIZE_MAX, (float)std::atoi(savedFontSize.c_str())));
     }
 
     LayoutEngine layoutEngine(contentWidth, bodyFont, fontSize, config::LINE_SPACING);
@@ -117,7 +139,7 @@ int main() {
         documentManager.update(deltaTime);
 
         BeginDrawing();
-        ClearBackground(RAYWHITE);
+        ClearBackground(theme::WINDOW_BG);
 
         float scrollY = documentManager.getScrollY();
         float totalHeight = documentManager.getTotalHeight();
@@ -141,6 +163,7 @@ int main() {
         uiManager.drawContextMenu();
         uiManager.drawGoToDialog();
         uiManager.drawSettingsPanel();
+        uiManager.drawAbout();
 #ifndef NDEBUG
         renderer.drawFpsCounter(10, GetScreenHeight() - 30);
 #endif

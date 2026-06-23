@@ -41,7 +41,7 @@ endif()
 
 # ── Source files (explicit list — no GLOB_RECURSE) ────────────────────────
 set(CORE_SOURCES
-    src/core/APIClient.cpp
+    src/core/CurlHttpClient.cpp
     src/core/EnvLoader.cpp
     src/core/FontHelper.cpp
 )

@@ -1,8 +1,9 @@
-#include "APIClient.h"
+#include "CurlHttpClient.h"
+#include <curl/curl.h>
 #include <cstring>
 #include <iostream>
 
-APIClient::APIClient() {
+CurlHttpClient::CurlHttpClient() {
     curl = curl_easy_init();
     if (curl) {
         curl_easy_setopt(curl, CURLOPT_FOLLOWLOCATION, 1L);
@@ -10,46 +11,47 @@ APIClient::APIClient() {
     }
 }
 
-APIClient::~APIClient() {
+CurlHttpClient::~CurlHttpClient() {
     if (curl) {
         curl_easy_cleanup(curl);
     }
 }
 
-void APIClient::setAppKey(const std::string& key) {
+void CurlHttpClient::setAppKey(const std::string& key) {
     appKey = key;
 }
 
-std::string APIClient::getAppKey() const {
+std::string CurlHttpClient::getAppKey() const {
     return appKey;
 }
 
-size_t APIClient::WriteCallback(void* contents, size_t size, size_t nmemb, void* userp) {
+size_t CurlHttpClient::WriteCallback(void* contents, size_t size, size_t nmemb, void* userp) {
     size_t realsize = size * nmemb;
     std::string* buffer = static_cast<std::string*>(userp);
     buffer->append(static_cast<char*>(contents), realsize);
     return realsize;
 }
 
-std::string APIClient::get(const std::string& url) {
+std::string CurlHttpClient::get(const std::string& url) {
     std::string response;
+    CURL* ch = static_cast<CURL*>(curl);
 
-    if (!curl) {
+    if (!ch) {
         return response;
     }
 
-    curl_easy_setopt(curl, CURLOPT_URL, url.c_str());
-    curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, WriteCallback);
-    curl_easy_setopt(curl, CURLOPT_WRITEDATA, &response);
+    curl_easy_setopt(ch, CURLOPT_URL, url.c_str());
+    curl_easy_setopt(ch, CURLOPT_WRITEFUNCTION, WriteCallback);
+    curl_easy_setopt(ch, CURLOPT_WRITEDATA, &response);
 
     struct curl_slist* headers = nullptr;
     if (!appKey.empty()) {
         std::string header = "X-YVP-App-Key: " + appKey;
         headers = curl_slist_append(headers, header.c_str());
-        curl_easy_setopt(curl, CURLOPT_HTTPHEADER, headers);
+        curl_easy_setopt(ch, CURLOPT_HTTPHEADER, headers);
     }
 
-    CURLcode res = curl_easy_perform(curl);
+    CURLcode res = curl_easy_perform(ch);
 
     if (res != CURLE_OK) {
         std::cerr << "API request failed: " << curl_easy_strerror(res) << std::endl;

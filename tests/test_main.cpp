@@ -4,7 +4,8 @@
 #include "core/Config.h"
 #include "core/EnvLoader.h"
 #include "core/BibleBooks.h"
-#include "core/APIClient.h"
+#include "core/IHttpClient.h"
+#include "MockHttpClient.h"
 #include "data/ChapterProvider.h"
 #include "data/BibleClient.h"
 #include "data/CompositeProvider.h"
@@ -286,7 +287,7 @@ TEST_CASE("USFMParser caches book data") {
 // ── BibleClient HTML Parser Tests ──────────────────────────────────────
 
 TEST_CASE("BibleClient parses section heading from HTML") {
-    APIClient api;
+    MockHttpClient api;
     BibleClient client(api, 3034);
     std::string html = "<div class=\"s1 yv-h\">The Creation</div>";
     auto result = BibleClientTest::Parse(client, html, "GEN", 1);
@@ -300,7 +301,7 @@ TEST_CASE("BibleClient parses section heading from HTML") {
 }
 
 TEST_CASE("BibleClient parses s2 heading with different level") {
-    APIClient api;
+    MockHttpClient api;
     BibleClient client(api, 3034);
     std::string html = "<div class=\"s2 yv-h\">Subheading</div>";
     auto result = BibleClientTest::Parse(client, html, "GEN", 2);
@@ -311,7 +312,7 @@ TEST_CASE("BibleClient parses s2 heading with different level") {
 }
 
 TEST_CASE("BibleClient parses paragraph with verse content") {
-    APIClient api;
+    MockHttpClient api;
     BibleClient client(api, 3034);
     std::string html = "<div class=\"p\">"
         "<span class=\"yv-v\" v=\"1\"></span>"
@@ -330,7 +331,7 @@ TEST_CASE("BibleClient parses paragraph with verse content") {
 }
 
 TEST_CASE("BibleClient strips footnotes from HTML") {
-    APIClient api;
+    MockHttpClient api;
     BibleClient client(api, 3034);
     std::string html = "<div class=\"p\">"
         "<span class=\"yv-v\" v=\"1\"></span>"
@@ -349,7 +350,7 @@ TEST_CASE("BibleClient strips footnotes from HTML") {
 }
 
 TEST_CASE("BibleClient parses poetry lines q1 and q2") {
-    APIClient api;
+    MockHttpClient api;
     BibleClient client(api, 3034);
     std::string html = "<div class=\"q1\">"
         "<span class=\"yv-v\" v=\"1\"></span>"
@@ -369,7 +370,7 @@ TEST_CASE("BibleClient parses poetry lines q1 and q2") {
 }
 
 TEST_CASE("BibleClient decodes HTML entities") {
-    APIClient api;
+    MockHttpClient api;
     BibleClient client(api, 3034);
     std::string html = "<div class=\"p\">"
         "<span class=\"yv-v\" v=\"1\"></span>"
@@ -388,7 +389,7 @@ TEST_CASE("BibleClient decodes HTML entities") {
 }
 
 TEST_CASE("BibleClient handles empty HTML") {
-    APIClient api;
+    MockHttpClient api;
     BibleClient client(api, 3034);
     auto result = BibleClientTest::Parse(client, "", "GEN", 1);
     REQUIRE(result.has_value());
@@ -397,7 +398,7 @@ TEST_CASE("BibleClient handles empty HTML") {
 }
 
 TEST_CASE("BibleClient parses multiple verses in a chapter") {
-    APIClient api;
+    MockHttpClient api;
     BibleClient client(api, 3034);
     std::string html = "<div class=\"p\">"
         "<span class=\"yv-v\" v=\"1\"></span><span class=\"yv-vlbl\">1</span>Verse one"

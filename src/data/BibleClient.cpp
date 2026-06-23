@@ -4,7 +4,7 @@
 #include <algorithm>
 #include <cctype>
 
-BibleClient::BibleClient(APIClient& client, int bibleId)
+BibleClient::BibleClient(IHttpClient& client, int bibleId)
     : apiClient(client), bibleId(bibleId), baseUrl("https://api.youversion.com/v1") {
 }
 

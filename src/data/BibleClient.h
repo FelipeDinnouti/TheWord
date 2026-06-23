@@ -3,12 +3,12 @@
 
 #include <string>
 #include <optional>
-#include "../core/APIClient.h"
+#include "../core/IHttpClient.h"
 #include "ChapterProvider.h"
 
 class BibleClient : public ChapterProvider {
 public:
-    BibleClient(APIClient& apiClient, int bibleId);
+    BibleClient(IHttpClient& apiClient, int bibleId);
 
     bool HasChapter(const std::string& bookId, int chapter) const override;
     std::optional<ChapterData> LoadChapter(
@@ -18,7 +18,7 @@ public:
 private:
     friend class BibleClientTest;
 
-    APIClient& apiClient;
+    IHttpClient& apiClient;
     int bibleId;
     const std::string baseUrl;
 
