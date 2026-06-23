@@ -8,6 +8,9 @@ constexpr int WINDOW_HEIGHT = 800;
 constexpr int TARGET_FPS = 60;
 
 constexpr float FONT_SIZE = 24.0f;
+constexpr float FONT_SIZE_MIN = 12.0f;
+constexpr float FONT_SIZE_MAX = 36.0f;
+constexpr float FONT_SIZE_STEP = 2.0f;
 constexpr float FONT_HEADING_SIZE = FONT_SIZE * 1.3f;
 constexpr float LINE_SPACING = 1.2f;
 

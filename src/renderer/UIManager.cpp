@@ -1,4 +1,5 @@
 #include "UIManager.h"
+#include "core/Config.h"
 #include "highlight/Highlighter.h"
 #include "document/DocumentManager.h"
 #include "text/LayoutEngine.h"
@@ -24,7 +25,8 @@ UIManager::UIManager(const Font& headingFont, float headingSize, Highlighter& hi
       currentFontSize(initialFontSize), versionOnline(initialVersionOnline),
       contextMenuActive(false), contextMenuPos{0, 0},
       contextHighlightId(-1), contextHighlightTypeId(-1),
-      goToDialogActive(false), goToSelection(0),
+      goToDialogActive(false), goToSelection(0), goToError(false),
+      aboutActive(false),
       settingsActive(false) {}
 
 float UIManager::getContentTop() const {
@@ -38,8 +40,7 @@ float UIManager::getFontSize() const {
 // ── Helpers ──────────────────────────────────────────────────────────────
 
 void UIManager::drawBackdrop() {
-    DrawRectangle(0, 0, GetScreenWidth(), GetScreenHeight(),
-                  {0, 0, 0, BACKDROP_ALPHA});
+    DrawRectangle(0, 0, GetScreenWidth(), GetScreenHeight(), theme::OVERLAY_BG);
 }
 
 void UIManager::applyFontSize(float newSize) {
@@ -77,7 +78,7 @@ Rectangle UIManager::getCloseButtonRect(Rectangle panelRect) const {
 
 void UIManager::drawTopBar(const std::string& chapterTitle) {
     if (!chapterTitle.empty()) {
-        DrawTextEx(headingFont, chapterTitle.c_str(), {20, 20}, headingSize, 1, DARKGRAY);
+        DrawTextEx(headingFont, chapterTitle.c_str(), {20, 20}, headingSize, 1, theme::UI_TEXT);
     }
 }
 
@@ -145,15 +146,15 @@ bool UIManager::handleContextMenuClick(Vector2 pos) {
 void UIManager::drawContextMenu() {
     if (!contextMenuActive) return;
 
-    DrawRectangle(contextMenuPos.x, contextMenuPos.y, MENU_WIDTH, MENU_HEIGHT, WHITE);
-    DrawRectangleLines(contextMenuPos.x, contextMenuPos.y, MENU_WIDTH, MENU_HEIGHT, DARKGRAY);
+    DrawRectangle(contextMenuPos.x, contextMenuPos.y, MENU_WIDTH, MENU_HEIGHT, theme::PANEL_BG);
+    DrawRectangleLines(contextMenuPos.x, contextMenuPos.y, MENU_WIDTH, MENU_HEIGHT, theme::PANEL_BORDER);
 
     float x0 = contextMenuPos.x + MENU_PADDING;
     float y0 = contextMenuPos.y + MENU_PADDING;
     float contentH = MENU_HEIGHT - MENU_PADDING * 2;
 
     DrawTextEx(headingFont, "Del", {x0, y0 + (contentH - headingSize) / 2.0f},
-               headingSize, 1, RED);
+               headingSize, 1, theme::UI_DELETE);
 
     float swatchStartX = x0 + DELETE_WIDTH + LABEL_SWATCH_GAP;
     float swatchY = y0 + (contentH - SWATCH_SIZE) / 2.0f;
@@ -162,7 +163,7 @@ void UIManager::drawContextMenu() {
         float swatchX = swatchStartX + i * (SWATCH_SIZE + SWATCH_GAP);
         Color c = {types[i].color.r, types[i].color.g, types[i].color.b, 255};
         DrawRectangle(swatchX, swatchY, SWATCH_SIZE, SWATCH_SIZE, c);
-        DrawRectangleLines(swatchX, swatchY, SWATCH_SIZE, SWATCH_SIZE, GRAY);
+        DrawRectangleLines(swatchX, swatchY, SWATCH_SIZE, SWATCH_SIZE, theme::BUTTON_BORDER);
     }
 }
 
@@ -179,6 +180,7 @@ void UIManager::toggleGoToDialog() {
 void UIManager::dismissGoToDialog() {
     goToDialogActive = false;
     goToInput.clear();
+    goToError = false;
 }
 
 bool UIManager::isGoToDialogActive() const {
@@ -209,25 +211,39 @@ std::vector<int> UIManager::getSuggestions() const {
 }
 
 std::string UIManager::parseGoToInput(const std::string& input) const {
+    if (auto r = tryParseBookDotChapter(input); !r.empty()) return r;
+    if (auto r = tryParseFullNameThenChapter(input); !r.empty()) return r;
+    if (auto r = tryParseSpaceSeparated(input); !r.empty()) return r;
+    return "";
+}
+
+std::string UIManager::tryParseBookDotChapter(const std::string& input) {
     for (const auto& book : BOOKS) {
         std::string code = book.code;
-
         if (input.size() > code.size() + 1 &&
             startsWithIgnoreCase(input, code) && input[code.size()] == '.') {
             int ch = std::atoi(input.c_str() + code.size() + 1);
             if (ch >= 1 && ch <= book.chapterCount)
                 return code + "." + std::to_string(ch);
         }
+    }
+    return "";
+}
 
+std::string UIManager::tryParseFullNameThenChapter(const std::string& input) {
+    for (const auto& book : BOOKS) {
         std::string name = book.fullName;
         if (input.size() > name.size() + 1 &&
             startsWithIgnoreCase(input, name) && input[name.size()] == ' ') {
             int ch = std::atoi(input.c_str() + name.size() + 1);
             if (ch >= 1 && ch <= book.chapterCount)
-                return code + "." + std::to_string(ch);
+                return std::string(book.code) + "." + std::to_string(ch);
         }
     }
+    return "";
+}
 
+std::string UIManager::tryParseSpaceSeparated(const std::string& input) {
     size_t space = input.rfind(' ');
     if (space != std::string::npos && space + 1 < input.size()) {
         int ch = std::atoi(input.c_str() + space + 1);
@@ -242,7 +258,6 @@ std::string UIManager::parseGoToInput(const std::string& input) const {
             }
         }
     }
-
     return "";
 }
 
@@ -253,12 +268,14 @@ void UIManager::handleGoToKeyboardInput() {
     while (ch > 0) {
         if (ch >= 32 && ch <= 126) {
             goToInput.push_back(static_cast<char>(ch));
+            goToError = false;
         }
         ch = GetCharPressed();
     }
 
     if (IsKeyPressed(KEY_BACKSPACE) && !goToInput.empty()) {
         goToInput.pop_back();
+        goToError = false;
     }
 
     if (IsKeyPressed(KEY_DOWN)) {
@@ -282,7 +299,31 @@ void UIManager::handleGoToKeyboardInput() {
             docManager.loadInitialChapter(ref);
             goToDialogActive = false;
             goToInput.clear();
+            goToError = false;
+        } else {
+            goToError = true;
         }
+    }
+}
+
+void UIManager::drawCloseButton(Rectangle panelRect) {
+    Rectangle closeBtn = getCloseButtonRect(panelRect);
+    DrawRectangleRec(closeBtn, theme::BUTTON_BG);
+    DrawRectangleLinesEx(closeBtn, 1, theme::BUTTON_BORDER);
+    Vector2 closeLabelSize = MeasureTextEx(headingFont, "X", headingSize * theme::FONT_DETAIL, 1);
+    float closeTextX = closeBtn.x + (closeBtn.width - closeLabelSize.x) / 2.0f;
+    DrawTextEx(headingFont, "X", {closeTextX, closeBtn.y + 1}, headingSize * theme::FONT_DETAIL, 1, theme::UI_TEXT);
+}
+
+void UIManager::drawGoToSuggestions(Rectangle dlg, const std::vector<int>& suggestions) {
+    float sy = dlg.y + 80;
+    for (size_t i = 0; i < suggestions.size(); ++i) {
+        const auto& book = BOOKS[suggestions[i]];
+        Color bg = ((int)i == goToSelection) ? theme::SELECTED_BG : theme::PANEL_BG;
+        DrawRectangle(dlg.x + 10, sy, DIALOG_WIDTH - 20, SUGGESTION_ITEM_H, bg);
+        std::string label = std::string(book.code) + " - " + book.fullName;
+        DrawTextEx(headingFont, label.c_str(), {dlg.x + 14, sy + 2}, headingSize * theme::FONT_LABEL, 1, theme::UI_TEXT);
+        sy += SUGGESTION_LINE_H;
     }
 }
 
@@ -292,37 +333,21 @@ void UIManager::drawGoToDialog() {
     drawBackdrop();
     Rectangle dlgRect = getGoToDialogRect();
 
-    DrawRectangleRec(dlgRect, WHITE);
-    DrawRectangleLinesEx(dlgRect, 1, DARKGRAY);
+    DrawRectangleRec(dlgRect, theme::PANEL_BG);
+    DrawRectangleLinesEx(dlgRect, 1, theme::PANEL_BORDER);
 
-    DrawTextEx(headingFont, "Go to:", {dlgRect.x + 10, dlgRect.y + 10}, headingSize, 1, BLACK);
+    DrawTextEx(headingFont, "Go to:", {dlgRect.x + SETTINGS_LABEL_X, dlgRect.y + SETTINGS_LABEL_X}, headingSize, 1, theme::UI_TITLE);
+    drawCloseButton(dlgRect);
 
-    Rectangle closeBtn = getCloseButtonRect(dlgRect);
-    DrawRectangleRec(closeBtn, LIGHTGRAY);
-    DrawRectangleLinesEx(closeBtn, 1, GRAY);
-
-    Vector2 closeLabelSize = MeasureTextEx(headingFont, "X", headingSize * 0.7f, 1);
-    float closeTextX = closeBtn.x + (closeBtn.width - closeLabelSize.x) / 2.0f;
-    DrawTextEx(headingFont, "X", {closeTextX, closeBtn.y + 1}, headingSize * 0.7f, 1, DARKGRAY);
-
-    Rectangle inputBox = {dlgRect.x + 10, dlgRect.y + 40, DIALOG_WIDTH - 20, 30};
-    DrawRectangleRec(inputBox, LIGHTGRAY);
-    DrawRectangleLinesEx(inputBox, 1, GRAY);
+    Rectangle inputBox = {dlgRect.x + SETTINGS_LABEL_X, dlgRect.y + SETTINGS_ROW1_Y, DIALOG_WIDTH - 20, INPUT_BOX_H};
+    DrawRectangleRec(inputBox, theme::INPUT_BG);
+    DrawRectangleLinesEx(inputBox, 1, goToError ? theme::INPUT_BORDER_ERROR : theme::INPUT_BORDER);
 
     std::string display = goToInput;
     if (fmod(GetTime() * 2.0, 1.0) < 0.5) display += "|";
-    DrawTextEx(headingFont, display.c_str(), {inputBox.x + 4, inputBox.y + 4}, headingSize, 1, BLACK);
+    DrawTextEx(headingFont, display.c_str(), {inputBox.x + INPUT_BOX_INSET, inputBox.y + INPUT_BOX_INSET}, headingSize, 1, theme::UI_INPUT_TEXT);
 
-    auto suggestions = getSuggestions();
-    float sy = dlgRect.y + 80;
-    for (size_t i = 0; i < suggestions.size(); ++i) {
-        const auto& book = BOOKS[suggestions[i]];
-        Color bg = ((int)i == goToSelection) ? SKYBLUE : WHITE;
-        DrawRectangle(dlgRect.x + 10, sy, DIALOG_WIDTH - 20, 22, bg);
-        std::string label = std::string(book.code) + " - " + book.fullName;
-        DrawTextEx(headingFont, label.c_str(), {dlgRect.x + 14, sy + 2}, headingSize * 0.8f, 1, DARKGRAY);
-        sy += 24;
-    }
+    drawGoToSuggestions(dlgRect, getSuggestions());
 }
 
 void UIManager::handleGoToClick(Vector2 pos) {
@@ -337,6 +362,64 @@ void UIManager::handleGoToClick(Vector2 pos) {
     Rectangle closeBtn = getCloseButtonRect(dlgRect);
     if (CheckCollisionPointRec(pos, closeBtn)) {
         dismissGoToDialog();
+    }
+}
+
+// ── About Overlay ──────────────────────────────────────────────────────
+
+void UIManager::toggleAbout() {
+    aboutActive = !aboutActive;
+}
+
+void UIManager::dismissAbout() {
+    aboutActive = false;
+}
+
+bool UIManager::isAboutActive() const {
+    return aboutActive;
+}
+
+Rectangle UIManager::getAboutRect() const {
+    float screenW = (float)GetScreenWidth();
+    float screenH = (float)GetScreenHeight();
+    return {(screenW - ABOUT_WIDTH) / 2.0f,
+            (screenH - ABOUT_HEIGHT) / 2.0f,
+            ABOUT_WIDTH, ABOUT_HEIGHT};
+}
+
+void UIManager::drawAbout() {
+    if (!aboutActive) return;
+
+    drawBackdrop();
+    Rectangle panel = getAboutRect();
+    DrawRectangleRec(panel, theme::PANEL_BG);
+    DrawRectangleLinesEx(panel, 1, theme::PANEL_BORDER);
+    DrawTextEx(headingFont, "About", {panel.x + SETTINGS_LABEL_X, panel.y + SETTINGS_LABEL_X}, headingSize, 1, theme::UI_TITLE);
+    drawCloseButton(panel);
+
+    float y = panel.y + ABOUT_FIRST_LINE_Y;
+    DrawTextEx(headingFont, "TheWord Bible Reader", {panel.x + SETTINGS_LABEL_X, y}, headingSize * theme::FONT_DETAIL, 1, theme::UI_TEXT);
+    y += ABOUT_TEXT_LINE_H;
+    DrawTextEx(headingFont, "Built with Raylib", {panel.x + SETTINGS_LABEL_X, y}, headingSize * theme::FONT_DETAIL, 1, theme::UI_TEXT);
+    y += ABOUT_TEXT_LINE_H;
+    DrawTextEx(headingFont, "Data: Bilia Livre (CC BY 4.0)", {panel.x + SETTINGS_LABEL_X, y}, headingSize * theme::FONT_DETAIL, 1, theme::UI_TEXT);
+    y += ABOUT_TEXT_LINE_H;
+    DrawTextEx(headingFont, "API: YouVersion", {panel.x + SETTINGS_LABEL_X, y}, headingSize * theme::FONT_DETAIL, 1, theme::UI_TEXT);
+    y += ABOUT_TEXT_LINE_H;
+    DrawTextEx(headingFont, "Keyboard: G/S/A/Esc", {panel.x + SETTINGS_LABEL_X, y}, headingSize * theme::FONT_DETAIL, 1, theme::UI_TEXT);
+}
+
+void UIManager::handleAboutClick(Vector2 pos) {
+    if (!aboutActive) return;
+
+    Rectangle panel = getAboutRect();
+    if (!CheckCollisionPointRec(pos, panel)) {
+        dismissAbout();
+        return;
+    }
+    Rectangle closeBtn = getCloseButtonRect(panel);
+    if (CheckCollisionPointRec(pos, closeBtn)) {
+        dismissAbout();
     }
 }
 
@@ -363,53 +446,65 @@ void UIManager::handleSettingsClick(Vector2 pos) {
         return;
     }
 
-    Rectangle closeBtn = getCloseButtonRect(panelRect);
+    if (handleSettingsClickOnTitleClose(pos, panelRect)) return;
+    if (handleSettingsClickOnFontRow(pos, panelRect)) return;
+    if (compositeProv && handleSettingsClickOnSourceRow(pos, panelRect)) return;
+    handleSettingsClickOnColorRow(pos, panelRect);
+}
+
+bool UIManager::handleSettingsClickOnTitleClose(Vector2 pos, Rectangle panel) {
+    Rectangle closeBtn = getCloseButtonRect(panel);
     if (CheckCollisionPointRec(pos, closeBtn)) {
         settingsActive = false;
-        return;
+        return true;
     }
+    return false;
+}
 
-    float row1y = panelRect.y + 40;
-    float row2y = row1y + 30;
-
-    Rectangle minusRect = {panelRect.x + 120, row1y, 28, 22};
+bool UIManager::handleSettingsClickOnFontRow(Vector2 pos, Rectangle panel) {
+    float rowY = panel.y + SETTINGS_ROW1_Y;
+    Rectangle minusRect = {panel.x + FONT_BTN_X, rowY, FONT_BTN_W, FONT_BTN_H};
     if (CheckCollisionPointRec(pos, minusRect)) {
-        applyFontSize(std::max(12.0f, currentFontSize - 2.0f));
-        return;
+        applyFontSize(std::max(config::FONT_SIZE_MIN, currentFontSize - config::FONT_SIZE_STEP));
+        return true;
     }
-
-    Rectangle plusRect = {panelRect.x + 180, row1y, 28, 22};
+    Rectangle plusRect = {panel.x + FONT_PLUS_X, rowY, FONT_BTN_W, FONT_BTN_H};
     if (CheckCollisionPointRec(pos, plusRect)) {
-        applyFontSize(std::min(36.0f, currentFontSize + 2.0f));
-        return;
+        applyFontSize(std::min(config::FONT_SIZE_MAX, currentFontSize + config::FONT_SIZE_STEP));
+        return true;
     }
+    return false;
+}
 
-    if (compositeProv) {
-        Rectangle usfmRect = {panelRect.x + 100, row2y, 60, 22};
-        Rectangle onlineRect = {panelRect.x + 168, row2y, 60, 22};
-        if (CheckCollisionPointRec(pos, usfmRect)) {
-            compositeProv->setPrimary(offlineProv);
-            versionOnline = false;
-            highlighter.setProvider("USFMParser");
-            docManager.loadInitialChapter(docManager.getCurrentChapterId());
-            persistence.setPreference("active_version", "offline");
-            return;
-        }
-        if (CheckCollisionPointRec(pos, onlineRect)) {
-            compositeProv->setPrimary(onlineProv);
-            versionOnline = true;
-            highlighter.setProvider("BibleClient");
-            docManager.loadInitialChapter(docManager.getCurrentChapterId());
-            persistence.setPreference("active_version", "online");
-            return;
-        }
+bool UIManager::handleSettingsClickOnSourceRow(Vector2 pos, Rectangle panel) {
+    float rowY = panel.y + SETTINGS_ROW1_Y + SETTINGS_ROW_GAP;
+    Rectangle usfmRect = {panel.x + SRC_USFM_X, rowY, SRC_BTN_W, SRC_BTN_H};
+    Rectangle onlineRect = {panel.x + SRC_ONLINE_X, rowY, SRC_BTN_W, SRC_BTN_H};
+    if (CheckCollisionPointRec(pos, usfmRect)) {
+        compositeProv->setPrimary(offlineProv);
+        versionOnline = false;
+        highlighter.setProvider("USFMParser");
+        docManager.loadInitialChapter(docManager.getCurrentChapterId());
+        persistence.setPreference("active_version", "offline");
+        return true;
     }
+    if (CheckCollisionPointRec(pos, onlineRect)) {
+        compositeProv->setPrimary(onlineProv);
+        versionOnline = true;
+        highlighter.setProvider("BibleClient");
+        docManager.loadInitialChapter(docManager.getCurrentChapterId());
+        persistence.setPreference("active_version", "online");
+        return true;
+    }
+    return false;
+}
 
-    float row3y = row2y + 40;
+void UIManager::handleSettingsClickOnColorRow(Vector2 pos, Rectangle panel) {
+    float rowY = panel.y + SETTINGS_ROW1_Y + (compositeProv ? SETTINGS_ROW_GAP : 0) + COLOR_ROW_SPACER;
     const auto& types = highlighter.getTypes();
     for (size_t i = 0; i < types.size(); ++i) {
-        float swatchX = panelRect.x + 30 + i * (SWATCH_SIZE + SWATCH_GAP);
-        Rectangle swatchRect = {swatchX, row3y, SWATCH_SIZE, SWATCH_SIZE};
+        float swatchX = panel.x + COLOR_SWATCH_START + i * (SWATCH_SIZE + SWATCH_GAP);
+        Rectangle swatchRect = {swatchX, rowY, SWATCH_SIZE, SWATCH_SIZE};
         if (CheckCollisionPointRec(pos, swatchRect)) {
             highlighter.setActiveTypeId(types[i].id);
             persistence.setPreference("active_color", std::to_string(types[i].id));
@@ -424,53 +519,55 @@ void UIManager::drawSettingsPanel() {
     drawBackdrop();
     Rectangle panelRect = getSettingsPanelRect();
 
-    DrawRectangleRec(panelRect, WHITE);
-    DrawRectangleLinesEx(panelRect, 1, DARKGRAY);
+    DrawRectangleRec(panelRect, theme::PANEL_BG);
+    DrawRectangleLinesEx(panelRect, 1, theme::PANEL_BORDER);
 
-    DrawTextEx(headingFont, "Settings", {panelRect.x + 10, panelRect.y + 10}, headingSize, 1, BLACK);
+    DrawTextEx(headingFont, "Settings", {panelRect.x + SETTINGS_LABEL_X, panelRect.y + SETTINGS_LABEL_X}, headingSize, 1, theme::UI_TITLE);
+    drawCloseButton(panelRect);
 
-    Rectangle closeBtn = getCloseButtonRect(panelRect);
-    DrawRectangleRec(closeBtn, LIGHTGRAY);
-    DrawRectangleLinesEx(closeBtn, 1, GRAY);
-    Vector2 closeLabelSize = MeasureTextEx(headingFont, "X", headingSize * 0.7f, 1);
-    float closeTextX = closeBtn.x + (closeBtn.width - closeLabelSize.x) / 2.0f;
-    DrawTextEx(headingFont, "X", {closeTextX, closeBtn.y + 1}, headingSize * 0.7f, 1, DARKGRAY);
+    drawSettingsFontRow(panelRect);
+    if (compositeProv) drawSettingsSourceRow(panelRect);
+    drawSettingsColorRow(panelRect);
+}
 
-    float row1y = panelRect.y + 40;
-    DrawTextEx(headingFont, "Font:", {panelRect.x + 10, row1y}, headingSize * 0.8f, 1, DARKGRAY);
-    DrawRectangle(panelRect.x + 120, row1y, 28, 22, LIGHTGRAY);
-    DrawRectangleLines(panelRect.x + 120, row1y, 28, 22, currentFontSize <= 12.0f ? LIGHTGRAY : GRAY);
-    DrawTextEx(headingFont, "-", {panelRect.x + 128, row1y + 1}, headingSize * 0.8f, 1, currentFontSize <= 12.0f ? GRAY : BLACK);
+void UIManager::drawSettingsFontRow(Rectangle panel) {
+    float rowY = panel.y + SETTINGS_ROW1_Y;
+    DrawTextEx(headingFont, "Font:", {panel.x + SETTINGS_LABEL_X, rowY}, headingSize * theme::FONT_LABEL, 1, theme::UI_TEXT);
+    DrawRectangle(panel.x + FONT_BTN_X, rowY, FONT_BTN_W, FONT_BTN_H, theme::BUTTON_BG);
+    DrawRectangleLines(panel.x + FONT_BTN_X, rowY, FONT_BTN_W, FONT_BTN_H, currentFontSize <= config::FONT_SIZE_MIN ? theme::BUTTON_BORDER_DISABLED : theme::BUTTON_BORDER);
+    DrawTextEx(headingFont, "-", {panel.x + FONT_BTN_X + 8, rowY + 1}, headingSize * theme::FONT_LABEL, 1, currentFontSize <= config::FONT_SIZE_MIN ? theme::UI_BUTTON_TEXT_DISABLED : theme::UI_BUTTON_TEXT);
     std::string sizeStr = std::to_string((int)currentFontSize);
-    Vector2 sz = MeasureTextEx(headingFont, sizeStr.c_str(), headingSize * 0.8f, 1);
-    DrawTextEx(headingFont, sizeStr.c_str(), {panelRect.x + 154 - sz.x / 2, row1y + 2}, headingSize * 0.8f, 1, DARKGRAY);
-    DrawRectangle(panelRect.x + 180, row1y, 28, 22, LIGHTGRAY);
-    DrawRectangleLines(panelRect.x + 180, row1y, 28, 22, currentFontSize >= 36.0f ? LIGHTGRAY : GRAY);
-    DrawTextEx(headingFont, "+", {panelRect.x + 188, row1y + 1}, headingSize * 0.8f, 1, currentFontSize >= 36.0f ? GRAY : BLACK);
+    Vector2 sz = MeasureTextEx(headingFont, sizeStr.c_str(), headingSize * theme::FONT_LABEL, 1);
+    DrawTextEx(headingFont, sizeStr.c_str(), {panel.x + FONT_SIZE_X - sz.x / 2, rowY + 2}, headingSize * theme::FONT_LABEL, 1, theme::UI_TEXT);
+    DrawRectangle(panel.x + FONT_PLUS_X, rowY, FONT_BTN_W, FONT_BTN_H, theme::BUTTON_BG);
+    DrawRectangleLines(panel.x + FONT_PLUS_X, rowY, FONT_BTN_W, FONT_BTN_H, currentFontSize >= config::FONT_SIZE_MAX ? theme::BUTTON_BORDER_DISABLED : theme::BUTTON_BORDER);
+    DrawTextEx(headingFont, "+", {panel.x + FONT_PLUS_X + 8, rowY + 1}, headingSize * theme::FONT_LABEL, 1, currentFontSize >= config::FONT_SIZE_MAX ? theme::UI_BUTTON_TEXT_DISABLED : theme::UI_BUTTON_TEXT);
+}
 
-    if (compositeProv) {
-        float row2y = row1y + 30;
-        DrawTextEx(headingFont, "Source:", {panelRect.x + 10, row2y}, headingSize * 0.8f, 1, DARKGRAY);
-        DrawRectangle(panelRect.x + 100, row2y, 60, 22, versionOnline ? LIGHTGRAY : SKYBLUE);
-        DrawRectangleLines(panelRect.x + 100, row2y, 60, 22, GRAY);
-        DrawTextEx(headingFont, "USFM", {panelRect.x + 110, row2y + 2}, headingSize * 0.7f, 1, DARKGRAY);
-        DrawRectangle(panelRect.x + 168, row2y, 60, 22, versionOnline ? SKYBLUE : LIGHTGRAY);
-        DrawRectangleLines(panelRect.x + 168, row2y, 60, 22, GRAY);
-        DrawTextEx(headingFont, "API", {panelRect.x + 181, row2y + 2}, headingSize * 0.7f, 1, DARKGRAY);
-    }
+void UIManager::drawSettingsSourceRow(Rectangle panel) {
+    float rowY = panel.y + SETTINGS_ROW1_Y + SETTINGS_ROW_GAP;
+    DrawTextEx(headingFont, "Source:", {panel.x + SETTINGS_LABEL_X, rowY}, headingSize * theme::FONT_LABEL, 1, theme::UI_TEXT);
+    DrawRectangle(panel.x + SRC_USFM_X, rowY, SRC_BTN_W, SRC_BTN_H, versionOnline ? theme::SWITCH_OFF : theme::SWITCH_ON);
+    DrawRectangleLines(panel.x + SRC_USFM_X, rowY, SRC_BTN_W, SRC_BTN_H, theme::BUTTON_BORDER);
+    DrawTextEx(headingFont, "USFM", {panel.x + SRC_USFM_X + 10, rowY + 2}, headingSize * theme::FONT_DETAIL, 1, theme::UI_TEXT);
+    DrawRectangle(panel.x + SRC_ONLINE_X, rowY, SRC_BTN_W, SRC_BTN_H, versionOnline ? theme::SWITCH_ON : theme::SWITCH_OFF);
+    DrawRectangleLines(panel.x + SRC_ONLINE_X, rowY, SRC_BTN_W, SRC_BTN_H, theme::BUTTON_BORDER);
+    DrawTextEx(headingFont, "API", {panel.x + SRC_ONLINE_X + 13, rowY + 2}, headingSize * theme::FONT_DETAIL, 1, theme::UI_TEXT);
+}
 
-    float row3y = compositeProv ? (row1y + 70) : (row1y + 40);
-    DrawTextEx(headingFont, "Color:", {panelRect.x + 10, row3y}, headingSize * 0.8f, 1, DARKGRAY);
+void UIManager::drawSettingsColorRow(Rectangle panel) {
+    float rowY = panel.y + SETTINGS_ROW1_Y + (compositeProv ? SETTINGS_ROW_GAP : 0) + COLOR_ROW_SPACER;
+    DrawTextEx(headingFont, "Color:", {panel.x + SETTINGS_LABEL_X, rowY}, headingSize * theme::FONT_LABEL, 1, theme::UI_TEXT);
     const auto& types = highlighter.getTypes();
     int activeId = highlighter.getActiveTypeId();
     for (size_t i = 0; i < types.size(); ++i) {
-        float swatchX = panelRect.x + 30 + i * (SWATCH_SIZE + SWATCH_GAP);
+        float swatchX = panel.x + COLOR_SWATCH_START + i * (SWATCH_SIZE + SWATCH_GAP);
         Color c = {types[i].color.r, types[i].color.g, types[i].color.b, 255};
-        DrawRectangle(swatchX, row3y, SWATCH_SIZE, SWATCH_SIZE, c);
+        DrawRectangle(swatchX, rowY, SWATCH_SIZE, SWATCH_SIZE, c);
         if (types[i].id == activeId) {
-            DrawRectangleLines(swatchX - 1, row3y - 1, SWATCH_SIZE + 2, SWATCH_SIZE + 2, BLACK);
+            DrawRectangleLines(swatchX - 1, rowY - 1, SWATCH_SIZE + 2, SWATCH_SIZE + 2, theme::PANEL_BORDER);
         } else {
-            DrawRectangleLines(swatchX, row3y, SWATCH_SIZE, SWATCH_SIZE, GRAY);
+            DrawRectangleLines(swatchX, rowY, SWATCH_SIZE, SWATCH_SIZE, theme::BUTTON_BORDER);
         }
     }
 }
@@ -478,7 +575,8 @@ void UIManager::drawSettingsPanel() {
 // ── Dialog Dispatch ────────────────────────────────────────────────────
 
 void UIManager::dismissActiveDialog() {
-    if (goToDialogActive) dismissGoToDialog();
+    if (aboutActive) dismissAbout();
+    else if (goToDialogActive) dismissGoToDialog();
     else if (settingsActive) dismissSettings();
     else if (contextMenuActive) hideContextMenu();
 }

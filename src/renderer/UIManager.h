@@ -4,6 +4,7 @@
 #include <string>
 #include <vector>
 #include <raylib.h>
+#include "core/Theme.h"
 
 class Highlighter;
 class DocumentManager;
@@ -44,6 +45,13 @@ public:
     void handleGoToKeyboardInput();
     void handleGoToClick(Vector2 pos);
 
+    // About overlay
+    void toggleAbout();
+    void dismissAbout();
+    bool isAboutActive() const;
+    void drawAbout();
+    void handleAboutClick(Vector2 pos);
+
     // Settings panel
     void toggleSettings();
     void dismissSettings();
@@ -77,6 +85,10 @@ private:
     bool goToDialogActive;
     std::string goToInput;
     int goToSelection;
+    bool goToError;
+
+    // About
+    bool aboutActive;
 
     // Settings
     bool settingsActive;
@@ -98,6 +110,34 @@ private:
     static constexpr int BACKDROP_ALPHA = 120;
     static constexpr float CLOSE_SIZE = 18.0f;
     static constexpr float CLOSE_MARGIN = 6.0f;
+    static constexpr float ABOUT_WIDTH = 300.0f;
+    static constexpr float ABOUT_HEIGHT = 200.0f;
+    static constexpr float ABOUT_TEXT_LINE_H = 24.0f;
+    static constexpr float ABOUT_FIRST_LINE_Y = 50.0f;
+
+    // Settings panel layout
+    static constexpr float SETTINGS_LABEL_X = 10.0f;
+    static constexpr float SETTINGS_ROW1_Y = 40.0f;
+    static constexpr float SETTINGS_ROW_GAP = 30.0f;
+    static constexpr float COLOR_ROW_SPACER = 40.0f;
+    static constexpr float COLOR_SWATCH_START = 60.0f;
+
+    static constexpr float FONT_BTN_W = 28.0f;
+    static constexpr float FONT_BTN_H = 22.0f;
+    static constexpr float FONT_BTN_X = 120.0f;
+    static constexpr float FONT_SIZE_X = 154.0f;
+    static constexpr float FONT_PLUS_X = 180.0f;
+
+    static constexpr float SRC_BTN_W = 60.0f;
+    static constexpr float SRC_BTN_H = 22.0f;
+    static constexpr float SRC_USFM_X = 100.0f;
+    static constexpr float SRC_ONLINE_X = 168.0f;
+
+    // Go-to dialog layout
+    static constexpr float INPUT_BOX_H = 30.0f;
+    static constexpr float INPUT_BOX_INSET = 4.0f;
+    static constexpr float SUGGESTION_ITEM_H = 22.0f;
+    static constexpr float SUGGESTION_LINE_H = 24.0f;
 
     // Helpers
     void drawBackdrop();
@@ -105,10 +145,27 @@ private:
     Rectangle getGoToDialogRect() const;
     Rectangle getSettingsPanelRect() const;
     Rectangle getCloseButtonRect(Rectangle panelRect) const;
+    Rectangle getAboutRect() const;
 
     std::vector<int> getSuggestions() const;
     std::string parseGoToInput(const std::string& input) const;
     static bool startsWithIgnoreCase(const std::string& str, const std::string& prefix);
+
+    static std::string tryParseBookDotChapter(const std::string& input);
+    static std::string tryParseFullNameThenChapter(const std::string& input);
+    static std::string tryParseSpaceSeparated(const std::string& input);
+
+    void drawCloseButton(Rectangle panelRect);
+    void drawGoToSuggestions(Rectangle dlg, const std::vector<int>& suggestions);
+
+    void drawSettingsFontRow(Rectangle panel);
+    void drawSettingsSourceRow(Rectangle panel);
+    void drawSettingsColorRow(Rectangle panel);
+
+    bool handleSettingsClickOnTitleClose(Vector2 pos, Rectangle panel);
+    bool handleSettingsClickOnFontRow(Vector2 pos, Rectangle panel);
+    bool handleSettingsClickOnSourceRow(Vector2 pos, Rectangle panel);
+    void handleSettingsClickOnColorRow(Vector2 pos, Rectangle panel);
 };
 
 #endif

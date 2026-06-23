@@ -1,6 +1,6 @@
 # Progress Tracking
 
-> Status: Phase 8 Complete | Last Updated: 2026-06-22
+> Status: Phase 9 Complete | Last Updated: 2026-06-23
 
 ## Overall Progress
 
@@ -14,7 +14,7 @@
 | Phase 6: BibleClient (HTML API) | ✅ Complete | 2026-07 |
 | Phase 7: Highlighting System | ✅ Complete | 2026-08 |
 | Phase 8: SQLite Persistence | ✅ Complete | 2026-08 |
-| Phase 9: UI Layer | 🏃 In Progress | 2026-08 |
+| Phase 9: UI Layer | ✅ Complete | 2026-06 |
 | Phase 10: Mobile Preparation | ⬜ Planned | 2026-09 |
 
 ## Phase A — Documentation Restructure ✅
@@ -162,14 +162,18 @@
 - [x] **FPS counter**: Gated behind `#ifndef NDEBUG` (hidden in release builds)
 - [x] 64/64 tests still passing
 
-### Sprint 4: Polish ⬜
+### Sprint 4: Polish ✅
 
-- [ ] Heading differentiation — split BookTitle, SectionHeading, ChapterLabel into distinct render styles
-  - BookTitle: headingFont at 1.6×, BLACK, centered
-  - SectionHeading: headingFont at 1.3×, DARKGRAY, centered (as-is)
-  - ChapterLabel: headingFont at 1.6×, gray (80,80,80), centered
-- [ ] Splash screen (text-only "TheWord" + "Loading...")
-- [ ] About/credits overlay
+- [x] Heading differentiation — BookTitle: headingFont 1.6× BLACK centered, ChapterLabel: headingFont 1.6× gray(80,80,80) centered, SectionHeading: headingFont 1.3× DARKGRAY (as-is)
+- [x] Splash screen — text-only "TheWord" at 48pt + "Loading..." at 20pt drawn before font loading
+- [x] About/credits overlay — toggle with 'A', shows app name, Raylib credit, data sources, keyboard shortcuts
+- [x] Error feedback for invalid go-to input (D1) — input box border turns RED on invalid Enter, clears on next keystroke
+- [x] Scrollbar track visibility (D2) — widened from 4px to 6px, darkened from LIGHTGRAY to GRAY
+- [x] Theme consolidation — created `src/core/Theme.h` with 27 named color constants and 4 font scale constants; all 54 inline color literals and 19 inline font scales replaced with `theme::*` references
+- [x] Layout constants — settings panel grid positions, font/source button dimensions, go-to dialog spacing all extracted to named constants
+- [x] Config font ranges — `FONT_SIZE_MIN` (12), `FONT_SIZE_MAX` (36), `FONT_SIZE_STEP` (2) added to Config.h; all inline min/max/step references replaced
+- [x] Position fixes — about overlay text aligned to `SETTINGS_LABEL_X` (+15→+10); color swatches start at `COLOR_SWATCH_START` (+30→+60, clear of "Color:" label)
+- [x] 64/64 tests still passing
 
 ## Phase 10 — Mobile/Android ⬜
 
@@ -181,5 +185,5 @@
 
 | Phase | Status |
 |-------|--------|
-| Phase 9: UI Layer polish | 🏃 In Progress |
+| Phase 9: UI Layer polish | ✅ Complete |
 | Phase 10: Mobile/Android | ⬜ Planned |

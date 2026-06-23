@@ -1,4 +1,5 @@
 #include "LayoutEngine.h"
+#include "core/Theme.h"
 #include <algorithm>
 #include <cmath>
 
@@ -60,7 +61,7 @@ ChapterLayout LayoutEngine::layoutChapter(const std::string& chapterId, const Ch
                 break;
 
             case SegmentType::SectionHeading:
-                currentY += layoutHeading(seg, currentY, layout.lines);
+                currentY += layoutHeading(seg, currentY, layout.lines, theme::FONT_HEADING);
                 break;
 
             case SegmentType::VerseText:
@@ -74,7 +75,7 @@ ChapterLayout LayoutEngine::layoutChapter(const std::string& chapterId, const Ch
 
             case SegmentType::ChapterLabel:
             case SegmentType::BookTitle:
-                currentY += layoutHeading(seg, currentY, layout.lines);
+                currentY += layoutHeading(seg, currentY, layout.lines, theme::FONT_LARGE_HEADING);
                 break;
         }
     }
@@ -146,13 +147,13 @@ float LayoutEngine::layoutWords(const Segment& seg, const ChapterData& data, flo
     return y - startY;
 }
 
-float LayoutEngine::layoutHeading(const Segment& seg, float startY, std::vector<Line>& lines) {
-    float lineHeight = fontSize * lineSpacing * 1.3f;
+float LayoutEngine::layoutHeading(const Segment& seg, float startY, std::vector<Line>& lines, float fontScale) {
+    float lineHeight = fontSize * lineSpacing * fontScale;
     float y = startY;
 
     y += HEADING_TOP_GAP;
 
-    float headingWidth = MeasureTextEx(font, seg.text.c_str(), fontSize, 1).x;
+    float headingWidth = MeasureTextEx(font, seg.text.c_str(), fontSize * fontScale, 1).x;
     float x = (maxWidth - headingWidth) / 2.0f;
 
     Line headingLine;
@@ -164,7 +165,7 @@ float LayoutEngine::layoutHeading(const Segment& seg, float startY, std::vector<
     span.x = x;
     span.y = y;
     span.width = headingWidth;
-    span.height = fontSize;
+    span.height = fontSize * fontScale;
     span.verseId = 0;
     span.startWord = -1;
     span.endWord = -1;

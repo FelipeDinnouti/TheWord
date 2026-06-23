@@ -5,6 +5,7 @@
 #include <vector>
 #include <raylib.h>
 #include "data/ChapterProvider.h"
+#include "core/Theme.h"
 
 struct HighlightRect {
     float x;
@@ -37,7 +38,7 @@ private:
     const Font& headingFont;
     float contentTop;
     float fontSize;
-    float headingSize;
+    float headingSize;  // fontSize * theme::FONT_HEADING
 
     void drawSpan(const Span& span, float screenY);
 };

@@ -19,6 +19,13 @@ void InputHandler::handleInput(float deltaTime) {
         return;
     }
 
+    if (uiManager.isAboutActive()) {
+        if (IsMouseButtonPressed(MOUSE_LEFT_BUTTON)) {
+            uiManager.handleAboutClick(GetMousePosition());
+        }
+        return;
+    }
+
     if (uiManager.isGoToDialogActive()) {
         if (IsMouseButtonPressed(MOUSE_LEFT_BUTTON)) {
             uiManager.handleGoToClick(GetMousePosition());
@@ -51,6 +58,31 @@ void InputHandler::handleInput(float deltaTime) {
         return;
     }
 
+    if (IsKeyPressed(KEY_A)) {
+        if (uiManager.isContextMenuActive()) uiManager.hideContextMenu();
+        uiManager.toggleAbout();
+        return;
+    }
+
+    handleScroll();
+
+    if (IsMouseButtonPressed(MOUSE_BUTTON_RIGHT)) {
+        Vector2 mousePos = GetMousePosition();
+        int wordId = docManager.hitTestWord(mousePos.x, mousePos.y, docManager.getScrollY());
+        if (wordId >= 0) {
+            const Highlight* hl = highlighter.highlightAtWord(wordId);
+            if (hl) {
+                uiManager.showContextMenu(mousePos, hl->id, hl->typeId);
+            }
+        }
+    }
+
+    handlePressFSM();
+
+    handleWindowResize();
+}
+
+void InputHandler::handleScroll() {
     float wheel = GetMouseWheelMove();
     if (wheel != 0) {
         scrollVelocity -= wheel * SCROLL_SENSITIVITY;
@@ -69,18 +101,9 @@ void InputHandler::handleInput(float deltaTime) {
     }
 
     docManager.scrollBy(scrollVelocity);
+}
 
-    if (IsMouseButtonPressed(MOUSE_BUTTON_RIGHT)) {
-        Vector2 mousePos = GetMousePosition();
-        int wordId = docManager.hitTestWord(mousePos.x, mousePos.y, docManager.getScrollY());
-        if (wordId >= 0) {
-            const Highlight* hl = highlighter.highlightAtWord(wordId);
-            if (hl) {
-                uiManager.showContextMenu(mousePos, hl->id, hl->typeId);
-            }
-        }
-    }
-
+void InputHandler::handlePressFSM() {
     switch (pressState) {
         case PressState::Idle:
             if (IsMouseButtonPressed(MOUSE_LEFT_BUTTON)) {
@@ -138,7 +161,9 @@ void InputHandler::handleInput(float deltaTime) {
             }
             break;
     }
+}
 
+void InputHandler::handleWindowResize() {
     if (IsWindowResized()) {
         float newContentWidth = GetScreenWidth() - 40.0f;
         layoutEngine.setMaxWidth(newContentWidth);

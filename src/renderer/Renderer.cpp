@@ -2,11 +2,11 @@
 #include <algorithm>
 
 Renderer::Renderer(const Font& bodyFont, const Font& headingFont, float contentTop, float fontSize)
-    : bodyFont(bodyFont), headingFont(headingFont), contentTop(contentTop), fontSize(fontSize), headingSize(fontSize * 1.3f) {}
+    : bodyFont(bodyFont), headingFont(headingFont), contentTop(contentTop), fontSize(fontSize), headingSize(fontSize * theme::FONT_HEADING) {}
 
 void Renderer::setFontSize(float size) {
     fontSize = size;
-    headingSize = size * 1.3f;
+    headingSize = size * theme::FONT_HEADING;
 }
 
 float Renderer::getFontSize() const {
@@ -36,20 +36,28 @@ void Renderer::drawFrame(float scrollY, float totalHeight, float viewportHeight,
 }
 
 void Renderer::drawSpan(const Span& span, float screenY) {
-    Color color = BLACK;
+    Color color = theme::DOC_BODY;
     float drawSize = fontSize;
     Font useFont = bodyFont;
 
     switch (span.type) {
-        case SegmentType::SectionHeading:
-        case SegmentType::ChapterLabel:
         case SegmentType::BookTitle:
-            color = DARKGRAY;
+            color = theme::DOC_BOOK_TITLE;
+            drawSize = fontSize * theme::FONT_LARGE_HEADING;
+            useFont = headingFont;
+            break;
+        case SegmentType::ChapterLabel:
+            color = theme::DOC_CHAPTER_LABEL;
+            drawSize = fontSize * theme::FONT_LARGE_HEADING;
+            useFont = headingFont;
+            break;
+        case SegmentType::SectionHeading:
+            color = theme::DOC_HEADING;
             drawSize = headingSize;
             useFont = headingFont;
             break;
         case SegmentType::PoetryLine:
-            color = DARKGRAY;
+            color = theme::DOC_POETRY;
             drawSize = fontSize;
             break;
         default:
@@ -64,7 +72,7 @@ void Renderer::drawScrollbar(float scrollY, float totalHeight, float viewportHei
     if (scrollBarHeight < MIN_SCROLLBAR_HEIGHT) scrollBarHeight = MIN_SCROLLBAR_HEIGHT;
 
     float scrollBarY = contentTop + (scrollY / totalHeight) * (viewportHeight - scrollBarHeight);
-    DrawRectangle(GetScreenWidth() - 6, (int)scrollBarY, 4, (int)scrollBarHeight, LIGHTGRAY);
+    DrawRectangle(GetScreenWidth() - 8, (int)scrollBarY, 6, (int)scrollBarHeight, theme::SCROLLBAR_THUMB);
 }
 
 void Renderer::drawFpsCounter(int x, int y) {

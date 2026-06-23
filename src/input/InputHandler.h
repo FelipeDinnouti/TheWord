@@ -36,6 +36,10 @@ private:
     double pressStartTime;
     Vector2 pressStartPos;
     int pressStartWord;
+
+    void handleScroll();
+    void handlePressFSM();
+    void handleWindowResize();
 };
 
 #endif
