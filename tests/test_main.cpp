@@ -1,5 +1,6 @@
 #define DOCTEST_CONFIG_IMPLEMENT_WITH_MAIN
 #include "doctest/doctest.h"
+#include <raylib.h>
 
 #include "core/Config.h"
 #include "core/EnvLoader.h"

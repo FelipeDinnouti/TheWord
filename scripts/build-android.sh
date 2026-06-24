@@ -18,7 +18,7 @@ fi
 echo "=== Configuring with NDK: $ANDROID_NDK ==="
 cmake -B "$BUILD_DIR" \
     -DCMAKE_TOOLCHAIN_FILE="$CMAKE_TOOLCHAIN" \
-    -DANDROID_ABI=arm64-v8a \
+    -DANDROID_ABI=x86_64 \
     -DANDROID_PLATFORM=android-24 \
     -DCMAKE_BUILD_TYPE=Release \
     -DPLATFORM=Android \
@@ -39,14 +39,12 @@ $BUILD_TOOLS/aapt package -f -M AndroidManifest.xml \
 
 cp /tmp/theword-base-$$.apk /tmp/theword-unsigned-$$.apk
 
-$BUILD_TOOLS/aapt add /tmp/theword-unsigned-$$.apk \
-    "$BUILD_DIR/libtheword.so"
-
-# Build full APK dir and zip assets
-mkdir -p "$APK_DIR"
+# Build full APK dir — native lib at lib/<abi>/ path
+mkdir -p "$APK_DIR/lib/x86_64"
+cp "$BUILD_DIR/libtheword.so" "$APK_DIR/lib/x86_64/"
 cp -rL assets "$APK_DIR/"
 cp -rL shaders "$APK_DIR/" 2>/dev/null || true
-(cd "$APK_DIR" && zip -r /tmp/theword-unsigned-$$.apk assets/ shaders/ 2>/dev/null)
+(cd "$APK_DIR" && zip -r /tmp/theword-unsigned-$$.apk lib/ assets/ shaders/ 2>/dev/null)
 
 $BUILD_TOOLS/zipalign -f -v 4 /tmp/theword-unsigned-$$.apk /tmp/theword-aligned-$$.apk
 

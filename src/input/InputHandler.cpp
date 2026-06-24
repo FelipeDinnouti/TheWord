@@ -16,7 +16,7 @@ InputHandler::InputHandler(DocumentManager& docManager, Highlighter& highlighter
       touchActive(false), touchLastY(0.0f), lastTouchDelta(0.0f), lastPinchDist(0.0f) {}
 
 void InputHandler::handleInput(float deltaTime) {
-    if (IsKeyPressed(KEY_ESCAPE)) {
+    if (IsKeyPressed(key::ESCAPE)) {
         uiManager.dismissActiveDialog();
         return;
     }
@@ -48,25 +48,25 @@ void InputHandler::handleInput(float deltaTime) {
         return;
     }
 
-    if (IsKeyPressed(KEY_G)) {
+    if (IsKeyPressed(key::G)) {
         if (uiManager.isContextMenuActive()) uiManager.hideContextMenu();
         uiManager.toggleGoToDialog();
         return;
     }
 
-    if (IsKeyPressed(KEY_S)) {
+    if (IsKeyPressed(key::S)) {
         if (uiManager.isContextMenuActive()) uiManager.hideContextMenu();
         uiManager.toggleSettings();
         return;
     }
 
-    if (IsKeyPressed(KEY_A)) {
+    if (IsKeyPressed(key::A)) {
         if (uiManager.isContextMenuActive()) uiManager.hideContextMenu();
         uiManager.toggleAbout();
         return;
     }
 
-#ifdef __EMSCRIPTEN__
+#if defined(__EMSCRIPTEN__) || defined(__ANDROID__)
     handlePinch();
     handleTouchScroll();
     handleTouchPressFSM();
@@ -85,10 +85,10 @@ void InputHandler::handleScroll() {
         scrollVelocity -= wheel * SCROLL_SENSITIVITY;
     }
 
-    if (IsKeyDown(KEY_DOWN)) {
+    if (IsKeyDown(key::DOWN)) {
         scrollVelocity += SCROLL_SENSITIVITY * KEYBOARD_SCROLL_FACTOR;
     }
-    if (IsKeyDown(KEY_UP)) {
+    if (IsKeyDown(key::UP)) {
         scrollVelocity -= SCROLL_SENSITIVITY * KEYBOARD_SCROLL_FACTOR;
     }
 
@@ -276,7 +276,7 @@ void InputHandler::handlePinch() {
 
 void InputHandler::handleWindowResize() {
     if (IsWindowResized()) {
-        float newContentWidth = GetScreenWidth() - 40.0f;
+        float newContentWidth = GetScreenWidth() - config::CONTENT_PADDING;
         layoutEngine.setMaxWidth(newContentWidth);
         layoutEngine.invalidateCache();
 

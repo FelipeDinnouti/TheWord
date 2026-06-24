@@ -4,6 +4,7 @@
 #include <string>
 #include <vector>
 #include <raylib.h>
+#include "core/Config.h"
 #include "core/Theme.h"
 
 class Highlighter;
@@ -21,7 +22,7 @@ public:
               Renderer& renderer, PersistenceManager& persistence,
               ChapterProvider& onlineProv, ChapterProvider& offlineProv,
               CompositeProvider* compositeProv, float initialFontSize = 24.0f,
-              bool initialVersionOnline = false);
+              bool initialVersionOnline = false, float scaleFactor = 1.0f);
 
     float getContentTop() const;
     float getFontSize() const;
@@ -74,6 +75,7 @@ private:
     CompositeProvider* compositeProv;
 
     float currentFontSize;
+    float scale;
     bool versionOnline;
 
     // Context menu
@@ -95,8 +97,7 @@ private:
     bool settingsActive;
 
     // Constants
-    static constexpr float TOP_BAR_HEIGHT = 60.0f;
-    static constexpr float CONTENT_PADDING = 40.0f;
+    static constexpr float TOP_BAR_HEIGHT = config::TOP_BAR_HEIGHT;
     static constexpr float MENU_WIDTH = 190.0f;
     static constexpr float MENU_HEIGHT = 32.0f;
     static constexpr float SWATCH_SIZE = 20.0f;

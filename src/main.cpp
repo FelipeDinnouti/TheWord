@@ -37,26 +37,37 @@ extern "C" struct android_app* GetAndroidApp(void);
 
 int main() {
     Logger::Info("Starting TheWord");
-    InitWindow(config::WINDOW_WIDTH, config::WINDOW_HEIGHT, "TheWord");
+
+#if defined(__ANDROID__)
+    ANativeWindow* mainWin = GetAndroidApp()->window;
+    int screenW = ANativeWindow_getWidth(mainWin);
+    int screenH = ANativeWindow_getHeight(mainWin);
+#else
+    int screenW = config::WINDOW_WIDTH;
+    int screenH = config::WINDOW_HEIGHT;
+#endif
+    float scale = (float)screenW / config::WINDOW_WIDTH;
+
+    InitWindow(screenW, screenH, "TheWord");
     Logger::Info("Window initialized");
     SetTargetFPS(config::TARGET_FPS);
 
     {
         const char* title = "TheWord";
         const char* subtitle = "Loading...";
-        float titleSize = 48.0f;
-        float subSize = 20.0f;
+        float titleSize = 48.0f * scale;
+        float subSize = 20.0f * scale;
         Vector2 titleDims = MeasureTextEx(GetFontDefault(), title, titleSize, 1);
         Vector2 subDims = MeasureTextEx(GetFontDefault(), subtitle, subSize, 1);
         BeginDrawing();
         ClearBackground(theme::WINDOW_BG);
         DrawTextEx(GetFontDefault(), title,
-                   {(config::WINDOW_WIDTH - titleDims.x) / 2.0f,
-                    (config::WINDOW_HEIGHT - titleDims.y) / 2.0f - 20},
+                   {(screenW - titleDims.x) / 2.0f,
+                    (screenH - titleDims.y) / 2.0f - 20.0f * scale},
                    titleSize, 1, theme::SPLASH_TITLE);
         DrawTextEx(GetFontDefault(), subtitle,
-                   {(config::WINDOW_WIDTH - subDims.x) / 2.0f,
-                    (config::WINDOW_HEIGHT - subDims.y) / 2.0f + 20},
+                   {(screenW - subDims.x) / 2.0f,
+                    (screenH - subDims.y) / 2.0f + 20.0f * scale},
                    subSize, 1, theme::SPLASH_SUBTITLE);
         EndDrawing();
     }
@@ -64,17 +75,19 @@ int main() {
     std::vector<int> codepoints = LoadFontCodepoints(config::FONT_REGULAR);
 
     Logger::Info("Loading fonts");
-    Font bodyFont = LoadFontEx(config::FONT_REGULAR, (int)config::FONT_SIZE,
+    int scaledFontSize = (int)(config::FONT_SIZE * scale);
+    int scaledHeadingSize = (int)(config::FONT_HEADING_SIZE * scale);
+    Font bodyFont = LoadFontEx(config::FONT_REGULAR, scaledFontSize,
                                codepoints.data(), (int)codepoints.size());
     SetTextureFilter(bodyFont.texture, TEXTURE_FILTER_POINT);
 
-    Font headingFont = LoadFontEx(config::FONT_REGULAR, (int)config::FONT_HEADING_SIZE,
+    Font headingFont = LoadFontEx(config::FONT_REGULAR, scaledHeadingSize,
                                   codepoints.data(), (int)codepoints.size());
     SetTextureFilter(headingFont.texture, TEXTURE_FILTER_POINT);
     Logger::Info("Fonts loaded");
 
-    float headingSize = config::FONT_SIZE * 1.3f;
-    float contentWidth = config::WINDOW_WIDTH - 40.0f;
+    float headingSize = config::FONT_HEADING_SIZE * scale;
+    float contentWidth = screenW - config::CONTENT_PADDING;
 
 #ifdef __ANDROID__
     Logger::Info("Initializing Android asset manager");
@@ -142,12 +155,13 @@ int main() {
     if (!savedFontSize.empty()) {
         fontSize = std::max(config::FONT_SIZE_MIN, std::min(config::FONT_SIZE_MAX, (float)std::atoi(savedFontSize.c_str())));
     }
+    float renderedFontSize = fontSize * scale;
 
-    LayoutEngine layoutEngine(contentWidth, bodyFont, fontSize, config::LINE_SPACING);
-    Renderer renderer(bodyFont, headingFont, 60.0f, fontSize);
+    LayoutEngine layoutEngine(contentWidth, bodyFont, renderedFontSize, config::LINE_SPACING, scale);
+    Renderer renderer(bodyFont, headingFont, config::TOP_BAR_HEIGHT, renderedFontSize);
 
-    float viewportHeight = config::WINDOW_HEIGHT - 60.0f;
-    DocumentManager documentManager(layoutEngine, viewportHeight, *activeProv, 60.0f);
+    float viewportHeight = screenH - config::TOP_BAR_HEIGHT;
+    DocumentManager documentManager(layoutEngine, viewportHeight, *activeProv, config::TOP_BAR_HEIGHT);
 
     bool versionOnline = false;
     if (compositeProvider) {
@@ -166,7 +180,7 @@ int main() {
     UIManager uiManager(headingFont, headingSize, highlighter,
                         documentManager, layoutEngine, renderer, storage,
                         *onlineProv, *offlineProv, compositeProvider.get(),
-                        fontSize, versionOnline);
+                        fontSize, versionOnline, scale);
 
     std::string savedColor = storage.getPreference("active_color", "");
     if (!savedColor.empty()) {

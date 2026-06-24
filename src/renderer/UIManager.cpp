@@ -17,12 +17,12 @@ UIManager::UIManager(const Font& headingFont, float headingSize, Highlighter& hi
                      Renderer& renderer, PersistenceManager& persistence,
                      ChapterProvider& onlineProv, ChapterProvider& offlineProv,
                      CompositeProvider* compositeProv, float initialFontSize,
-                     bool initialVersionOnline)
+                     bool initialVersionOnline, float scaleFactor)
     : headingFont(headingFont), headingSize(headingSize), highlighter(highlighter),
       docManager(docManager), layoutEngine(layoutEngine), renderer(renderer),
       persistence(persistence), onlineProv(onlineProv), offlineProv(offlineProv),
       compositeProv(compositeProv),
-      currentFontSize(initialFontSize), versionOnline(initialVersionOnline),
+      currentFontSize(initialFontSize), scale(scaleFactor), versionOnline(initialVersionOnline),
       contextMenuActive(false), contextMenuPos{0, 0},
       contextHighlightId(-1), contextHighlightTypeId(-1),
       goToDialogActive(false), goToSelection(0), goToError(false),
@@ -45,9 +45,10 @@ void UIManager::drawBackdrop() {
 
 void UIManager::applyFontSize(float newSize) {
     currentFontSize = newSize;
-    layoutEngine.setFontSize(newSize);
+    float scaledSize = newSize * scale;
+    layoutEngine.setFontSize(scaledSize);
     layoutEngine.invalidateCache();
-    renderer.setFontSize(newSize);
+    renderer.setFontSize(scaledSize);
     docManager.invalidateLayouts();
     persistence.setPreference("font_size", std::to_string((int)newSize));
 }
@@ -281,27 +282,27 @@ void UIManager::handleGoToKeyboardInput() {
         ch = GetCharPressed();
     }
 
-    if (IsKeyPressed(KEY_BACKSPACE) && !goToInput.empty()) {
+    if (IsKeyPressed(key::BACKSPACE) && !goToInput.empty()) {
         goToInput.pop_back();
         goToError = false;
     }
 
-    if (IsKeyPressed(KEY_DOWN)) {
+    if (IsKeyPressed(key::DOWN)) {
         auto suggestions = getSuggestions();
         goToSelection = std::min(goToSelection + 1, std::max(0, (int)suggestions.size() - 1));
     }
-    if (IsKeyPressed(KEY_UP)) {
+    if (IsKeyPressed(key::UP)) {
         goToSelection = std::max(goToSelection - 1, 0);
     }
 
-    if (IsKeyPressed(KEY_TAB)) {
+    if (IsKeyPressed(key::TAB)) {
         auto suggestions = getSuggestions();
         if (!suggestions.empty() && goToSelection < (int)suggestions.size()) {
             goToInput = BOOKS[suggestions[goToSelection]].code;
         }
     }
 
-    if (IsKeyPressed(KEY_ENTER) && !goToInput.empty()) {
+    if (IsKeyPressed(key::ENTER) && !goToInput.empty()) {
         std::string ref = parseGoToInput(goToInput);
         if (!ref.empty()) {
             docManager.loadInitialChapter(ref);

@@ -8,7 +8,7 @@
 
 class LayoutEngine {
 public:
-    LayoutEngine(float maxWidth, const Font& font, float fontSize, float lineSpacing);
+    LayoutEngine(float maxWidth, const Font& font, float fontSize, float lineSpacing, float scaleFactor = 1.0f);
 
     ChapterLayout layoutChapter(const std::string& chapterId, const ChapterData& data);
 
@@ -26,19 +26,18 @@ private:
     const Font& font;
     float fontSize;
     float lineSpacing;
+    float leftMargin;
+    float rightMargin;
+    float paragraphGap;
+    float headingTopGap;
+    float headingBottomGap;
+    float poetryIndent;
 
     std::vector<ChapterLayout> cachedLayouts;
 
     float layoutWords(const Segment& seg, const ChapterData& data, float startY,
                       std::vector<Line>& lines, float indent, SegmentType spanType);
     float layoutHeading(const Segment& seg, float startY, std::vector<Line>& lines, float fontScale);
-
-    static constexpr float PARAGRAPH_GAP = 8.0f;
-    static constexpr float HEADING_TOP_GAP = 12.0f;
-    static constexpr float HEADING_BOTTOM_GAP = 6.0f;
-    static constexpr float POETRY_INDENT = 20.0f;
-    static constexpr float LEFT_MARGIN = 10.0f;
-    static constexpr float RIGHT_MARGIN = 10.0f;
 };
 
 #endif // LAYOUTENGINE_H

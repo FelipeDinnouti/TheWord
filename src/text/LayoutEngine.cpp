@@ -3,8 +3,11 @@
 #include <algorithm>
 #include <cmath>
 
-LayoutEngine::LayoutEngine(float maxWidth, const Font& font, float fontSize, float lineSpacing)
-    : maxWidth(maxWidth), font(font), fontSize(fontSize), lineSpacing(lineSpacing) {}
+LayoutEngine::LayoutEngine(float maxWidth, const Font& font, float fontSize, float lineSpacing, float scaleFactor)
+    : maxWidth(maxWidth), font(font), fontSize(fontSize), lineSpacing(lineSpacing),
+      leftMargin(10.0f * scaleFactor), rightMargin(10.0f * scaleFactor),
+      paragraphGap(8.0f * scaleFactor), headingTopGap(12.0f * scaleFactor),
+      headingBottomGap(6.0f * scaleFactor), poetryIndent(20.0f * scaleFactor) {}
 
 float LayoutEngine::getFontSize() const {
     return fontSize;
@@ -57,7 +60,7 @@ ChapterLayout LayoutEngine::layoutChapter(const std::string& chapterId, const Ch
     for (const auto& seg : data.segments) {
         switch (seg.type) {
             case SegmentType::ParagraphBreak:
-                currentY += PARAGRAPH_GAP;
+                currentY += paragraphGap;
                 break;
 
             case SegmentType::SectionHeading:
@@ -70,7 +73,7 @@ ChapterLayout LayoutEngine::layoutChapter(const std::string& chapterId, const Ch
 
             case SegmentType::PoetryLine:
                 currentY += layoutWords(seg, data, currentY, layout.lines,
-                                        seg.level * POETRY_INDENT, SegmentType::PoetryLine);
+                                        seg.level * poetryIndent, SegmentType::PoetryLine);
                 break;
 
             case SegmentType::ChapterLabel:
@@ -90,10 +93,10 @@ ChapterLayout LayoutEngine::layoutChapter(const std::string& chapterId, const Ch
 float LayoutEngine::layoutWords(const Segment& seg, const ChapterData& data, float startY,
                                 std::vector<Line>& lines, float indent, SegmentType spanType) {
     float lineHeight = fontSize * lineSpacing;
-    float availableWidth = maxWidth - LEFT_MARGIN - RIGHT_MARGIN - indent;
+    float availableWidth = maxWidth - leftMargin - rightMargin - indent;
     float spaceWidth = MeasureTextEx(font, " ", fontSize, 1).x;
     float y = startY;
-    float startX = LEFT_MARGIN + indent;
+    float startX = leftMargin + indent;
     float x = startX;
 
     Line currentLine;
@@ -151,7 +154,7 @@ float LayoutEngine::layoutHeading(const Segment& seg, float startY, std::vector<
     float lineHeight = fontSize * lineSpacing * fontScale;
     float y = startY;
 
-    y += HEADING_TOP_GAP;
+    y += headingTopGap;
 
     float headingWidth = MeasureTextEx(font, seg.text.c_str(), fontSize * fontScale, 1).x;
     float x = (maxWidth - headingWidth) / 2.0f;
@@ -175,7 +178,7 @@ float LayoutEngine::layoutHeading(const Segment& seg, float startY, std::vector<
     lines.push_back(headingLine);
 
     y += lineHeight;
-    y += HEADING_BOTTOM_GAP;
+    y += headingBottomGap;
 
     return y - startY;
 }
