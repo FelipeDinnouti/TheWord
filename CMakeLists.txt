@@ -114,7 +114,7 @@ set(PERSISTENCE_SOURCES
     src/persistence/PersistenceManager.cpp
 )
 
-add_executable(theword
+set(THEWORD_SOURCES
     src/main.cpp
     ${CORE_SOURCES}
     ${DATA_SOURCES}
@@ -126,6 +126,12 @@ add_executable(theword
     ${RENDERER_SOURCES}
     $<TARGET_OBJECTS:sqlite3_obj>
 )
+
+if(ANDROID)
+    add_library(theword SHARED ${THEWORD_SOURCES})
+else()
+    add_executable(theword ${THEWORD_SOURCES})
+endif()
 
 target_include_directories(theword PRIVATE src ${sqlite3_SOURCE_DIR})
 
@@ -198,12 +204,8 @@ elseif(ANDROID)
         log
     )
     target_link_options(theword PRIVATE
-        "-uANativeActivity_onCreate"
+        "-Wl,-u,ANativeActivity_onCreate"
         "-Wl,-undefined,dynamic_lookup"
-    )
-    set_target_properties(theword PROPERTIES
-        SUFFIX ".so"
-        PREFIX "lib"
     )
 elseif(WIN32)
     target_link_libraries(theword PRIVATE
