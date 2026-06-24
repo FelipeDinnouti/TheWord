@@ -39,16 +39,20 @@ int main() {
     Logger::Info("Starting TheWord");
 
 #if defined(__ANDROID__)
-    ANativeWindow* mainWin = GetAndroidApp()->window;
-    int screenW = ANativeWindow_getWidth(mainWin);
-    int screenH = ANativeWindow_getHeight(mainWin);
+    int density = AConfiguration_getDensity(GetAndroidApp()->config);
+    float densityScale = (density > 0) ? (float)density / 160.0f : 1.0f;
+    if (densityScale < 1.0f) densityScale = 1.0f;
+    if (densityScale > 4.0f) densityScale = 4.0f;
+    int renderW = (int)(config::WINDOW_WIDTH * densityScale);
+    int renderH = (int)(config::WINDOW_HEIGHT * densityScale);
+    float scale = densityScale;
 #else
-    int screenW = config::WINDOW_WIDTH;
-    int screenH = config::WINDOW_HEIGHT;
+    int renderW = config::WINDOW_WIDTH;
+    int renderH = config::WINDOW_HEIGHT;
+    float scale = 1.0f;
 #endif
-    float scale = (float)screenW / config::WINDOW_WIDTH;
 
-    InitWindow(screenW, screenH, "TheWord");
+    InitWindow(renderW, renderH, "TheWord");
     Logger::Info("Window initialized");
     SetTargetFPS(config::TARGET_FPS);
 
@@ -62,12 +66,12 @@ int main() {
         BeginDrawing();
         ClearBackground(theme::WINDOW_BG);
         DrawTextEx(GetFontDefault(), title,
-                   {(screenW - titleDims.x) / 2.0f,
-                    (screenH - titleDims.y) / 2.0f - 20.0f * scale},
+                   {(renderW - titleDims.x) / 2.0f,
+                    (renderH - titleDims.y) / 2.0f - 20.0f * scale},
                    titleSize, 1, theme::SPLASH_TITLE);
         DrawTextEx(GetFontDefault(), subtitle,
-                   {(screenW - subDims.x) / 2.0f,
-                    (screenH - subDims.y) / 2.0f + 20.0f * scale},
+                   {(renderW - subDims.x) / 2.0f,
+                    (renderH - subDims.y) / 2.0f + 20.0f * scale},
                    subSize, 1, theme::SPLASH_SUBTITLE);
         EndDrawing();
     }
@@ -87,7 +91,7 @@ int main() {
     Logger::Info("Fonts loaded");
 
     float headingSize = config::FONT_HEADING_SIZE * scale;
-    float contentWidth = screenW - config::CONTENT_PADDING;
+    float contentWidth = renderW - config::CONTENT_PADDING;
 
 #ifdef __ANDROID__
     Logger::Info("Initializing Android asset manager");
@@ -160,7 +164,7 @@ int main() {
     LayoutEngine layoutEngine(contentWidth, bodyFont, renderedFontSize, config::LINE_SPACING, scale);
     Renderer renderer(bodyFont, headingFont, config::TOP_BAR_HEIGHT, renderedFontSize);
 
-    float viewportHeight = screenH - config::TOP_BAR_HEIGHT;
+    float viewportHeight = renderH - config::TOP_BAR_HEIGHT;
     DocumentManager documentManager(layoutEngine, viewportHeight, *activeProv, config::TOP_BAR_HEIGHT);
 
     bool versionOnline = false;
