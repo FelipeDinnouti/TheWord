@@ -13,8 +13,7 @@ if(EMSCRIPTEN OR ANDROID)
 endif()
 
 if(ANDROID)
-    set(PLATFORM_ANDROID ON CACHE BOOL "" FORCE)
-    set(PLATFORM_OS ANDROID)
+    set(PLATFORM "Android" CACHE STRING "Platform to build for." FORCE)
 endif()
 
 FetchContent_Declare(
