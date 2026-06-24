@@ -6,10 +6,11 @@
 #include <optional>
 #include <unordered_map>
 #include "ChapterProvider.h"
+#include "core/IAssetProvider.h"
 
 class USFMParser : public ChapterProvider {
 public:
-    explicit USFMParser(const std::string& usfmDir);
+    explicit USFMParser(const std::string& usfmDir, IAssetProvider* assets = nullptr);
 
     bool HasChapter(const std::string& bookId, int chapter) const override;
     std::optional<ChapterData> LoadChapter(
@@ -18,6 +19,7 @@ public:
 
 private:
     std::string usfmDir;
+    IAssetProvider* assets;
     mutable std::unordered_map<std::string, bool> cachedHasChapter;
     mutable std::unordered_map<std::string, std::vector<ChapterData>> bookCache;
 

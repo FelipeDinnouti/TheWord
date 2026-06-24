@@ -7,9 +7,14 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 include(FetchContent)
 
 # ── Raylib ─────────────────────────────────────────────────────────────────
-if(EMSCRIPTEN)
+if(EMSCRIPTEN OR ANDROID)
     set(GLFW_BUILD_X11 OFF CACHE BOOL "" FORCE)
     set(GLFW_USE_WAYLAND OFF CACHE BOOL "" FORCE)
+endif()
+
+if(ANDROID)
+    set(PLATFORM_ANDROID ON CACHE BOOL "" FORCE)
+    set(PLATFORM_OS ANDROID)
 endif()
 
 FetchContent_Declare(
@@ -50,12 +55,22 @@ if(EMSCRIPTEN)
         src/core/EmscriptenClient.cpp
         src/core/EnvLoader.cpp
         src/core/FontHelper.cpp
+        src/core/FileAssetProvider.cpp
+    )
+elseif(ANDROID)
+    set(CORE_SOURCES
+        src/core/AndroidClient.cpp
+        src/core/EnvLoader.cpp
+        src/core/FontHelper.cpp
+        src/core/FileAssetProvider.cpp
+        src/core/AndroidAssetProvider.cpp
     )
 else()
     set(CORE_SOURCES
         src/core/CurlHttpClient.cpp
         src/core/EnvLoader.cpp
         src/core/FontHelper.cpp
+        src/core/FileAssetProvider.cpp
     )
 endif()
 
@@ -111,7 +126,7 @@ add_executable(theword
 
 target_include_directories(theword PRIVATE src ${sqlite3_SOURCE_DIR})
 
-if(NOT EMSCRIPTEN)
+if(NOT EMSCRIPTEN AND NOT ANDROID)
     add_executable(theword_test
         tests/test_main.cpp
         ${CORE_SOURCES}
@@ -145,6 +160,48 @@ if(EMSCRIPTEN)
     )
     set_target_properties(theword PROPERTIES SUFFIX ".html")
     target_link_libraries(theword PRIVATE raylib)
+elseif(ANDROID)
+    # Bundle libcurl for Android NDK
+    FetchContent_Declare(
+        curl
+        URL https://curl.se/download/curl-8.4.0.tar.gz
+        DOWNLOAD_EXTRACT_TIMESTAMP TRUE
+    )
+    set(CURL_USE_OPENSSL OFF CACHE BOOL "" FORCE)
+    set(CURL_DISABLE_CRYPTO_AUTH ON CACHE BOOL "" FORCE)
+    set(ENABLE_ARES OFF CACHE BOOL "" FORCE)
+    set(BUILD_CURL_EXE OFF CACHE BOOL "" FORCE)
+    set(BUILD_TESTING OFF CACHE BOOL "" FORCE)
+    set(HTTP_ONLY ON CACHE BOOL "" FORCE)
+    FetchContent_GetProperties(curl)
+    if(NOT curl_POPULATED)
+        FetchContent_Populate(curl)
+    endif()
+
+    # Build libcurl as a static library for Android NDK
+    add_subdirectory(${curl_SOURCE_DIR} ${curl_BINARY_DIR} EXCLUDE_FROM_ALL)
+
+    target_compile_definitions(theword PRIVATE CURL_STATICLIB)
+    target_include_directories(theword PRIVATE
+        ${curl_SOURCE_DIR}/include
+        ${ANDROID_NDK}/sources/android/native_app_glue
+    )
+    target_link_libraries(theword PRIVATE
+        raylib
+        libcurl_static
+        android
+        EGL
+        GLESv2
+        log
+    )
+    target_link_options(theword PRIVATE
+        "-uANativeActivity_onCreate"
+        "-Wl,-undefined,dynamic_lookup"
+    )
+    set_target_properties(theword PROPERTIES
+        SUFFIX ".so"
+        PREFIX "lib"
+    )
 elseif(WIN32)
     target_link_libraries(theword PRIVATE
         raylib

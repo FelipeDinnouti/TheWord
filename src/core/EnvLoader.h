@@ -7,6 +7,7 @@
 class EnvLoader {
 public:
     static void load(const std::string& filepath = ".env");
+    static void loadFromContent(const std::string& content);
     static std::string get(const std::string& key);
     static std::string get(const std::string& key, const std::string& defaultValue);
 

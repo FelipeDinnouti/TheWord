@@ -5,8 +5,8 @@
 #include <cctype>
 #include <iostream>
 
-USFMParser::USFMParser(const std::string& usfmDir)
-    : usfmDir(usfmDir) {}
+USFMParser::USFMParser(const std::string& usfmDir, IAssetProvider* assets)
+    : usfmDir(usfmDir), assets(assets) {}
 
 const char* USFMParser::ProviderName() const {
     return "USFMParser";
@@ -22,6 +22,10 @@ std::string USFMParser::extractBookCodeFromId(const std::string& line) const {
 }
 
 std::string USFMParser::loadFile(const std::string& filepath) const {
+    if (assets) {
+        auto content = assets->readFileText(filepath);
+        return content.value_or("");
+    }
     std::ifstream file(filepath);
     if (!file.is_open()) return "";
 

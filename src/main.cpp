@@ -3,8 +3,15 @@
 #include "core/FontHelper.h"
 #include "core/BibleBooks.h"
 #include "core/IHttpClient.h"
+#include "core/FileAssetProvider.h"
 #ifdef __EMSCRIPTEN__
 #include "core/EmscriptenClient.h"
+#elif defined(__ANDROID__)
+#include <android_native_app_glue.h>
+#include <android/asset_manager.h>
+#include "core/AndroidClient.h"
+#include "core/AndroidAssetProvider.h"
+extern "C" struct android_app* GetAndroidApp(void);
 #else
 #include "core/CurlHttpClient.h"
 #endif
@@ -64,10 +71,23 @@ int main() {
     float headingSize = config::FONT_SIZE * 1.3f;
     float contentWidth = config::WINDOW_WIDTH - 40.0f;
 
+#ifdef __ANDROID__
+    AAssetManager* mgr = GetAndroidApp()->activity->assetManager;
+    AndroidAssetProvider androidAssets(mgr);
+    IAssetProvider& fileAssets = androidAssets;
+
+    // Load .env from APK assets if available
+    auto envContent = androidAssets.readFileText(config::ENV_FILE);
+    if (envContent) {
+        EnvLoader::loadFromContent(*envContent);
+    }
+#else
+    FileAssetProvider fileAssets;
     EnvLoader::load(config::ENV_FILE);
+#endif
     std::string apiKey = EnvLoader::get(config::YVP_APP_KEY);
 
-    USFMParser usfmParser(config::USFM_DIR);
+    USFMParser usfmParser(config::USFM_DIR, &fileAssets);
 
     std::unique_ptr<IHttpClient> apiClient;
     std::unique_ptr<BibleClient> bibleClient;
@@ -78,8 +98,10 @@ int main() {
     ChapterProvider* activeProv = &usfmParser;
 
     if (!apiKey.empty()) {
-#ifdef __EMSCRIPTEN__
+#if defined(__EMSCRIPTEN__)
         apiClient = std::make_unique<EmscriptenClient>();
+#elif defined(__ANDROID__)
+        apiClient = std::make_unique<AndroidClient>();
 #else
         apiClient = std::make_unique<CurlHttpClient>();
 #endif
@@ -91,8 +113,12 @@ int main() {
         activeProv = compositeProvider.get();
     }
 
+#ifdef __ANDROID__
+    std::string dbPath = std::string("/data/data/com.theword/app_storage/") + config::DB_FILE;
+#else
     std::string home = getenv("HOME") ? getenv("HOME") : ".";
     std::string dbPath = home + "/" + config::DB_DIR + "/" + config::DB_FILE;
+#endif
     PersistenceManager storage(dbPath);
     Highlighter highlighter(storage);
 

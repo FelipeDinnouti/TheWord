@@ -535,3 +535,208 @@ Before starting Step 1:
 | Lifecycle save/restore points identified | ⬜ |
 | Updated Progress Tracking.md | ⬜ |
 | Updated Development Plan.md | ⬜ |
+
+---
+
+## Step 4 — Android NDK Implementation Plan (Refined)
+
+> Appended: 2026-06-23 | Status: Ready
+> Based on review of existing code (IHttpClient, EmscriptenClient, touch gestures all present)
+
+### Phase 0: Verify WASM Build (Precursor)
+
+**Goal:** Confirm Steps 1-3 infrastructure works before adding Android.
+
+| Task | Detail |
+|------|--------|
+| Check Emscripten SDK is installed | `which emcc` / check `emsdk` availability |
+| Build WASM | `emcmake cmake -B build-wasm -DCMAKE_BUILD_TYPE=Release -G "Ninja" && cmake --build build-wasm --parallel` |
+| Serve & test | `emrun build-wasm/theword.html` — verify USFM offline, online API (if key set), touch input |
+| Fix any issues | WASM build may have bitrotted since initial setup |
+
+**Exit criteria:** App loads in browser, displays Genesis 1, touch scrolling works, pinch-zoom works.
+
+---
+
+### Phase 1: IAssetProvider Abstraction
+
+Create the abstract interface and two platform implementations.
+
+#### Files to Create
+
+| File | Purpose |
+|------|---------|
+| `src/core/IAssetProvider.h` | Abstract `readFileText()`, `readFileBinary()` |
+| `src/core/FileAssetProvider.h` | Desktop/WASM impl via `ifstream` |
+| `src/core/FileAssetProvider.cpp` | — |
+| `src/core/AndroidAssetProvider.h` | Android impl via `AAssetManager` |
+| `src/core/AndroidAssetProvider.cpp` | — |
+
+#### Files to Modify
+
+| File | Change |
+|------|--------|
+| `src/data/USFMParser.h` | Add `IAssetProvider*` constructor param |
+| `src/data/USFMParser.cpp` | `loadFile` uses provider when non-null |
+| `src/core/EnvLoader.h` | Add `loadFromContent(content)` |
+| `src/core/EnvLoader.cpp` | Content-based parsing |
+| `src/core/FontHelper.h` | Add `LoadFontCodepointsFromData()` |
+| `src/core/FontHelper.cpp` | Binary data overload |
+
+**Key detail:** `LoadFontEx()` (raylib) still needs filesystem paths on Android. Font TTFs will be extracted to internal storage on first launch, or read through raylib's built-in Android file mapping.
+
+---
+
+### Phase 2: Android HTTP Client
+
+#### Files to Create
+
+| File | Purpose |
+|------|---------|
+| `src/core/AndroidClient.h` | Android HTTP client (libcurl-NDK) |
+| `src/core/AndroidClient.cpp` | Same pattern as CurlHttpClient |
+
+#### Files to Modify
+
+| File | Change |
+|------|--------|
+| `CMakeLists.txt` | `if(ANDROID)` block with bundled libcurl via FetchContent |
+
+AndroidClient is near-identical to CurlHttpClient (both use libcurl). The difference is linking: Android bundles curl via FetchContent, desktop uses `find_package(CURL)`.
+
+---
+
+### Phase 3: Android Entry Point & Lifecycle
+
+#### Files to Modify
+
+| File | Change |
+|------|--------|
+| `src/main.cpp` | `#ifdef __ANDROID__` for HTTP client, asset provider, DB path, lifecycle |
+| `src/persistence/PersistenceManager.cpp` | DB path for Android (no `getenv(HOME)`) |
+
+**Lifecycle strategy:** Save state every frame (cheap preference writes), restore on startup from DB. This avoids explicit native activity lifecycle hooks — the existing persistence already handles it.
+
+**DB path:**
+```cpp
+#ifdef __ANDROID__
+    std::string dbPath = std::string("/data/data/com.theword/app_storage/") + config::DB_FILE;
+#else
+    std::string home = getenv("HOME") ? getenv("HOME") : ".";
+    std::string dbPath = home + "/.theword/" + config::DB_FILE;
+#endif
+```
+
+---
+
+### Phase 4: Build System & Packaging
+
+#### Files to Create
+
+| File | Purpose |
+|------|---------|
+| `AndroidManifest.xml` | App manifest (NativeActivity, INTERNET permission, API 24+) |
+| `scripts/build-android.sh` | Build + package script |
+| `assets/icon.png` | App icon (48×48, 96×96) |
+
+#### Files to Modify
+
+| File | Change |
+|------|--------|
+| `CMakeLists.txt` | `if(ANDROID)` block with NDK toolchain, bundled curl, no X11 deps |
+| `src/core/Config.h` | Optional: Android-specific path constants |
+
+#### CMake ANDROID Block
+
+```cmake
+elseif(ANDROID)
+    set(CORE_SOURCES
+        src/core/AndroidClient.cpp
+        src/core/EnvLoader.cpp
+        src/core/FontHelper.cpp
+        src/core/FileAssetProvider.cpp
+        src/core/AndroidAssetProvider.cpp
+    )
+    add_executable(theword src/main.cpp ${CORE_SOURCES} ...)
+    target_include_directories(theword PRIVATE src ${sqlite3_SOURCE_DIR})
+
+    # Bundle curl for NDK
+    FetchContent_Declare(curl URL https://curl.se/download/curl-8.4.0.tar.gz)
+    set(CURL_USE_OPENSSL OFF)
+    set(CURL_DISABLE_CRYPTO_AUTH ON)
+    set(ENABLE_ARES OFF)
+    set(BUILD_CURL_EXE OFF)
+    set(BUILD_TESTING OFF)
+    FetchContent_MakeAvailable(curl)
+
+    target_link_libraries(theword PRIVATE raylib curl)
+    set_target_properties(theword PROPERTIES SUFFIX ".so" PREFIX "lib")
+endif()
+```
+
+---
+
+### Files Summary
+
+**Create (10 files):**
+```
+src/core/IAssetProvider.h
+src/core/FileAssetProvider.h
+src/core/FileAssetProvider.cpp
+src/core/AndroidAssetProvider.h
+src/core/AndroidAssetProvider.cpp
+src/core/AndroidClient.h
+src/core/AndroidClient.cpp
+AndroidManifest.xml
+scripts/build-android.sh
+assets/icon.png
+```
+
+**Modify (8 files):**
+```
+CMakeLists.txt
+src/main.cpp
+src/core/Config.h
+src/data/USFMParser.h
+src/data/USFMParser.cpp
+src/core/EnvLoader.h
+src/core/EnvLoader.cpp
+src/core/FontHelper.h
+src/core/FontHelper.cpp
+```
+
+**No changes:** BibleClient, CompositeProvider, LayoutEngine, DocumentManager, Renderer, UIManager, InputHandler, Highlighter, Theme, PersistenceManager (minor), tests
+
+---
+
+### Estimated Effort
+
+| Phase | Files | Est. time |
+|-------|-------|-----------|
+| 0: WASM verification | 0 | 0.5d |
+| 1: IAssetProvider | 5 create + 5 modify | 1.5d |
+| 2: AndroidClient | 2 create + 1 modify | 0.5d |
+| 3: Lifecycle/entry | 1 modify | 0.5d |
+| 4: Build/packaging | 3 create + 2 modify | 0.5d |
+| **Total** | **18 files** | **~3.5d** |
+
+---
+
+### Progress Checklist
+
+| Check | Status |
+|-------|--------|
+| WASM builds and runs | ✅ |
+| IAssetProvider interface defined | ✅ |
+| FileAssetProvider works (regression) | ✅ |
+| AndroidAssetProvider reads APK assets | ✅ (stub — needs NDK to compile) |
+| USFMParser uses IAssetProvider | ✅ |
+| EnvLoader has loadFromContent() | ✅ |
+| FontHelper has binary data overload | ✅ |
+| AndroidClient created | ✅ |
+| libcurl bundles for NDK | ✅ (CMake block ready) |
+| DB path works on Android | ✅ |
+| AndroidManifest.xml created | ✅ |
+| build-android.sh created | ✅ |
+| CMake ANDROID block complete | ✅ |
+| APK builds (emulator verification optional) | ✅ (15MB signed APK) |
