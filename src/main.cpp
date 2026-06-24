@@ -4,6 +4,7 @@
 #include "core/BibleBooks.h"
 #include "core/IHttpClient.h"
 #include "core/FileAssetProvider.h"
+#include "core/Logger.h"
 #ifdef __EMSCRIPTEN__
 #include "core/EmscriptenClient.h"
 #elif defined(__ANDROID__)
@@ -35,7 +36,9 @@ extern "C" struct android_app* GetAndroidApp(void);
 #include <algorithm>
 
 int main() {
+    Logger::Info("Starting TheWord");
     InitWindow(config::WINDOW_WIDTH, config::WINDOW_HEIGHT, "TheWord");
+    Logger::Info("Window initialized");
     SetTargetFPS(config::TARGET_FPS);
 
     {
@@ -60,6 +63,7 @@ int main() {
 
     std::vector<int> codepoints = LoadFontCodepoints(config::FONT_REGULAR);
 
+    Logger::Info("Loading fonts");
     Font bodyFont = LoadFontEx(config::FONT_REGULAR, (int)config::FONT_SIZE,
                                codepoints.data(), (int)codepoints.size());
     SetTextureFilter(bodyFont.texture, TEXTURE_FILTER_POINT);
@@ -67,26 +71,34 @@ int main() {
     Font headingFont = LoadFontEx(config::FONT_REGULAR, (int)config::FONT_HEADING_SIZE,
                                   codepoints.data(), (int)codepoints.size());
     SetTextureFilter(headingFont.texture, TEXTURE_FILTER_POINT);
+    Logger::Info("Fonts loaded");
 
     float headingSize = config::FONT_SIZE * 1.3f;
     float contentWidth = config::WINDOW_WIDTH - 40.0f;
 
 #ifdef __ANDROID__
-    AAssetManager* mgr = GetAndroidApp()->activity->assetManager;
+    Logger::Info("Initializing Android asset manager");
+    android_app* appState = GetAndroidApp();
+    if (!appState) {
+        Logger::Error("GetAndroidApp() returned null");
+        return 1;
+    }
+    AAssetManager* mgr = appState->activity->assetManager;
     AndroidAssetProvider androidAssets(mgr);
     IAssetProvider& fileAssets = androidAssets;
 
-    // Load .env from APK assets if available
     auto envContent = androidAssets.readFileText(config::ENV_FILE);
     if (envContent) {
         EnvLoader::loadFromContent(*envContent);
     }
+    Logger::Info("Android assets initialized");
 #else
     FileAssetProvider fileAssets;
     EnvLoader::load(config::ENV_FILE);
 #endif
     std::string apiKey = EnvLoader::get(config::YVP_APP_KEY);
 
+    Logger::Info("Creating USFM parser");
     USFMParser usfmParser(config::USFM_DIR, &fileAssets);
 
     std::unique_ptr<IHttpClient> apiClient;
@@ -98,6 +110,7 @@ int main() {
     ChapterProvider* activeProv = &usfmParser;
 
     if (!apiKey.empty()) {
+        Logger::Info("API key found, creating online client");
 #if defined(__EMSCRIPTEN__)
         apiClient = std::make_unique<EmscriptenClient>();
 #elif defined(__ANDROID__)
@@ -114,14 +127,16 @@ int main() {
     }
 
 #ifdef __ANDROID__
-    std::string dbPath = std::string("/data/data/com.theword/app_storage/") + config::DB_FILE;
+    std::string dbPath = std::string("/data/data/com.theword.app/app_storage/") + config::DB_FILE;
 #else
     std::string home = getenv("HOME") ? getenv("HOME") : ".";
     std::string dbPath = home + "/" + config::DB_DIR + "/" + config::DB_FILE;
 #endif
+    Logger::Info("Opening database: " + dbPath);
     PersistenceManager storage(dbPath);
     Highlighter highlighter(storage);
 
+    Logger::Info("Database initialized");
     float fontSize = config::FONT_SIZE;
     std::string savedFontSize = storage.getPreference("font_size", "");
     if (!savedFontSize.empty()) {
@@ -160,10 +175,12 @@ int main() {
 
     InputHandler inputHandler(documentManager, highlighter, layoutEngine, uiManager, uiManager.getContentTop());
 
+    Logger::Info("Loading initial chapter");
     documentManager.loadInitialChapter("GEN.1");
 
     double lastTime = GetTime();
 
+    Logger::Info("Entering main loop");
     while (!WindowShouldClose()) {
         double currentTime = GetTime();
         float deltaTime = (float)(currentTime - lastTime);
