@@ -14,6 +14,9 @@ endif()
 
 if(ANDROID)
     set(PLATFORM "Android" CACHE STRING "Platform to build for." FORCE)
+    if(NOT ANDROID_NDK AND CMAKE_ANDROID_NDK)
+        set(ANDROID_NDK "${CMAKE_ANDROID_NDK}" CACHE STRING "Android NDK path" FORCE)
+    endif()
 endif()
 
 FetchContent_Declare(

@@ -22,6 +22,7 @@ cmake -B "$BUILD_DIR" \
     -DANDROID_PLATFORM=android-24 \
     -DCMAKE_BUILD_TYPE=Release \
     -DPLATFORM=Android \
+    -DANDROID_NDK="$ANDROID_NDK" \
     -DOPENGL_INCLUDE_DIR="$NDK_SYSROOT/usr/include" \
     -G "Ninja"
 
