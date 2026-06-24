@@ -210,7 +210,7 @@ void InputHandler::handleTouchPressFSM() {
 
     switch (pressState) {
         case PressState::Idle:
-            if (touchCount == 1 && !touchActive) {
+            if (touchCount == 1) {
                 pressStartTime = GetTime();
                 pressStartPos = touchPos;
                 pressStartWord = docManager.hitTestWord(
@@ -268,6 +268,7 @@ void InputHandler::handlePinch() {
         }
         lastPinchDist = dist;
         touchActive = false;
+        pressState = PressState::Idle;
     } else {
         lastPinchDist = 0.0f;
     }
