@@ -8,9 +8,10 @@
 #include <cmath>
 
 InputHandler::InputHandler(DocumentManager& docManager, Highlighter& highlighter,
-                           LayoutEngine& layoutEngine, UIManager& uiManager, float contentTop)
+                           LayoutEngine& layoutEngine, UIManager& uiManager,
+                           float contentTop, float scale)
     : docManager(docManager), highlighter(highlighter), layoutEngine(layoutEngine),
-      uiManager(uiManager), contentTop(contentTop), scrollVelocity(0.0f),
+      uiManager(uiManager), contentTop(contentTop), scale(scale), scrollVelocity(0.0f),
       pressState(PressState::Idle), pressStartTime(0.0),
       pressStartPos{0, 0}, pressStartWord(-1),
       touchActive(false), touchLastY(0.0f), lastTouchDelta(0.0f), lastPinchDist(0.0f) {}
@@ -66,7 +67,13 @@ void InputHandler::handleInput(float deltaTime) {
         return;
     }
 
-#if defined(__EMSCRIPTEN__) || defined(__ANDROID__)
+#if defined(__ANDROID__)
+    handlePinch();
+    handleTouchScroll();
+    handleScroll();
+    handlePressFSM();
+    handleRightClick();
+#elif defined(__EMSCRIPTEN__)
     handlePinch();
     handleTouchScroll();
     handleTouchPressFSM();
@@ -276,7 +283,7 @@ void InputHandler::handlePinch() {
 
 void InputHandler::handleWindowResize() {
     if (IsWindowResized()) {
-        float newContentWidth = GetScreenWidth() - config::CONTENT_PADDING;
+        float newContentWidth = GetScreenWidth() - config::CONTENT_PADDING * scale;
         layoutEngine.setMaxWidth(newContentWidth);
         layoutEngine.invalidateCache();
 

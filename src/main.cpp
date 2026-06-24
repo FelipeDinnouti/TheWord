@@ -40,21 +40,23 @@ int main() {
 
 #if defined(__ANDROID__)
     int density = AConfiguration_getDensity(GetAndroidApp()->config);
-    float densityScale = (density > 0) ? (float)density / 160.0f : 1.0f;
-    if (densityScale < 1.0f) densityScale = 1.0f;
-    if (densityScale > 4.0f) densityScale = 4.0f;
-    int renderW = (int)(config::WINDOW_WIDTH * densityScale);
-    int renderH = (int)(config::WINDOW_HEIGHT * densityScale);
-    float scale = densityScale;
+    float scale = (density > 0) ? (float)density / 160.0f : 1.0f;
+    if (scale < 1.0f) scale = 1.0f;
+    if (scale > 4.0f) scale = 4.0f;
 #else
-    int renderW = config::WINDOW_WIDTH;
-    int renderH = config::WINDOW_HEIGHT;
     float scale = 1.0f;
 #endif
 
-    InitWindow(renderW, renderH, "TheWord");
+#if defined(__ANDROID__)
+    InitWindow(0, 0, "TheWord");
+#else
+    InitWindow(config::WINDOW_WIDTH, config::WINDOW_HEIGHT, "TheWord");
+#endif
     Logger::Info("Window initialized");
     SetTargetFPS(config::TARGET_FPS);
+
+    int renderW = GetScreenWidth();
+    int renderH = GetScreenHeight();
 
     {
         const char* title = "TheWord";
@@ -91,7 +93,8 @@ int main() {
     Logger::Info("Fonts loaded");
 
     float headingSize = config::FONT_HEADING_SIZE * scale;
-    float contentWidth = renderW - config::CONTENT_PADDING;
+    float contentTop = config::TOP_BAR_HEIGHT * scale;
+    float contentWidth = renderW - config::CONTENT_PADDING * scale;
 
 #ifdef __ANDROID__
     Logger::Info("Initializing Android asset manager");
@@ -162,10 +165,10 @@ int main() {
     float renderedFontSize = fontSize * scale;
 
     LayoutEngine layoutEngine(contentWidth, bodyFont, renderedFontSize, config::LINE_SPACING, scale);
-    Renderer renderer(bodyFont, headingFont, config::TOP_BAR_HEIGHT, renderedFontSize);
+    Renderer renderer(bodyFont, headingFont, contentTop, renderedFontSize);
 
-    float viewportHeight = renderH - config::TOP_BAR_HEIGHT;
-    DocumentManager documentManager(layoutEngine, viewportHeight, *activeProv, config::TOP_BAR_HEIGHT);
+    float viewportHeight = renderH - contentTop;
+    DocumentManager documentManager(layoutEngine, viewportHeight, *activeProv, contentTop);
 
     bool versionOnline = false;
     if (compositeProvider) {
@@ -191,7 +194,7 @@ int main() {
         highlighter.setActiveTypeId(std::atoi(savedColor.c_str()));
     }
 
-    InputHandler inputHandler(documentManager, highlighter, layoutEngine, uiManager, uiManager.getContentTop());
+    InputHandler inputHandler(documentManager, highlighter, layoutEngine, uiManager, uiManager.getContentTop(), scale);
 
     Logger::Info("Loading initial chapter");
     documentManager.loadInitialChapter("GEN.1");
@@ -200,6 +203,10 @@ int main() {
 
     Logger::Info("Entering main loop");
     while (!WindowShouldClose()) {
+#if defined(__ANDROID__)
+        android_app* app = GetAndroidApp();
+        if (!app || !app->window) break;
+#endif
         double currentTime = GetTime();
         float deltaTime = (float)(currentTime - lastTime);
         lastTime = currentTime;

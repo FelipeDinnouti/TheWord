@@ -30,7 +30,7 @@ UIManager::UIManager(const Font& headingFont, float headingSize, Highlighter& hi
       settingsActive(false) {}
 
 float UIManager::getContentTop() const {
-    return TOP_BAR_HEIGHT;
+    return TOP_BAR_HEIGHT * scale;
 }
 
 float UIManager::getFontSize() const {
