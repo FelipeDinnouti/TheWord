@@ -1,7 +1,7 @@
 #include "EmscriptenClient.h"
+#include "Logger.h"
 #include <emscripten/fetch.h>
 #include <cstring>
-#include <iostream>
 
 EmscriptenClient::EmscriptenClient() {}
 
@@ -27,7 +27,7 @@ static void onSuccess(emscripten_fetch_t* fetch) {
 
 static void onError(emscripten_fetch_t* fetch) {
     auto* buf = static_cast<FetchBuffer*>(fetch->userData);
-    std::cerr << "WASM fetch failed: " << fetch->statusText << std::endl;
+    Logger::Error("WASM fetch failed: " + std::string(fetch->statusText));
     buf->done = true;
     emscripten_fetch_close(fetch);
 }

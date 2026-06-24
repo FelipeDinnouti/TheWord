@@ -50,27 +50,28 @@ if(NOT sqlite3_POPULATED)
 endif()
 
 # ── Source files (explicit list — no GLOB_RECURSE) ────────────────────────
+set(CORE_BASE_SOURCES
+    src/core/Logger.cpp
+    src/core/EnvLoader.cpp
+    src/core/FontHelper.cpp
+    src/core/FileAssetProvider.cpp
+)
+
 if(EMSCRIPTEN)
     set(CORE_SOURCES
         src/core/EmscriptenClient.cpp
-        src/core/EnvLoader.cpp
-        src/core/FontHelper.cpp
-        src/core/FileAssetProvider.cpp
+        ${CORE_BASE_SOURCES}
     )
 elseif(ANDROID)
     set(CORE_SOURCES
         src/core/AndroidClient.cpp
-        src/core/EnvLoader.cpp
-        src/core/FontHelper.cpp
-        src/core/FileAssetProvider.cpp
         src/core/AndroidAssetProvider.cpp
+        ${CORE_BASE_SOURCES}
     )
 else()
     set(CORE_SOURCES
         src/core/CurlHttpClient.cpp
-        src/core/EnvLoader.cpp
-        src/core/FontHelper.cpp
-        src/core/FileAssetProvider.cpp
+        ${CORE_BASE_SOURCES}
     )
 endif()
 

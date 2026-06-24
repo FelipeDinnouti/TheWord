@@ -1,7 +1,7 @@
 #include "CurlHttpClient.h"
+#include "Logger.h"
 #include <curl/curl.h>
 #include <cstring>
-#include <iostream>
 
 CurlHttpClient::CurlHttpClient() {
     curl = curl_easy_init();
@@ -54,7 +54,7 @@ std::string CurlHttpClient::get(const std::string& url) {
     CURLcode res = curl_easy_perform(ch);
 
     if (res != CURLE_OK) {
-        std::cerr << "API request failed: " << curl_easy_strerror(res) << std::endl;
+        Logger::Error("API request failed: " + std::string(curl_easy_strerror(res)));
         response.clear();
     }
 
