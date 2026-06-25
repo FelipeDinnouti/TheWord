@@ -11,7 +11,8 @@ class UIManager;
 class InputHandler {
 public:
     InputHandler(DocumentManager& docManager, Highlighter& highlighter,
-                 LayoutEngine& layoutEngine, UIManager& uiManager, float contentTop);
+                 LayoutEngine& layoutEngine, UIManager& uiManager,
+                 float contentTop, float scale = 1.0f);
 
     void HandleInput(float deltaTime);
 
@@ -23,6 +24,7 @@ private:
     LayoutEngine& layoutEngine;
     UIManager& uiManager;
     float contentTop;
+    float scale;
 
     float scrollVelocity;
     static constexpr float SCROLL_SENSITIVITY = 30.0f;
