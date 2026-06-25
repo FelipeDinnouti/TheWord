@@ -11,25 +11,25 @@ Highlighter::Highlighter(PersistenceInterface& persistence)
     , selecting(false)
     , nextId(1)
     , activeTypeId(1) {
-    types = persistence.loadHighlightTypes();
+    types = persistence.LoadHighlightTypes();
     if (types.empty()) {
         types.push_back(DEFAULT_HIGHLIGHT_TYPE);
     }
     activeTypeId = types[0].id;
-    load();
+    Load();
 }
 
-void Highlighter::setProvider(const std::string& name) {
+void Highlighter::SetProvider(const std::string& name) {
     currentProvider = name;
-    load();
+    Load();
 }
 
-const std::string& Highlighter::getProvider() const {
+const std::string& Highlighter::GetProvider() const {
     return currentProvider;
 }
 
-void Highlighter::load() {
-    highlights = persistence.loadHighlights();
+void Highlighter::Load() {
+    highlights = persistence.LoadHighlights();
     highlights.erase(
         std::remove_if(highlights.begin(), highlights.end(),
             [this](const Highlight& h) {
@@ -41,18 +41,18 @@ void Highlighter::load() {
     }
 }
 
-void Highlighter::startSelection(int wordId) {
+void Highlighter::StartSelection(int wordId) {
     selecting = true;
     selectionStart = wordId;
     selectionEnd = wordId;
 }
 
-void Highlighter::updateSelection(int wordId) {
+void Highlighter::UpdateSelection(int wordId) {
     if (!selecting) return;
     selectionEnd = wordId;
 }
 
-void Highlighter::endSelection() {
+void Highlighter::EndSelection() {
     if (!selecting) return;
     selecting = false;
 
@@ -68,17 +68,17 @@ void Highlighter::endSelection() {
     h.providerName = currentProvider;
 
     highlights.push_back(h);
-    persistence.saveHighlight(h);
+    persistence.SaveHighlight(h);
 }
 
-bool Highlighter::isWordHighlighted(int wordId) const {
+bool Highlighter::IsWordHighlighted(int wordId) const {
     for (const auto& h : highlights) {
         if (wordId >= h.startWord && wordId <= h.endWord) return true;
     }
     return false;
 }
 
-Color Highlighter::getHighlightForWord(int wordId) const {
+Color Highlighter::GetHighlightForWord(int wordId) const {
     for (const auto& h : highlights) {
         if (wordId >= h.startWord && wordId <= h.endWord) {
             for (const auto& t : types) {
@@ -90,7 +90,7 @@ Color Highlighter::getHighlightForWord(int wordId) const {
     return {0, 0, 0, 0};
 }
 
-const Highlight* Highlighter::highlightAtWord(int wordId) const {
+const Highlight* Highlighter::HighlightAtWord(int wordId) const {
     for (const auto& h : highlights) {
         if (wordId >= h.startWord && wordId <= h.endWord) {
             return &h;
@@ -99,36 +99,36 @@ const Highlight* Highlighter::highlightAtWord(int wordId) const {
     return nullptr;
 }
 
-void Highlighter::removeHighlight(int id) {
+void Highlighter::RemoveHighlight(int id) {
     highlights.erase(
         std::remove_if(highlights.begin(), highlights.end(),
             [id](const Highlight& h) { return h.id == id; }),
         highlights.end());
-    persistence.removeHighlight(id);
+    persistence.RemoveHighlight(id);
 }
 
-void Highlighter::recolorHighlight(int highlightId, int newTypeId) {
+void Highlighter::RecolorHighlight(int highlightId, int newTypeId) {
     for (auto& h : highlights) {
         if (h.id == highlightId) {
             h.typeId = newTypeId;
-            persistence.saveHighlight(h);
+            persistence.SaveHighlight(h);
             return;
         }
     }
 }
 
-void Highlighter::setActiveTypeId(int typeId) {
+void Highlighter::SetActiveTypeId(int typeId) {
     activeTypeId = typeId;
 }
 
-int Highlighter::getActiveTypeId() const {
+int Highlighter::GetActiveTypeId() const {
     return activeTypeId;
 }
 
-const std::vector<Highlight>& Highlighter::getHighlights() const {
+const std::vector<Highlight>& Highlighter::GetHighlights() const {
     return highlights;
 }
 
-const std::vector<HighlightType>& Highlighter::getTypes() const {
+const std::vector<HighlightType>& Highlighter::GetTypes() const {
     return types;
 }

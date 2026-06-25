@@ -2,7 +2,7 @@
 #include "core/GlobalId.h"
 #include <sstream>
 
-static std::vector<Word> tokenizeText(const std::string& text, int verseId) {
+static std::vector<Word> TokenizeText(const std::string& text, int verseId) {
     std::vector<Word> words;
     std::istringstream stream(text);
     std::string word;
@@ -38,9 +38,9 @@ std::optional<ChapterData> StubChapterProvider::LoadChapter(
     const char* verse17 = "For God did not send his Son into the world to condemn the world but to save the world through him";
     const char* verse18 = "Whoever believes in him is not condemned but whoever does not believe stands condemned already because they have not believed in the name of Gods one and only Son";
 
-    auto w16 = tokenizeText(verse16, 16);
-    auto w17 = tokenizeText(verse17, 17);
-    auto w18 = tokenizeText(verse18, 18);
+    auto w16 = TokenizeText(verse16, 16);
+    auto w17 = TokenizeText(verse17, 17);
+    auto w18 = TokenizeText(verse18, 18);
 
     data.words.reserve(w16.size() + w17.size() + w18.size());
     data.words.insert(data.words.end(), w16.begin(), w16.end());

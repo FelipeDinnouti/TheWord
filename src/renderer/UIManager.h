@@ -24,43 +24,38 @@ public:
               CompositeProvider* compositeProv, float initialFontSize = 24.0f,
               bool initialVersionOnline = false, float scaleFactor = 1.0f);
 
-    float getContentTop() const;
-    float getFontSize() const;
+    float GetContentTop() const;
+    float GetFontSize() const;
 
-    // Drawing
-    void drawTopBar(const std::string& chapterTitle);
-    void drawContextMenu();
-    void drawSettingsPanel();
-    void drawGoToDialog();
+    void DrawTopBar(const std::string& chapterTitle);
+    void DrawContextMenu();
+    void DrawSettingsPanel();
+    void DrawGoToDialog();
 
-    // Context menu
-    void showContextMenu(Vector2 position, int highlightId, int typeId);
-    void hideContextMenu();
-    bool isContextMenuActive() const;
-    bool handleContextMenuClick(Vector2 pos);
+    void ShowContextMenu(Vector2 position, int highlightId, int typeId);
+    void HideContextMenu();
+    bool IsContextMenuActive() const;
+    bool HandleContextMenuClick(Vector2 pos);
 
-    // Go-to dialog
-    void toggleGoToDialog();
-    void dismissGoToDialog();
-    bool isGoToDialogActive() const;
-    void handleGoToKeyboardInput();
-    void handleGoToClick(Vector2 pos);
+    void ToggleGoToDialog();
+    void DismissGoToDialog();
+    bool IsGoToDialogActive() const;
+    void HandleGoToKeyboardInput();
+    void HandleGoToClick(Vector2 pos);
 
-    // About overlay
-    void toggleAbout();
-    void dismissAbout();
-    bool isAboutActive() const;
-    void drawAbout();
-    void handleAboutClick(Vector2 pos);
+    void ToggleAbout();
+    void DismissAbout();
+    bool IsAboutActive() const;
+    void DrawAbout();
+    void HandleAboutClick(Vector2 pos);
 
-    // Settings panel
-    void toggleSettings();
-    void dismissSettings();
-    bool isSettingsActive() const;
-    void handleSettingsClick(Vector2 pos);
+    void ToggleSettings();
+    void DismissSettings();
+    bool IsSettingsActive() const;
+    void HandleSettingsClick(Vector2 pos);
 
-    void changeFontSize(float delta);
-    void dismissActiveDialog();
+    void ChangeFontSize(float delta);
+    void DismissActiveDialog();
 
 private:
     const Font& headingFont;
@@ -141,33 +136,32 @@ private:
     static constexpr float SUGGESTION_ITEM_H = 22.0f;
     static constexpr float SUGGESTION_LINE_H = 24.0f;
 
-    // Helpers
-    void drawBackdrop();
-    void applyFontSize(float newSize);
-    Rectangle getGoToDialogRect() const;
-    Rectangle getSettingsPanelRect() const;
-    Rectangle getCloseButtonRect(Rectangle panelRect) const;
-    Rectangle getAboutRect() const;
+    void DrawBackdrop();
+    void ApplyFontSize(float newSize);
+    Rectangle GetGoToDialogRect() const;
+    Rectangle GetSettingsPanelRect() const;
+    Rectangle GetCloseButtonRect(Rectangle panelRect) const;
+    Rectangle GetAboutRect() const;
 
-    std::vector<int> getSuggestions() const;
-    std::string parseGoToInput(const std::string& input) const;
-    static bool startsWithIgnoreCase(const std::string& str, const std::string& prefix);
+    std::vector<int> GetSuggestions() const;
+    std::string ParseGoToInput(const std::string& input) const;
+    static bool StartsWithIgnoreCase(const std::string& str, const std::string& prefix);
 
-    static std::string tryParseBookDotChapter(const std::string& input);
-    static std::string tryParseFullNameThenChapter(const std::string& input);
-    static std::string tryParseSpaceSeparated(const std::string& input);
+    static std::string TryParseBookDotChapter(const std::string& input);
+    static std::string TryParseFullNameThenChapter(const std::string& input);
+    static std::string TryParseSpaceSeparated(const std::string& input);
 
-    void drawCloseButton(Rectangle panelRect);
-    void drawGoToSuggestions(Rectangle dlg, const std::vector<int>& suggestions);
+    void DrawCloseButton(Rectangle panelRect);
+    void DrawGoToSuggestions(Rectangle dlg, const std::vector<int>& suggestions);
 
-    void drawSettingsFontRow(Rectangle panel);
-    void drawSettingsSourceRow(Rectangle panel);
-    void drawSettingsColorRow(Rectangle panel);
+    void DrawSettingsFontRow(Rectangle panel);
+    void DrawSettingsSourceRow(Rectangle panel);
+    void DrawSettingsColorRow(Rectangle panel);
 
-    bool handleSettingsClickOnTitleClose(Vector2 pos, Rectangle panel);
-    bool handleSettingsClickOnFontRow(Vector2 pos, Rectangle panel);
-    bool handleSettingsClickOnSourceRow(Vector2 pos, Rectangle panel);
-    void handleSettingsClickOnColorRow(Vector2 pos, Rectangle panel);
+    bool HandleSettingsClickOnTitleClose(Vector2 pos, Rectangle panel);
+    bool HandleSettingsClickOnFontRow(Vector2 pos, Rectangle panel);
+    bool HandleSettingsClickOnSourceRow(Vector2 pos, Rectangle panel);
+    void HandleSettingsClickOnColorRow(Vector2 pos, Rectangle panel);
 };
 
 #endif

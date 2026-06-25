@@ -21,7 +21,7 @@ class BibleClientTest {
 public:
     static std::optional<ChapterData> Parse(BibleClient& client,
             const std::string& html, const std::string& bookId, int chapter) {
-        return client.parseHtmlChapter(html, bookId, chapter);
+        return client.ParseHtmlChapter(html, bookId, chapter);
     }
 };
 
@@ -501,8 +501,8 @@ TEST_CASE("CompositeProvider setPrimary switches primary provider") {
     REQUIRE(r1.has_value());
     CHECK(r1->words[0].text == "Genesis");
 
-    // After setPrimary to fail, LoadChapter should fail (both primary and fallback fail)
-    composite.setPrimary(fail);
+    // After SetPrimary to fail, LoadChapter should fail (both primary and fallback fail)
+    composite.SetPrimary(fail);
     auto r2 = composite.LoadChapter("GEN", 1);
     CHECK_FALSE(r2.has_value());
 }
@@ -515,8 +515,8 @@ TEST_CASE("CompositeProvider setPrimary switches to working provider") {
     auto r1 = composite.LoadChapter("GEN", 1);
     REQUIRE(r1.has_value());
 
-    // After setPrimary to ag, primary succeeds directly
-    composite.setPrimary(ag);
+    // After SetPrimary to ag, primary succeeds directly
+    composite.SetPrimary(ag);
     auto r2 = composite.LoadChapter("GEN", 1);
     REQUIRE(r2.has_value());
     CHECK(r2->words[0].text == "Genesis");
@@ -534,9 +534,9 @@ TEST_CASE("CompositeProvider ProviderName") {
 TEST_CASE("Highlighter startSelection records word ID") {
     InMemoryStorage store;
     Highlighter h(store);
-    h.startSelection(42);
-    h.endSelection();
-    auto& highlights = h.getHighlights();
+    h.StartSelection(42);
+    h.EndSelection();
+    auto& highlights = h.GetHighlights();
     REQUIRE(highlights.size() == 1);
     CHECK(highlights[0].startWord == 42);
     CHECK(highlights[0].endWord == 42);
@@ -545,10 +545,10 @@ TEST_CASE("Highlighter startSelection records word ID") {
 TEST_CASE("Highlighter selection range covers start to end") {
     InMemoryStorage store;
     Highlighter h(store);
-    h.startSelection(5);
-    h.updateSelection(12);
-    h.endSelection();
-    auto& highlights = h.getHighlights();
+    h.StartSelection(5);
+    h.UpdateSelection(12);
+    h.EndSelection();
+    auto& highlights = h.GetHighlights();
     REQUIRE(highlights.size() == 1);
     CHECK(highlights[0].startWord == 5);
     CHECK(highlights[0].endWord == 12);
@@ -557,10 +557,10 @@ TEST_CASE("Highlighter selection range covers start to end") {
 TEST_CASE("Highlighter handles reverse drag direction") {
     InMemoryStorage store;
     Highlighter h(store);
-    h.startSelection(20);
-    h.updateSelection(10);
-    h.endSelection();
-    auto& highlights = h.getHighlights();
+    h.StartSelection(20);
+    h.UpdateSelection(10);
+    h.EndSelection();
+    auto& highlights = h.GetHighlights();
     REQUIRE(highlights.size() == 1);
     CHECK(highlights[0].startWord == 10);
     CHECK(highlights[0].endWord == 20);
@@ -569,48 +569,48 @@ TEST_CASE("Highlighter handles reverse drag direction") {
 TEST_CASE("Highlighter does not create highlight without endSelection") {
     InMemoryStorage store;
     Highlighter h(store);
-    h.startSelection(5);
-    CHECK(h.getHighlights().empty());
+    h.StartSelection(5);
+    CHECK(h.GetHighlights().empty());
 }
 
 TEST_CASE("Highlighter isWordHighlighted checks ranges") {
     InMemoryStorage store;
     Highlighter h(store);
-    h.startSelection(5);
-    h.updateSelection(10);
-    h.endSelection();
-    CHECK(h.isWordHighlighted(5));
-    CHECK(h.isWordHighlighted(7));
-    CHECK(h.isWordHighlighted(10));
-    CHECK_FALSE(h.isWordHighlighted(4));
-    CHECK_FALSE(h.isWordHighlighted(11));
+    h.StartSelection(5);
+    h.UpdateSelection(10);
+    h.EndSelection();
+    CHECK(h.IsWordHighlighted(5));
+    CHECK(h.IsWordHighlighted(7));
+    CHECK(h.IsWordHighlighted(10));
+    CHECK_FALSE(h.IsWordHighlighted(4));
+    CHECK_FALSE(h.IsWordHighlighted(11));
 }
 
 TEST_CASE("Highlighter getHighlightForWord returns color for highlighted word") {
     InMemoryStorage store;
     Highlighter h(store);
-    h.startSelection(5);
-    h.updateSelection(10);
-    h.endSelection();
-    Color c = h.getHighlightForWord(7);
+    h.StartSelection(5);
+    h.UpdateSelection(10);
+    h.EndSelection();
+    Color c = h.GetHighlightForWord(7);
     CHECK(c.a > 0);
-    Color c2 = h.getHighlightForWord(99);
+    Color c2 = h.GetHighlightForWord(99);
     CHECK(c2.a == 0);
 }
 
 TEST_CASE("Highlighter loads persisted highlights on construction") {
     InMemoryStorage store;
-    store.saveHighlight({1, 10, 20, 1});
+    store.SaveHighlight({1, 10, 20, 1});
     Highlighter h(store);
-    CHECK(h.isWordHighlighted(15));
-    CHECK_FALSE(h.isWordHighlighted(5));
+    CHECK(h.IsWordHighlighted(15));
+    CHECK_FALSE(h.IsWordHighlighted(5));
 }
 
 TEST_CASE("InMemoryStorage save and load round-trip") {
     InMemoryStorage store;
-    store.saveHighlight({1, 10, 20, 1});
-    store.saveHighlight({2, 30, 40, 1});
-    auto highlights = store.loadHighlights();
+    store.SaveHighlight({1, 10, 20, 1});
+    store.SaveHighlight({2, 30, 40, 1});
+    auto highlights = store.LoadHighlights();
     REQUIRE(highlights.size() == 2);
     CHECK(highlights[0].startWord == 10);
     CHECK(highlights[1].startWord == 30);
@@ -618,19 +618,19 @@ TEST_CASE("InMemoryStorage save and load round-trip") {
 
 TEST_CASE("InMemoryStorage remove highlight") {
     InMemoryStorage store;
-    store.saveHighlight({1, 10, 20, 1});
-    store.saveHighlight({2, 30, 40, 1});
-    store.removeHighlight(1);
-    auto highlights = store.loadHighlights();
+    store.SaveHighlight({1, 10, 20, 1});
+    store.SaveHighlight({2, 30, 40, 1});
+    store.RemoveHighlight(1);
+    auto highlights = store.LoadHighlights();
     REQUIRE(highlights.size() == 1);
     CHECK(highlights[0].id == 2);
 }
 
 TEST_CASE("InMemoryStorage saveHighlight replaces existing by ID") {
     InMemoryStorage store;
-    store.saveHighlight({1, 10, 20, 1});
-    store.saveHighlight({1, 15, 25, 2});
-    auto highlights = store.loadHighlights();
+    store.SaveHighlight({1, 10, 20, 1});
+    store.SaveHighlight({1, 15, 25, 2});
+    auto highlights = store.LoadHighlights();
     REQUIRE(highlights.size() == 1);
     CHECK(highlights[0].startWord == 15);
     CHECK(highlights[0].typeId == 2);
@@ -638,7 +638,7 @@ TEST_CASE("InMemoryStorage saveHighlight replaces existing by ID") {
 
 TEST_CASE("InMemoryStorage loadHighlightTypes returns empty") {
     InMemoryStorage store;
-    auto types = store.loadHighlightTypes();
+    auto types = store.LoadHighlightTypes();
     CHECK(types.empty());
 }
 
@@ -647,10 +647,10 @@ TEST_CASE("InMemoryStorage loadHighlightTypes returns empty") {
 TEST_CASE("Highlighter highlightAtWord returns pointer for highlighted word") {
     InMemoryStorage store;
     Highlighter h(store);
-    h.startSelection(5);
-    h.updateSelection(10);
-    h.endSelection();
-    const Highlight* hl = h.highlightAtWord(7);
+    h.StartSelection(5);
+    h.UpdateSelection(10);
+    h.EndSelection();
+    const Highlight* hl = h.HighlightAtWord(7);
     REQUIRE(hl != nullptr);
     CHECK(hl->startWord == 5);
     CHECK(hl->endWord == 10);
@@ -659,62 +659,62 @@ TEST_CASE("Highlighter highlightAtWord returns pointer for highlighted word") {
 TEST_CASE("Highlighter highlightAtWord returns nullptr for unhighlighted word") {
     InMemoryStorage store;
     Highlighter h(store);
-    h.startSelection(5);
-    h.updateSelection(10);
-    h.endSelection();
-    const Highlight* hl = h.highlightAtWord(4);
+    h.StartSelection(5);
+    h.UpdateSelection(10);
+    h.EndSelection();
+    const Highlight* hl = h.HighlightAtWord(4);
     CHECK(hl == nullptr);
-    hl = h.highlightAtWord(11);
+    hl = h.HighlightAtWord(11);
     CHECK(hl == nullptr);
 }
 
 TEST_CASE("Highlighter removeHighlight removes from internal vector") {
     InMemoryStorage store;
     Highlighter h(store);
-    h.startSelection(5);
-    h.updateSelection(10);
-    h.endSelection();
-    REQUIRE(h.getHighlights().size() == 1);
-    h.removeHighlight(h.getHighlights()[0].id);
-    CHECK(h.getHighlights().empty());
-    CHECK_FALSE(h.isWordHighlighted(7));
+    h.StartSelection(5);
+    h.UpdateSelection(10);
+    h.EndSelection();
+    REQUIRE(h.GetHighlights().size() == 1);
+    h.RemoveHighlight(h.GetHighlights()[0].id);
+    CHECK(h.GetHighlights().empty());
+    CHECK_FALSE(h.IsWordHighlighted(7));
 }
 
 TEST_CASE("Highlighter recolorHighlight changes typeId") {
     InMemoryStorage store;
     Highlighter h(store);
-    h.startSelection(5);
-    h.updateSelection(10);
-    h.endSelection();
-    int hlId = h.getHighlights()[0].id;
-    int oldType = h.getHighlights()[0].typeId;
+    h.StartSelection(5);
+    h.UpdateSelection(10);
+    h.EndSelection();
+    int hlId = h.GetHighlights()[0].id;
+    int oldType = h.GetHighlights()[0].typeId;
     int newType = (oldType == 1) ? 2 : 1;
-    h.recolorHighlight(hlId, newType);
-    CHECK(h.getHighlights()[0].typeId == newType);
+    h.RecolorHighlight(hlId, newType);
+    CHECK(h.GetHighlights()[0].typeId == newType);
 }
 
 TEST_CASE("Highlighter activeTypeId used by endSelection") {
     InMemoryStorage store;
     Highlighter h(store);
-    h.setActiveTypeId(99);
-    h.startSelection(1);
-    h.updateSelection(5);
-    h.endSelection();
-    CHECK(h.getHighlights()[0].typeId == 99);
+    h.SetActiveTypeId(99);
+    h.StartSelection(1);
+    h.UpdateSelection(5);
+    h.EndSelection();
+    CHECK(h.GetHighlights()[0].typeId == 99);
 }
 
 TEST_CASE("Highlighter getActiveTypeId returns current") {
     InMemoryStorage store;
     Highlighter h(store);
-    CHECK(h.getActiveTypeId() == 1);
-    h.setActiveTypeId(5);
-    CHECK(h.getActiveTypeId() == 5);
+    CHECK(h.GetActiveTypeId() == 1);
+    h.SetActiveTypeId(5);
+    CHECK(h.GetActiveTypeId() == 5);
 }
 
 TEST_CASE("Highlighter getTypes returns available types") {
     InMemoryStorage store;
     Highlighter h(store);
-    const auto& types = h.getTypes();
+    const auto& types = h.GetTypes();
     CHECK_FALSE(types.empty());
     CHECK(types[0].id == 1);
 }
@@ -723,9 +723,9 @@ TEST_CASE("Highlighter getTypes returns available types") {
 
 TEST_CASE("PersistenceManager save and load round-trip") {
     PersistenceManager pm(":memory:");
-    pm.saveHighlight({1, 10, 20, 1});
-    pm.saveHighlight({2, 30, 40, 1});
-    auto highlights = pm.loadHighlights();
+    pm.SaveHighlight({1, 10, 20, 1});
+    pm.SaveHighlight({2, 30, 40, 1});
+    auto highlights = pm.LoadHighlights();
     REQUIRE(highlights.size() == 2);
     CHECK(highlights[0].startWord == 10);
     CHECK(highlights[0].endWord == 20);
@@ -735,17 +735,17 @@ TEST_CASE("PersistenceManager save and load round-trip") {
 
 TEST_CASE("PersistenceManager remove highlight") {
     PersistenceManager pm(":memory:");
-    pm.saveHighlight({1, 10, 20, 1});
-    pm.saveHighlight({2, 30, 40, 1});
-    pm.removeHighlight(1);
-    auto highlights = pm.loadHighlights();
+    pm.SaveHighlight({1, 10, 20, 1});
+    pm.SaveHighlight({2, 30, 40, 1});
+    pm.RemoveHighlight(1);
+    auto highlights = pm.LoadHighlights();
     REQUIRE(highlights.size() == 1);
     CHECK(highlights[0].id == 2);
 }
 
 TEST_CASE("PersistenceManager highlight types") {
     PersistenceManager pm(":memory:");
-    auto types = pm.loadHighlightTypes();
+    auto types = pm.LoadHighlightTypes();
     REQUIRE(types.size() == 5);
     CHECK(types[0].id == 1);
     CHECK(types[0].name == "Yellow");
@@ -758,9 +758,9 @@ TEST_CASE("PersistenceManager highlight types") {
 
 TEST_CASE("PersistenceManager preferences") {
     PersistenceManager pm(":memory:");
-    pm.setPreference("theme", "dark");
-    pm.setPreference("font_size", "18");
-    CHECK(pm.getPreference("theme", "") == "dark");
-    CHECK(pm.getPreference("font_size", "") == "18");
-    CHECK(pm.getPreference("nonexistent", "default") == "default");
+    pm.SetPreference("theme", "dark");
+    pm.SetPreference("font_size", "18");
+    CHECK(pm.GetPreference("theme", "") == "dark");
+    CHECK(pm.GetPreference("font_size", "") == "18");
+    CHECK(pm.GetPreference("nonexistent", "default") == "default");
 }

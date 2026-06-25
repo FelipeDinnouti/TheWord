@@ -15,19 +15,19 @@ public:
     PersistenceManager(PersistenceManager&&) = delete;
     PersistenceManager& operator=(PersistenceManager&&) = delete;
 
-    std::vector<Highlight> loadHighlights() override;
-    void saveHighlight(const Highlight& h) override;
-    void removeHighlight(int id) override;
-    std::vector<HighlightType> loadHighlightTypes() override;
-    void saveHighlightType(const HighlightType& t);
+    std::vector<Highlight> LoadHighlights() override;
+    void SaveHighlight(const Highlight& h) override;
+    void RemoveHighlight(int id) override;
+    std::vector<HighlightType> LoadHighlightTypes() override;
+    void SaveHighlightType(const HighlightType& t);
 
-    std::string getPreference(const std::string& key, const std::string& defaultValue);
-    void setPreference(const std::string& key, const std::string& value);
+    std::string GetPreference(const std::string& key, const std::string& defaultValue);
+    void SetPreference(const std::string& key, const std::string& value);
 
 private:
     sqlite3* db;
-    void initSchema();
-    void ensureDirectory(const std::string& dbPath);
+    void InitSchema();
+    void EnsureDirectory(const std::string& dbPath);
 };
 
 #endif

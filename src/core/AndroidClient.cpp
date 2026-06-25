@@ -17,11 +17,11 @@ AndroidClient::~AndroidClient() {
     }
 }
 
-void AndroidClient::setAppKey(const std::string& key) {
+void AndroidClient::SetAppKey(const std::string& key) {
     appKey = key;
 }
 
-std::string AndroidClient::getAppKey() const {
+std::string AndroidClient::GetAppKey() const {
     return appKey;
 }
 
@@ -32,7 +32,7 @@ size_t AndroidClient::WriteCallback(void* contents, size_t size, size_t nmemb, v
     return realsize;
 }
 
-std::string AndroidClient::get(const std::string& url) {
+std::string AndroidClient::Get(const std::string& url) {
     std::string response;
     CURL* ch = static_cast<CURL*>(curl);
 

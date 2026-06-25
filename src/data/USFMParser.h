@@ -23,11 +23,11 @@ private:
     mutable std::unordered_map<std::string, bool> cachedHasChapter;
     mutable std::unordered_map<std::string, std::vector<ChapterData>> bookCache;
 
-    std::vector<ChapterData> parseBook(const std::string& bookId) const;
-    std::string loadFile(const std::string& filepath) const;
-    std::string stripFootnotes(const std::string& text) const;
-    std::string stripInlineMarkers(const std::string& text) const;
-    std::string extractBookCodeFromId(const std::string& line) const;
+    std::vector<ChapterData> ParseBook(const std::string& bookId) const;
+    std::string LoadFile(const std::string& filepath) const;
+    std::string StripFootnotes(const std::string& text) const;
+    std::string StripInlineMarkers(const std::string& text) const;
+    std::string ExtractBookCodeFromId(const std::string& line) const;
 };
 
 #endif

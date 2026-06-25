@@ -3,7 +3,7 @@
 CompositeProvider::CompositeProvider(ChapterProvider& primary, ChapterProvider& fallback)
     : primary(&primary), fallback(fallback) {}
 
-void CompositeProvider::setPrimary(ChapterProvider& provider) {
+void CompositeProvider::SetPrimary(ChapterProvider& provider) {
     primary = &provider;
 }
 

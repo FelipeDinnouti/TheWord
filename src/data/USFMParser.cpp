@@ -12,7 +12,7 @@ const char* USFMParser::ProviderName() const {
     return "USFMParser";
 }
 
-std::string USFMParser::extractBookCodeFromId(const std::string& line) const {
+std::string USFMParser::ExtractBookCodeFromId(const std::string& line) const {
     // \id GEN Bíblia Livre - Textus Receptus
     if (line.size() < 5) return "";
     size_t start = 4; // skip "\id "
@@ -21,7 +21,7 @@ std::string USFMParser::extractBookCodeFromId(const std::string& line) const {
     return line.substr(start, end - start);
 }
 
-std::string USFMParser::loadFile(const std::string& filepath) const {
+std::string USFMParser::LoadFile(const std::string& filepath) const {
     if (assets) {
         auto content = assets->readFileText(filepath);
         return content.value_or("");
@@ -34,7 +34,7 @@ std::string USFMParser::loadFile(const std::string& filepath) const {
     return buffer.str();
 }
 
-std::string USFMParser::stripFootnotes(const std::string& text) const {
+std::string USFMParser::StripFootnotes(const std::string& text) const {
     std::string result;
     size_t pos = 0;
     bool inFootnote = false;
@@ -77,7 +77,7 @@ std::string USFMParser::stripFootnotes(const std::string& text) const {
     return cleaned;
 }
 
-std::string USFMParser::stripInlineMarkers(const std::string& text) const {
+std::string USFMParser::StripInlineMarkers(const std::string& text) const {
     std::string result = text;
 
     // Strip \add ... \add* — keep text between, remove markers
@@ -156,7 +156,7 @@ std::string USFMParser::stripInlineMarkers(const std::string& text) const {
     return result;
 }
 
-std::vector<ChapterData> USFMParser::parseBook(const std::string& bookId) const {
+std::vector<ChapterData> USFMParser::ParseBook(const std::string& bookId) const {
     auto cached = bookCache.find(bookId);
     if (cached != bookCache.end()) {
         return cached->second;
@@ -164,18 +164,16 @@ std::vector<ChapterData> USFMParser::parseBook(const std::string& bookId) const 
 
     // Try to find and load the file
     std::string filepath = usfmDir + "/" + bookId + ".usfm";
-    std::string content = loadFile(filepath);
+    std::string content = LoadFile(filepath);
 
     if (content.empty()) {
         bookCache[bookId] = {};
         return {};
     }
 
-    // Pre-process: strip footnotes
-    content = stripFootnotes(content);
+    content = StripFootnotes(content);
 
-    // Pre-process: strip inline markers (\add, \wj, etc.)
-    content = stripInlineMarkers(content);
+    content = StripInlineMarkers(content);
 
     std::vector<ChapterData> chapters;
     ChapterData currentChapter;
@@ -428,7 +426,7 @@ bool USFMParser::HasChapter(const std::string& bookId, int chapter) const {
         return cached->second;
     }
 
-    auto chapters = parseBook(bookId);
+    auto chapters = ParseBook(bookId);
     for (const auto& ch : chapters) {
         if (ch.chapterNum == chapter) {
             cachedHasChapter[key] = true;
@@ -442,7 +440,7 @@ bool USFMParser::HasChapter(const std::string& bookId, int chapter) const {
 
 std::optional<ChapterData> USFMParser::LoadChapter(
         const std::string& bookId, int chapter) {
-    auto chapters = parseBook(bookId);
+    auto chapters = ParseBook(bookId);
     for (auto& ch : chapters) {
         if (ch.chapterNum == chapter) {
             return std::move(ch);

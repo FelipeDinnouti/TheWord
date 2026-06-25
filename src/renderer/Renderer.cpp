@@ -4,20 +4,20 @@
 Renderer::Renderer(const Font& bodyFont, const Font& headingFont, float contentTop, float fontSize)
     : bodyFont(bodyFont), headingFont(headingFont), contentTop(contentTop), fontSize(fontSize), headingSize(fontSize * theme::FONT_HEADING) {}
 
-void Renderer::setFontSize(float size) {
+void Renderer::SetFontSize(float size) {
     fontSize = size;
     headingSize = size * theme::FONT_HEADING;
 }
 
-float Renderer::getFontSize() const {
+float Renderer::GetFontSize() const {
     return fontSize;
 }
 
-float Renderer::getContentTop() const {
+float Renderer::GetContentTop() const {
     return contentTop;
 }
 
-void Renderer::drawFrame(float scrollY, float totalHeight, float viewportHeight,
+void Renderer::DrawFrame(float scrollY, float totalHeight, float viewportHeight,
                           const std::vector<std::pair<Span, float>>& docSpans,
                           const std::vector<HighlightRect>& highlightRects) {
     for (const auto& hr : highlightRects) {
@@ -27,15 +27,15 @@ void Renderer::drawFrame(float scrollY, float totalHeight, float viewportHeight,
     for (const auto& [span, docY] : docSpans) {
         float screenY = docY - scrollY + contentTop;
         if (screenY < -CULL_MARGIN || screenY > GetScreenHeight()) continue;
-        drawSpan(span, screenY);
+        DrawSpan(span, screenY);
     }
 
     if (totalHeight > viewportHeight) {
-        drawScrollbar(scrollY, totalHeight, viewportHeight);
+        DrawScrollbar(scrollY, totalHeight, viewportHeight);
     }
 }
 
-void Renderer::drawSpan(const Span& span, float screenY) {
+void Renderer::DrawSpan(const Span& span, float screenY) {
     Color color = theme::DOC_BODY;
     float drawSize = fontSize;
     Font useFont = bodyFont;
@@ -67,7 +67,7 @@ void Renderer::drawSpan(const Span& span, float screenY) {
     DrawTextEx(useFont, span.text.c_str(), {span.x, screenY}, drawSize, 1, color);
 }
 
-void Renderer::drawScrollbar(float scrollY, float totalHeight, float viewportHeight) {
+void Renderer::DrawScrollbar(float scrollY, float totalHeight, float viewportHeight) {
     float scrollBarHeight = viewportHeight * (viewportHeight / totalHeight);
     if (scrollBarHeight < MIN_SCROLLBAR_HEIGHT) scrollBarHeight = MIN_SCROLLBAR_HEIGHT;
 
@@ -75,6 +75,6 @@ void Renderer::drawScrollbar(float scrollY, float totalHeight, float viewportHei
     DrawRectangle(GetScreenWidth() - 8, (int)scrollBarY, 6, (int)scrollBarHeight, theme::SCROLLBAR_THUMB);
 }
 
-void Renderer::drawFpsCounter(int x, int y) {
+void Renderer::DrawFpsCounter(int x, int y) {
     DrawFPS(x, y);
 }

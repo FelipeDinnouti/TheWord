@@ -6,10 +6,10 @@
 
 class MockHttpClient : public IHttpClient {
 public:
-    void setResponse(const std::string& r) { response = r; }
-    std::string get(const std::string&) override { return response; }
-    void setAppKey(const std::string&) override {}
-    std::string getAppKey() const override { return ""; }
+    void SetResponse(const std::string& r) { response = r; }
+    std::string Get(const std::string&) override { return response; }
+    void SetAppKey(const std::string&) override {}
+    std::string GetAppKey() const override { return ""; }
 private:
     std::string response;
 };

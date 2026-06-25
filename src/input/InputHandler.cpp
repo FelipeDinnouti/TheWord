@@ -15,71 +15,71 @@ InputHandler::InputHandler(DocumentManager& docManager, Highlighter& highlighter
       pressStartPos{0, 0}, pressStartWord(-1),
       touchActive(false), touchLastY(0.0f), lastTouchDelta(0.0f), lastPinchDist(0.0f) {}
 
-void InputHandler::handleInput(float deltaTime) {
+void InputHandler::HandleInput(float deltaTime) {
     if (IsKeyPressed(key::ESCAPE)) {
-        uiManager.dismissActiveDialog();
+        uiManager.DismissActiveDialog();
         return;
     }
 
-    if (uiManager.isAboutActive()) {
+    if (uiManager.IsAboutActive()) {
         if (IsMouseButtonPressed(MOUSE_LEFT_BUTTON)) {
-            uiManager.handleAboutClick(GetMousePosition());
+            uiManager.HandleAboutClick(GetMousePosition());
         }
         return;
     }
 
-    if (uiManager.isGoToDialogActive()) {
+    if (uiManager.IsGoToDialogActive()) {
         if (IsMouseButtonPressed(MOUSE_LEFT_BUTTON)) {
-            uiManager.handleGoToClick(GetMousePosition());
+            uiManager.HandleGoToClick(GetMousePosition());
         }
-        uiManager.handleGoToKeyboardInput();
+        uiManager.HandleGoToKeyboardInput();
         return;
     }
 
-    if (uiManager.isSettingsActive()) {
+    if (uiManager.IsSettingsActive()) {
         if (IsMouseButtonPressed(MOUSE_LEFT_BUTTON)) {
-            uiManager.handleSettingsClick(GetMousePosition());
+            uiManager.HandleSettingsClick(GetMousePosition());
         }
         return;
     }
 
-    if (uiManager.isContextMenuActive() && IsMouseButtonPressed(MOUSE_LEFT_BUTTON)) {
-        uiManager.handleContextMenuClick(GetMousePosition());
+    if (uiManager.IsContextMenuActive() && IsMouseButtonPressed(MOUSE_LEFT_BUTTON)) {
+        uiManager.HandleContextMenuClick(GetMousePosition());
         return;
     }
 
     if (IsKeyPressed(key::G)) {
-        if (uiManager.isContextMenuActive()) uiManager.hideContextMenu();
-        uiManager.toggleGoToDialog();
+        if (uiManager.IsContextMenuActive()) uiManager.HideContextMenu();
+        uiManager.ToggleGoToDialog();
         return;
     }
 
     if (IsKeyPressed(key::S)) {
-        if (uiManager.isContextMenuActive()) uiManager.hideContextMenu();
-        uiManager.toggleSettings();
+        if (uiManager.IsContextMenuActive()) uiManager.HideContextMenu();
+        uiManager.ToggleSettings();
         return;
     }
 
     if (IsKeyPressed(key::A)) {
-        if (uiManager.isContextMenuActive()) uiManager.hideContextMenu();
-        uiManager.toggleAbout();
+        if (uiManager.IsContextMenuActive()) uiManager.HideContextMenu();
+        uiManager.ToggleAbout();
         return;
     }
 
 #if defined(__EMSCRIPTEN__) || defined(__ANDROID__)
-    handlePinch();
-    handleTouchScroll();
-    handleTouchPressFSM();
+    HandlePinch();
+    HandleTouchScroll();
+    HandleTouchPressFSM();
 #else
-    handleScroll();
-    handleRightClick();
-    handlePressFSM();
+    HandleScroll();
+    HandleRightClick();
+    HandlePressFSM();
 #endif
 
-    handleWindowResize();
+    HandleWindowResize();
 }
 
-void InputHandler::handleScroll() {
+void InputHandler::HandleScroll() {
     float wheel = GetMouseWheelMove();
     if (wheel != 0) {
         scrollVelocity -= wheel * SCROLL_SENSITIVITY;
@@ -97,17 +97,17 @@ void InputHandler::handleScroll() {
         scrollVelocity = 0.0f;
     }
 
-    docManager.scrollBy(scrollVelocity);
+    docManager.ScrollBy(scrollVelocity);
 }
 
-void InputHandler::handlePressFSM() {
+void InputHandler::HandlePressFSM() {
     switch (pressState) {
         case PressState::Idle:
             if (IsMouseButtonPressed(MOUSE_LEFT_BUTTON)) {
                 pressStartTime = GetTime();
                 pressStartPos = GetMousePosition();
-                pressStartWord = docManager.hitTestWord(
-                    pressStartPos.x, pressStartPos.y, docManager.getScrollY());
+                pressStartWord = docManager.HitTestWord(
+                    pressStartPos.x, pressStartPos.y, docManager.GetScrollY());
                 pressState = PressState::Pending;
             }
             break;
@@ -115,16 +115,16 @@ void InputHandler::handlePressFSM() {
         case PressState::Pending:
             if (!IsMouseButtonDown(MOUSE_LEFT_BUTTON)) {
                 if (pressStartWord >= 0) {
-                    highlighter.startSelection(pressStartWord);
-                    highlighter.endSelection();
+                    highlighter.StartSelection(pressStartWord);
+                    highlighter.EndSelection();
                 }
                 pressState = PressState::Idle;
             } else if (GetTime() - pressStartTime > LONG_PRESS_TIME) {
                 pressState = PressState::LongPress;
                 if (pressStartWord >= 0) {
-                    const Highlight* hl = highlighter.highlightAtWord(pressStartWord);
+                    const Highlight* hl = highlighter.HighlightAtWord(pressStartWord);
                     if (hl) {
-                        uiManager.showContextMenu(pressStartPos, hl->id, hl->typeId);
+                        uiManager.ShowContextMenu(pressStartPos, hl->id, hl->typeId);
                     }
                 }
             } else {
@@ -133,9 +133,9 @@ void InputHandler::handlePressFSM() {
                 float dy = m.y - pressStartPos.y;
                 if (dx * dx + dy * dy > LONG_PRESS_MOVE_THRESHOLD * LONG_PRESS_MOVE_THRESHOLD) {
                     pressState = PressState::Dragging;
-                    if (pressStartWord >= 0) highlighter.startSelection(pressStartWord);
-                    int wordId = docManager.hitTestWord(m.x, m.y, docManager.getScrollY());
-                    if (wordId >= 0) highlighter.updateSelection(wordId);
+                    if (pressStartWord >= 0) highlighter.StartSelection(pressStartWord);
+                    int wordId = docManager.HitTestWord(m.x, m.y, docManager.GetScrollY());
+                    if (wordId >= 0) highlighter.UpdateSelection(wordId);
                 }
             }
             break;
@@ -143,11 +143,11 @@ void InputHandler::handlePressFSM() {
         case PressState::Dragging:
             if (IsMouseButtonDown(MOUSE_LEFT_BUTTON)) {
                 Vector2 m = GetMousePosition();
-                int wordId = docManager.hitTestWord(m.x, m.y, docManager.getScrollY());
-                if (wordId >= 0) highlighter.updateSelection(wordId);
+                int wordId = docManager.HitTestWord(m.x, m.y, docManager.GetScrollY());
+                if (wordId >= 0) highlighter.UpdateSelection(wordId);
             }
             if (IsMouseButtonReleased(MOUSE_LEFT_BUTTON)) {
-                highlighter.endSelection();
+                highlighter.EndSelection();
                 pressState = PressState::Idle;
             }
             break;
@@ -160,20 +160,20 @@ void InputHandler::handlePressFSM() {
     }
 }
 
-void InputHandler::handleRightClick() {
+void InputHandler::HandleRightClick() {
     if (IsMouseButtonPressed(MOUSE_BUTTON_RIGHT)) {
         Vector2 mousePos = GetMousePosition();
-        int wordId = docManager.hitTestWord(mousePos.x, mousePos.y, docManager.getScrollY());
+        int wordId = docManager.HitTestWord(mousePos.x, mousePos.y, docManager.GetScrollY());
         if (wordId >= 0) {
-            const Highlight* hl = highlighter.highlightAtWord(wordId);
+            const Highlight* hl = highlighter.HighlightAtWord(wordId);
             if (hl) {
-                uiManager.showContextMenu(mousePos, hl->id, hl->typeId);
+                uiManager.ShowContextMenu(mousePos, hl->id, hl->typeId);
             }
         }
     }
 }
 
-void InputHandler::handleTouchScroll() {
+void InputHandler::HandleTouchScroll() {
     int touchCount = GetTouchPointCount();
     if (touchCount == 1) {
         Vector2 pos = GetTouchPosition(0);
@@ -185,7 +185,7 @@ void InputHandler::handleTouchScroll() {
             float deltaY = pos.y - touchLastY;
             touchLastY = pos.y;
             lastTouchDelta = deltaY;
-            docManager.scrollBy(deltaY);
+            docManager.ScrollBy(deltaY);
         }
     } else {
         if (touchActive) {
@@ -198,10 +198,10 @@ void InputHandler::handleTouchScroll() {
     if (std::abs(scrollVelocity) < MIN_VELOCITY) {
         scrollVelocity = 0.0f;
     }
-    docManager.scrollBy(scrollVelocity);
+    docManager.ScrollBy(scrollVelocity);
 }
 
-void InputHandler::handleTouchPressFSM() {
+void InputHandler::HandleTouchPressFSM() {
     int touchCount = GetTouchPointCount();
     Vector2 touchPos = {};
     if (touchCount >= 1) {
@@ -213,8 +213,8 @@ void InputHandler::handleTouchPressFSM() {
             if (touchCount == 1) {
                 pressStartTime = GetTime();
                 pressStartPos = touchPos;
-                pressStartWord = docManager.hitTestWord(
-                    pressStartPos.x, pressStartPos.y, docManager.getScrollY());
+                pressStartWord = docManager.HitTestWord(
+                    pressStartPos.x, pressStartPos.y, docManager.GetScrollY());
                 pressState = PressState::Pending;
             }
             break;
@@ -222,16 +222,16 @@ void InputHandler::handleTouchPressFSM() {
         case PressState::Pending:
             if (touchCount == 0) {
                 if (pressStartWord >= 0) {
-                    highlighter.startSelection(pressStartWord);
-                    highlighter.endSelection();
+                    highlighter.StartSelection(pressStartWord);
+                    highlighter.EndSelection();
                 }
                 pressState = PressState::Idle;
             } else if (GetTime() - pressStartTime > LONG_PRESS_TIME) {
                 pressState = PressState::LongPress;
                 if (pressStartWord >= 0) {
-                    const Highlight* hl = highlighter.highlightAtWord(pressStartWord);
+                    const Highlight* hl = highlighter.HighlightAtWord(pressStartWord);
                     if (hl) {
-                        uiManager.showContextMenu(pressStartPos, hl->id, hl->typeId);
+                        uiManager.ShowContextMenu(pressStartPos, hl->id, hl->typeId);
                     }
                 }
             } else {
@@ -253,7 +253,7 @@ void InputHandler::handleTouchPressFSM() {
     }
 }
 
-void InputHandler::handlePinch() {
+void InputHandler::HandlePinch() {
     int touchCount = GetTouchPointCount();
     if (touchCount >= 2) {
         Vector2 t1 = GetTouchPosition(0);
@@ -263,8 +263,8 @@ void InputHandler::handlePinch() {
         float dist = std::sqrt(dx * dx + dy * dy);
         if (lastPinchDist > 0.0f) {
             float delta = dist - lastPinchDist;
-            if (delta > 5.0f) uiManager.changeFontSize(config::FONT_SIZE_STEP);
-            if (delta < -5.0f) uiManager.changeFontSize(-config::FONT_SIZE_STEP);
+            if (delta > 5.0f) uiManager.ChangeFontSize(config::FONT_SIZE_STEP);
+            if (delta < -5.0f) uiManager.ChangeFontSize(-config::FONT_SIZE_STEP);
         }
         lastPinchDist = dist;
         touchActive = false;
@@ -274,22 +274,22 @@ void InputHandler::handlePinch() {
     }
 }
 
-void InputHandler::handleWindowResize() {
+void InputHandler::HandleWindowResize() {
     if (IsWindowResized()) {
         float newContentWidth = GetScreenWidth() - config::CONTENT_PADDING;
-        layoutEngine.setMaxWidth(newContentWidth);
-        layoutEngine.invalidateCache();
+        layoutEngine.SetMaxWidth(newContentWidth);
+        layoutEngine.InvalidateCache();
 
         float scrollFraction = 0.0f;
-        float totalHeight = docManager.getTotalHeight();
+        float totalHeight = docManager.GetTotalHeight();
         if (totalHeight > 0.0f) {
-            scrollFraction = docManager.getScrollY() / totalHeight;
+            scrollFraction = docManager.GetScrollY() / totalHeight;
         }
 
-        docManager.invalidateLayouts();
-        docManager.setViewportHeight(GetScreenHeight() - contentTop);
+        docManager.InvalidateLayouts();
+        docManager.SetViewportHeight(GetScreenHeight() - contentTop);
 
-        float newTotal = docManager.getTotalHeight();
-        docManager.scrollTo(scrollFraction * newTotal);
+        float newTotal = docManager.GetTotalHeight();
+        docManager.ScrollTo(scrollFraction * newTotal);
     }
 }

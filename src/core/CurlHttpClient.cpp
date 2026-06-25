@@ -17,11 +17,11 @@ CurlHttpClient::~CurlHttpClient() {
     }
 }
 
-void CurlHttpClient::setAppKey(const std::string& key) {
+void CurlHttpClient::SetAppKey(const std::string& key) {
     appKey = key;
 }
 
-std::string CurlHttpClient::getAppKey() const {
+std::string CurlHttpClient::GetAppKey() const {
     return appKey;
 }
 
@@ -32,7 +32,7 @@ size_t CurlHttpClient::WriteCallback(void* contents, size_t size, size_t nmemb, 
     return realsize;
 }
 
-std::string CurlHttpClient::get(const std::string& url) {
+std::string CurlHttpClient::Get(const std::string& url) {
     std::string response;
     CURL* ch = static_cast<CURL*>(curl);
 

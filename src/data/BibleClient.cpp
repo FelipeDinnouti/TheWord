@@ -16,7 +16,7 @@ const char* BibleClient::ProviderName() const {
     return "BibleClient";
 }
 
-std::string BibleClient::extractJsonString(const std::string& json, const std::string& key) {
+std::string BibleClient::ExtractJsonString(const std::string& json, const std::string& key) {
     std::string searchKey = "\"" + key + "\"";
     size_t keyPos = json.find(searchKey);
     if (keyPos == std::string::npos) return "";
@@ -53,16 +53,16 @@ std::optional<ChapterData> BibleClient::LoadChapter(
     std::string url = baseUrl + "/bibles/" + std::to_string(bibleId) +
                       "/passages/" + usfmRef + "?format=html&include_headings=true";
 
-    std::string response = apiClient.get(url);
+    std::string response = apiClient.Get(url);
     if (response.empty()) return std::nullopt;
 
-    std::string htmlContent = extractJsonString(response, "content");
+    std::string htmlContent = ExtractJsonString(response, "content");
     if (htmlContent.empty()) return std::nullopt;
 
-    return parseHtmlChapter(htmlContent, bookId, chapter);
+    return ParseHtmlChapter(htmlContent, bookId, chapter);
 }
 
-std::optional<ChapterData> BibleClient::parseHtmlChapter(const std::string& html,
+std::optional<ChapterData> BibleClient::ParseHtmlChapter(const std::string& html,
         const std::string& bookId, int chapter) {
     ChapterData data;
     data.bookId = bookId;
@@ -253,7 +253,7 @@ std::optional<ChapterData> BibleClient::parseHtmlChapter(const std::string& html
             flushWordsToSegment();
         } else if (segType == SegmentType::SectionHeading) {
             // Extract text from inner HTML (strip tags)
-            std::string headingText = stripHtml(innerHtml);
+            std::string headingText = StripHtml(innerHtml);
 
             // Remove leading verse labels if present
             while (!headingText.empty() && std::isdigit(static_cast<unsigned char>(headingText[0]))) {
@@ -354,7 +354,7 @@ std::optional<ChapterData> BibleClient::parseHtmlChapter(const std::string& html
     return data;
 }
 
-std::string BibleClient::stripHtml(const std::string& html) {
+std::string BibleClient::StripHtml(const std::string& html) {
     std::string result;
     bool inTag = false;
     for (size_t i = 0; i < html.size(); ++i) {

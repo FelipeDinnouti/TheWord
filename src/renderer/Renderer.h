@@ -19,16 +19,16 @@ class Renderer {
 public:
     Renderer(const Font& bodyFont, const Font& headingFont, float contentTop, float fontSize);
 
-    void drawFrame(float scrollY, float totalHeight, float viewportHeight,
+    void DrawFrame(float scrollY, float totalHeight, float viewportHeight,
                    const std::vector<std::pair<Span, float>>& docSpans,
                    const std::vector<HighlightRect>& highlightRects = {});
-    void drawScrollbar(float scrollY, float totalHeight, float viewportHeight);
-    void setFontSize(float size);
-    float getFontSize() const;
+    void DrawScrollbar(float scrollY, float totalHeight, float viewportHeight);
+    void SetFontSize(float size);
+    float GetFontSize() const;
 
-    void drawFpsCounter(int x, int y);
+    void DrawFpsCounter(int x, int y);
 
-    float getContentTop() const;
+    float GetContentTop() const;
 
 private:
     static constexpr float CULL_MARGIN = 50.0f;
@@ -40,7 +40,7 @@ private:
     float fontSize;
     float headingSize;  // fontSize * theme::FONT_HEADING
 
-    void drawSpan(const Span& span, float screenY);
+    void DrawSpan(const Span& span, float screenY);
 };
 
 #endif

@@ -135,7 +135,7 @@ int main() {
 #else
         apiClient = std::make_unique<CurlHttpClient>();
 #endif
-        apiClient->setAppKey(apiKey);
+        apiClient->SetAppKey(apiKey);
         bibleClient = std::make_unique<BibleClient>(*apiClient, 3034);
         compositeProvider = std::make_unique<CompositeProvider>(*bibleClient, usfmParser);
         onlineProv = bibleClient.get();
@@ -155,7 +155,7 @@ int main() {
 
     Logger::Info("Database initialized");
     float fontSize = config::FONT_SIZE;
-    std::string savedFontSize = storage.getPreference("font_size", "");
+    std::string savedFontSize = storage.GetPreference("font_size", "");
     if (!savedFontSize.empty()) {
         fontSize = std::max(config::FONT_SIZE_MIN, std::min(config::FONT_SIZE_MAX, (float)std::atoi(savedFontSize.c_str())));
     }
@@ -169,32 +169,32 @@ int main() {
 
     bool versionOnline = false;
     if (compositeProvider) {
-        std::string savedVersion = storage.getPreference("active_version", "online");
+        std::string savedVersion = storage.GetPreference("active_version", "online");
         if (savedVersion == "offline") {
-            compositeProvider->setPrimary(*offlineProv);
+            compositeProvider->SetPrimary(*offlineProv);
             versionOnline = false;
         } else {
-            compositeProvider->setPrimary(*onlineProv);
+            compositeProvider->SetPrimary(*onlineProv);
             versionOnline = true;
         }
     }
 
-    highlighter.setProvider(versionOnline ? "BibleClient" : "USFMParser");
+    highlighter.SetProvider(versionOnline ? "BibleClient" : "USFMParser");
 
     UIManager uiManager(headingFont, headingSize, highlighter,
                         documentManager, layoutEngine, renderer, storage,
                         *onlineProv, *offlineProv, compositeProvider.get(),
                         fontSize, versionOnline, scale);
 
-    std::string savedColor = storage.getPreference("active_color", "");
+    std::string savedColor = storage.GetPreference("active_color", "");
     if (!savedColor.empty()) {
-        highlighter.setActiveTypeId(std::atoi(savedColor.c_str()));
+        highlighter.SetActiveTypeId(std::atoi(savedColor.c_str()));
     }
 
-    InputHandler inputHandler(documentManager, highlighter, layoutEngine, uiManager, uiManager.getContentTop());
+    InputHandler inputHandler(documentManager, highlighter, layoutEngine, uiManager, uiManager.GetContentTop());
 
     Logger::Info("Loading initial chapter");
-    documentManager.loadInitialChapter("GEN.1");
+    documentManager.LoadInitialChapter("GEN.1");
 
     double lastTime = GetTime();
 
@@ -204,37 +204,37 @@ int main() {
         float deltaTime = (float)(currentTime - lastTime);
         lastTime = currentTime;
 
-        inputHandler.handleInput(deltaTime);
-        documentManager.update(deltaTime);
+        inputHandler.HandleInput(deltaTime);
+        documentManager.Update(deltaTime);
 
         BeginDrawing();
         ClearBackground(theme::WINDOW_BG);
 
-        float scrollY = documentManager.getScrollY();
-        float totalHeight = documentManager.getTotalHeight();
-        float viewHeight = documentManager.getViewportHeight();
+        float scrollY = documentManager.GetScrollY();
+        float totalHeight = documentManager.GetTotalHeight();
+        float viewHeight = documentManager.GetViewportHeight();
 
-        uiManager.drawTopBar(documentManager.getChapterTitle());
+        uiManager.DrawTopBar(documentManager.GetChapterTitle());
 
         std::vector<std::pair<Span, float>> docSpans;
-        documentManager.getVisibleSpans(docSpans);
+        documentManager.GetVisibleSpans(docSpans);
 
         std::vector<HighlightRect> hlRects;
         for (const auto& [span, docY] : docSpans) {
-            if (span.startWord >= 0 && highlighter.isWordHighlighted(span.startWord)) {
-                float screenY = docY - scrollY + uiManager.getContentTop();
+            if (span.startWord >= 0 && highlighter.IsWordHighlighted(span.startWord)) {
+                float screenY = docY - scrollY + uiManager.GetContentTop();
                 hlRects.push_back({span.x, screenY, span.width, span.height,
-                                   highlighter.getHighlightForWord(span.startWord)});
+                                   highlighter.GetHighlightForWord(span.startWord)});
             }
         }
 
-        renderer.drawFrame(scrollY, totalHeight, viewHeight, docSpans, hlRects);
-        uiManager.drawContextMenu();
-        uiManager.drawGoToDialog();
-        uiManager.drawSettingsPanel();
-        uiManager.drawAbout();
+        renderer.DrawFrame(scrollY, totalHeight, viewHeight, docSpans, hlRects);
+        uiManager.DrawContextMenu();
+        uiManager.DrawGoToDialog();
+        uiManager.DrawSettingsPanel();
+        uiManager.DrawAbout();
 #ifndef NDEBUG
-        renderer.drawFpsCounter(10, GetScreenHeight() - 30);
+        renderer.DrawFpsCounter(10, GetScreenHeight() - 30);
 #endif
 
         EndDrawing();

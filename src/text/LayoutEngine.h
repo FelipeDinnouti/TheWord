@@ -10,16 +10,16 @@ class LayoutEngine {
 public:
     LayoutEngine(float maxWidth, const Font& font, float fontSize, float lineSpacing, float scaleFactor = 1.0f);
 
-    ChapterLayout layoutChapter(const std::string& chapterId, const ChapterData& data);
+    ChapterLayout LayoutChapter(const std::string& chapterId, const ChapterData& data);
 
-    float getFontSize() const;
-    void setFontSize(float size);
+    float GetFontSize() const;
+    void SetFontSize(float size);
 
-    float getMaxWidth() const;
-    void setMaxWidth(float width);
-    void invalidateCache();
+    float GetMaxWidth() const;
+    void SetMaxWidth(float width);
+    void InvalidateCache();
 
-    int hitTestLine(const ChapterLayout& layout, float chapterRelativeY, float screenX) const;
+    int HitTestLine(const ChapterLayout& layout, float chapterRelativeY, float screenX) const;
 
 private:
     float maxWidth;
@@ -35,9 +35,9 @@ private:
 
     std::vector<ChapterLayout> cachedLayouts;
 
-    float layoutWords(const Segment& seg, const ChapterData& data, float startY,
+    float LayoutWords(const Segment& seg, const ChapterData& data, float startY,
                       std::vector<Line>& lines, float indent, SegmentType spanType);
-    float layoutHeading(const Segment& seg, float startY, std::vector<Line>& lines, float fontScale);
+    float LayoutHeading(const Segment& seg, float startY, std::vector<Line>& lines, float fontScale);
 };
 
 #endif // LAYOUTENGINE_H

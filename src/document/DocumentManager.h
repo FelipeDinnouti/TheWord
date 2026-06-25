@@ -22,25 +22,25 @@ public:
     DocumentManager(LayoutEngine& layoutEngine, float viewportHeight,
                     ChapterProvider& primaryProvider, float contentTop = 60.0f);
 
-    void loadInitialChapter(const std::string& chapterId);
+    void LoadInitialChapter(const std::string& chapterId);
 
-    void update(float deltaTime);
-    void scrollBy(float delta);
-    void scrollTo(float y);
+    void Update(float deltaTime);
+    void ScrollBy(float delta);
+    void ScrollTo(float y);
 
-    float getScrollY() const;
-    float getTotalHeight() const;
-    float getViewportHeight() const;
+    float GetScrollY() const;
+    float GetTotalHeight() const;
+    float GetViewportHeight() const;
 
-    void setViewportHeight(float height);
-    void invalidateLayouts();
+    void SetViewportHeight(float height);
+    void InvalidateLayouts();
 
-    void getVisibleSpans(std::vector<std::pair<Span, float>>& docSpans) const;
+    void GetVisibleSpans(std::vector<std::pair<Span, float>>& docSpans) const;
 
-    int hitTestWord(float screenX, float screenY, float scrollY) const;
+    int HitTestWord(float screenX, float screenY, float scrollY) const;
 
-    const std::string& getCurrentChapterId() const;
-    std::string getChapterTitle() const;
+    const std::string& GetCurrentChapterId() const;
+    std::string GetChapterTitle() const;
 
 private:
     LayoutEngine& layoutEngine;
@@ -56,10 +56,10 @@ private:
     static constexpr float SMOOTH_SPEED = 8.0f;
     static constexpr float AUTO_LOAD_MARGIN = 50.0f;
 
-    void recalculateChapterPositions();
-    bool tryLoadAdjacent(bool prepend);
-    void prependChapter(const std::string& chapterId, ChapterData&& data);
-    void appendChapter(const std::string& chapterId, ChapterData&& data);
+    void RecalculateChapterPositions();
+    bool TryLoadAdjacent(bool prepend);
+    void PrependChapter(const std::string& chapterId, ChapterData&& data);
+    void AppendChapter(const std::string& chapterId, ChapterData&& data);
 };
 
 #endif // DOCUMENTMANAGER_H

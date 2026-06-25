@@ -9,26 +9,26 @@ class Highlighter {
 public:
     explicit Highlighter(PersistenceInterface& persistence);
 
-    void startSelection(int wordId);
-    void updateSelection(int wordId);
-    void endSelection();
+    void StartSelection(int wordId);
+    void UpdateSelection(int wordId);
+    void EndSelection();
 
-    bool isWordHighlighted(int wordId) const;
-    Color getHighlightForWord(int wordId) const;
-    const Highlight* highlightAtWord(int wordId) const;
+    bool IsWordHighlighted(int wordId) const;
+    Color GetHighlightForWord(int wordId) const;
+    const Highlight* HighlightAtWord(int wordId) const;
 
-    void removeHighlight(int id);
-    void recolorHighlight(int highlightId, int newTypeId);
+    void RemoveHighlight(int id);
+    void RecolorHighlight(int highlightId, int newTypeId);
 
-    void setActiveTypeId(int typeId);
-    int getActiveTypeId() const;
+    void SetActiveTypeId(int typeId);
+    int GetActiveTypeId() const;
 
-    void setProvider(const std::string& name);
-    const std::string& getProvider() const;
+    void SetProvider(const std::string& name);
+    const std::string& GetProvider() const;
 
-    void load();
-    const std::vector<Highlight>& getHighlights() const;
-    const std::vector<HighlightType>& getTypes() const;
+    void Load();
+    const std::vector<Highlight>& GetHighlights() const;
+    const std::vector<HighlightType>& GetTypes() const;
 
 private:
     PersistenceInterface& persistence;

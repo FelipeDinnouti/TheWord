@@ -25,10 +25,10 @@ struct HighlightType {
 class PersistenceInterface {
 public:
     virtual ~PersistenceInterface() = default;
-    virtual std::vector<Highlight> loadHighlights() = 0;
-    virtual void saveHighlight(const Highlight& h) = 0;
-    virtual void removeHighlight(int id) = 0;
-    virtual std::vector<HighlightType> loadHighlightTypes() = 0;
+    virtual std::vector<Highlight> LoadHighlights() = 0;
+    virtual void SaveHighlight(const Highlight& h) = 0;
+    virtual void RemoveHighlight(int id) = 0;
+    virtual std::vector<HighlightType> LoadHighlightTypes() = 0;
 };
 
 #endif

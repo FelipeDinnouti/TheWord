@@ -4,20 +4,20 @@
 #include <sys/stat.h>
 
 PersistenceManager::PersistenceManager(const std::string& dbPath) : db(nullptr) {
-    ensureDirectory(dbPath);
+    EnsureDirectory(dbPath);
     if (sqlite3_open(dbPath.c_str(), &db) != SQLITE_OK) {
         sqlite3_close(db);
         db = nullptr;
         return;
     }
-    initSchema();
+    InitSchema();
 }
 
 PersistenceManager::~PersistenceManager() {
     if (db) sqlite3_close(db);
 }
 
-void PersistenceManager::ensureDirectory(const std::string& dbPath) {
+void PersistenceManager::EnsureDirectory(const std::string& dbPath) {
     if (dbPath == ":memory:") return;
     size_t slash = dbPath.rfind('/');
     if (slash == std::string::npos) return;
@@ -25,7 +25,7 @@ void PersistenceManager::ensureDirectory(const std::string& dbPath) {
     mkdir(dir.c_str(), 0755);
 }
 
-void PersistenceManager::initSchema() {
+void PersistenceManager::InitSchema() {
     const char* sql = R"(
         CREATE TABLE IF NOT EXISTS highlight_types (
             id INTEGER PRIMARY KEY,
@@ -78,7 +78,7 @@ void PersistenceManager::initSchema() {
         nullptr, nullptr, nullptr);
 }
 
-std::vector<Highlight> PersistenceManager::loadHighlights() {
+std::vector<Highlight> PersistenceManager::LoadHighlights() {
     std::vector<Highlight> results;
     sqlite3_stmt* stmt = nullptr;
     if (sqlite3_prepare_v2(db, "SELECT id, start_word, end_word, type_id, provider_name FROM highlights", -1, &stmt, nullptr) != SQLITE_OK) {
@@ -99,7 +99,7 @@ std::vector<Highlight> PersistenceManager::loadHighlights() {
     return results;
 }
 
-void PersistenceManager::saveHighlight(const Highlight& h) {
+void PersistenceManager::SaveHighlight(const Highlight& h) {
     sqlite3_stmt* stmt = nullptr;
     if (sqlite3_prepare_v2(db,
         "INSERT OR REPLACE INTO highlights (id, start_word, end_word, type_id, provider_name) VALUES (?, ?, ?, ?, ?)",
@@ -116,7 +116,7 @@ void PersistenceManager::saveHighlight(const Highlight& h) {
     sqlite3_finalize(stmt);
 }
 
-void PersistenceManager::removeHighlight(int id) {
+void PersistenceManager::RemoveHighlight(int id) {
     sqlite3_stmt* stmt = nullptr;
     if (sqlite3_prepare_v2(db, "DELETE FROM highlights WHERE id = ?", -1, &stmt, nullptr) != SQLITE_OK) {
         sqlite3_finalize(stmt);
@@ -127,7 +127,7 @@ void PersistenceManager::removeHighlight(int id) {
     sqlite3_finalize(stmt);
 }
 
-std::vector<HighlightType> PersistenceManager::loadHighlightTypes() {
+std::vector<HighlightType> PersistenceManager::LoadHighlightTypes() {
     std::vector<HighlightType> results;
     sqlite3_stmt* stmt = nullptr;
     if (sqlite3_prepare_v2(db, "SELECT id, name, color_r, color_g, color_b FROM highlight_types", -1, &stmt, nullptr) != SQLITE_OK) {
@@ -148,7 +148,7 @@ std::vector<HighlightType> PersistenceManager::loadHighlightTypes() {
     return results;
 }
 
-void PersistenceManager::saveHighlightType(const HighlightType& t) {
+void PersistenceManager::SaveHighlightType(const HighlightType& t) {
     sqlite3_stmt* stmt = nullptr;
     if (sqlite3_prepare_v2(db,
         "INSERT OR REPLACE INTO highlight_types (id, name, color_r, color_g, color_b) VALUES (?, ?, ?, ?, ?)",
@@ -165,7 +165,7 @@ void PersistenceManager::saveHighlightType(const HighlightType& t) {
     sqlite3_finalize(stmt);
 }
 
-std::string PersistenceManager::getPreference(const std::string& key, const std::string& defaultValue) {
+std::string PersistenceManager::GetPreference(const std::string& key, const std::string& defaultValue) {
     sqlite3_stmt* stmt = nullptr;
     if (sqlite3_prepare_v2(db, "SELECT value FROM preferences WHERE key = ?", -1, &stmt, nullptr) != SQLITE_OK) {
         sqlite3_finalize(stmt);
@@ -181,7 +181,7 @@ std::string PersistenceManager::getPreference(const std::string& key, const std:
     return defaultValue;
 }
 
-void PersistenceManager::setPreference(const std::string& key, const std::string& value) {
+void PersistenceManager::SetPreference(const std::string& key, const std::string& value) {
     sqlite3_stmt* stmt = nullptr;
     if (sqlite3_prepare_v2(db,
         "INSERT OR REPLACE INTO preferences (key, value) VALUES (?, ?)",

@@ -6,10 +6,10 @@
 
 class InMemoryStorage : public PersistenceInterface {
 public:
-    std::vector<Highlight> loadHighlights() override;
-    void saveHighlight(const Highlight& h) override;
-    void removeHighlight(int id) override;
-    std::vector<HighlightType> loadHighlightTypes() override;
+    std::vector<Highlight> LoadHighlights() override;
+    void SaveHighlight(const Highlight& h) override;
+    void RemoveHighlight(int id) override;
+    std::vector<HighlightType> LoadHighlightTypes() override;
 
 private:
     std::vector<Highlight> highlights;

@@ -9,29 +9,29 @@ LayoutEngine::LayoutEngine(float maxWidth, const Font& font, float fontSize, flo
       paragraphGap(8.0f * scaleFactor), headingTopGap(12.0f * scaleFactor),
       headingBottomGap(6.0f * scaleFactor), poetryIndent(20.0f * scaleFactor) {}
 
-float LayoutEngine::getFontSize() const {
+float LayoutEngine::GetFontSize() const {
     return fontSize;
 }
 
-void LayoutEngine::setFontSize(float size) {
+void LayoutEngine::SetFontSize(float size) {
     fontSize = size;
-    invalidateCache();
+    InvalidateCache();
 }
 
-void LayoutEngine::setMaxWidth(float width) {
+void LayoutEngine::SetMaxWidth(float width) {
     maxWidth = width;
-    invalidateCache();
+    InvalidateCache();
 }
 
-float LayoutEngine::getMaxWidth() const {
+float LayoutEngine::GetMaxWidth() const {
     return maxWidth;
 }
 
-void LayoutEngine::invalidateCache() {
+void LayoutEngine::InvalidateCache() {
     cachedLayouts.clear();
 }
 
-int LayoutEngine::hitTestLine(const ChapterLayout& layout, float chapterRelativeY, float screenX) const {
+int LayoutEngine::HitTestLine(const ChapterLayout& layout, float chapterRelativeY, float screenX) const {
     for (const auto& line : layout.lines) {
         if (chapterRelativeY >= line.y && chapterRelativeY < line.y + line.height) {
             for (const auto& span : line.spans) {
@@ -44,7 +44,7 @@ int LayoutEngine::hitTestLine(const ChapterLayout& layout, float chapterRelative
     return -1;
 }
 
-ChapterLayout LayoutEngine::layoutChapter(const std::string& chapterId, const ChapterData& data) {
+ChapterLayout LayoutEngine::LayoutChapter(const std::string& chapterId, const ChapterData& data) {
     ChapterLayout layout;
     layout.chapterId = chapterId;
 
@@ -64,21 +64,21 @@ ChapterLayout LayoutEngine::layoutChapter(const std::string& chapterId, const Ch
                 break;
 
             case SegmentType::SectionHeading:
-                currentY += layoutHeading(seg, currentY, layout.lines, theme::FONT_HEADING);
+                currentY += LayoutHeading(seg, currentY, layout.lines, theme::FONT_HEADING);
                 break;
 
             case SegmentType::VerseText:
-                currentY += layoutWords(seg, data, currentY, layout.lines, 0.0f, SegmentType::VerseText);
+                currentY += LayoutWords(seg, data, currentY, layout.lines, 0.0f, SegmentType::VerseText);
                 break;
 
             case SegmentType::PoetryLine:
-                currentY += layoutWords(seg, data, currentY, layout.lines,
+                currentY += LayoutWords(seg, data, currentY, layout.lines,
                                         seg.level * poetryIndent, SegmentType::PoetryLine);
                 break;
 
             case SegmentType::ChapterLabel:
             case SegmentType::BookTitle:
-                currentY += layoutHeading(seg, currentY, layout.lines, theme::FONT_LARGE_HEADING);
+                currentY += LayoutHeading(seg, currentY, layout.lines, theme::FONT_LARGE_HEADING);
                 break;
         }
     }
@@ -90,7 +90,7 @@ ChapterLayout LayoutEngine::layoutChapter(const std::string& chapterId, const Ch
     return layout;
 }
 
-float LayoutEngine::layoutWords(const Segment& seg, const ChapterData& data, float startY,
+float LayoutEngine::LayoutWords(const Segment& seg, const ChapterData& data, float startY,
                                 std::vector<Line>& lines, float indent, SegmentType spanType) {
     float lineHeight = fontSize * lineSpacing;
     float availableWidth = maxWidth - leftMargin - rightMargin - indent;
@@ -150,7 +150,7 @@ float LayoutEngine::layoutWords(const Segment& seg, const ChapterData& data, flo
     return y - startY;
 }
 
-float LayoutEngine::layoutHeading(const Segment& seg, float startY, std::vector<Line>& lines, float fontScale) {
+float LayoutEngine::LayoutHeading(const Segment& seg, float startY, std::vector<Line>& lines, float fontScale) {
     float lineHeight = fontSize * lineSpacing * fontScale;
     float y = startY;
 

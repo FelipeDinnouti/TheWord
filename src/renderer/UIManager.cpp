@@ -29,39 +29,37 @@ UIManager::UIManager(const Font& headingFont, float headingSize, Highlighter& hi
       aboutActive(false),
       settingsActive(false) {}
 
-float UIManager::getContentTop() const {
+float UIManager::GetContentTop() const {
     return TOP_BAR_HEIGHT;
 }
 
-float UIManager::getFontSize() const {
+float UIManager::GetFontSize() const {
     return currentFontSize;
 }
 
-// ── Helpers ──────────────────────────────────────────────────────────────
-
-void UIManager::drawBackdrop() {
+void UIManager::DrawBackdrop() {
     DrawRectangle(0, 0, GetScreenWidth(), GetScreenHeight(), theme::OVERLAY_BG);
 }
 
-void UIManager::applyFontSize(float newSize) {
+void UIManager::ApplyFontSize(float newSize) {
     currentFontSize = newSize;
     float scaledSize = newSize * scale;
-    layoutEngine.setFontSize(scaledSize);
-    layoutEngine.invalidateCache();
-    renderer.setFontSize(scaledSize);
-    docManager.invalidateLayouts();
-    persistence.setPreference("font_size", std::to_string((int)newSize));
+    layoutEngine.SetFontSize(scaledSize);
+    layoutEngine.InvalidateCache();
+    renderer.SetFontSize(scaledSize);
+    docManager.InvalidateLayouts();
+    persistence.SetPreference("font_size", std::to_string((int)newSize));
 }
 
-void UIManager::changeFontSize(float delta) {
+void UIManager::ChangeFontSize(float delta) {
     float newSize = currentFontSize + delta;
     newSize = std::max(config::FONT_SIZE_MIN, std::min(config::FONT_SIZE_MAX, newSize));
     if (newSize != currentFontSize) {
-        applyFontSize(newSize);
+        ApplyFontSize(newSize);
     }
 }
 
-Rectangle UIManager::getGoToDialogRect() const {
+Rectangle UIManager::GetGoToDialogRect() const {
     float screenW = (float)GetScreenWidth();
     float screenH = (float)GetScreenHeight();
     return {(screenW - DIALOG_WIDTH) / 2.0f,
@@ -69,7 +67,7 @@ Rectangle UIManager::getGoToDialogRect() const {
             DIALOG_WIDTH, GO_TO_DIALOG_HEIGHT};
 }
 
-Rectangle UIManager::getSettingsPanelRect() const {
+Rectangle UIManager::GetSettingsPanelRect() const {
     float screenW = (float)GetScreenWidth();
     float screenH = (float)GetScreenHeight();
     return {(screenW - SETTINGS_WIDTH) / 2.0f,
@@ -77,23 +75,19 @@ Rectangle UIManager::getSettingsPanelRect() const {
             SETTINGS_WIDTH, SETTINGS_HEIGHT};
 }
 
-Rectangle UIManager::getCloseButtonRect(Rectangle panelRect) const {
+Rectangle UIManager::GetCloseButtonRect(Rectangle panelRect) const {
     return {panelRect.x + panelRect.width - CLOSE_SIZE - CLOSE_MARGIN,
             panelRect.y + CLOSE_MARGIN,
             CLOSE_SIZE, CLOSE_SIZE};
 }
 
-// ── Top Bar ────────────────────────────────────────────────────────────
-
-void UIManager::drawTopBar(const std::string& chapterTitle) {
+void UIManager::DrawTopBar(const std::string& chapterTitle) {
     if (!chapterTitle.empty()) {
         DrawTextEx(headingFont, chapterTitle.c_str(), {20, 20}, headingSize, 1, theme::UI_TEXT);
     }
 }
 
-// ── Context Menu ───────────────────────────────────────────────────────
-
-void UIManager::showContextMenu(Vector2 position, int highlightId, int typeId) {
+void UIManager::ShowContextMenu(Vector2 position, int highlightId, int typeId) {
     contextMenuActive = true;
     contextMenuPos = position;
     contextHighlightId = highlightId;
@@ -109,20 +103,20 @@ void UIManager::showContextMenu(Vector2 position, int highlightId, int typeId) {
     if (contextMenuPos.y < TOP_BAR_HEIGHT) contextMenuPos.y = TOP_BAR_HEIGHT;
 }
 
-void UIManager::hideContextMenu() {
+void UIManager::HideContextMenu() {
     contextMenuActive = false;
 }
 
-bool UIManager::isContextMenuActive() const {
+bool UIManager::IsContextMenuActive() const {
     return contextMenuActive;
 }
 
-bool UIManager::handleContextMenuClick(Vector2 pos) {
+bool UIManager::HandleContextMenuClick(Vector2 pos) {
     if (!contextMenuActive) return false;
 
     Rectangle menuRect = {contextMenuPos.x, contextMenuPos.y, MENU_WIDTH, MENU_HEIGHT};
     if (!CheckCollisionPointRec(pos, menuRect)) {
-        hideContextMenu();
+        HideContextMenu();
         return false;
     }
 
@@ -131,28 +125,28 @@ bool UIManager::handleContextMenuClick(Vector2 pos) {
 
     Rectangle deleteRect = {x0, y0, DELETE_WIDTH, MENU_HEIGHT - MENU_PADDING * 2};
     if (CheckCollisionPointRec(pos, deleteRect)) {
-        highlighter.removeHighlight(contextHighlightId);
-        hideContextMenu();
+        highlighter.RemoveHighlight(contextHighlightId);
+        HideContextMenu();
         return true;
     }
 
     float swatchStartX = x0 + DELETE_WIDTH + LABEL_SWATCH_GAP;
-    const auto& types = highlighter.getTypes();
+    const auto& types = highlighter.GetTypes();
     for (size_t i = 0; i < types.size(); ++i) {
         float swatchX = swatchStartX + i * (SWATCH_SIZE + SWATCH_GAP);
         float swatchY = y0 + (MENU_HEIGHT - MENU_PADDING * 2 - SWATCH_SIZE) / 2.0f;
         if (CheckCollisionPointRec(pos, {swatchX, swatchY, SWATCH_SIZE, SWATCH_SIZE})) {
-            highlighter.recolorHighlight(contextHighlightId, types[i].id);
-            hideContextMenu();
+            highlighter.RecolorHighlight(contextHighlightId, types[i].id);
+            HideContextMenu();
             return true;
         }
     }
 
-    hideContextMenu();
+    HideContextMenu();
     return true;
 }
 
-void UIManager::drawContextMenu() {
+void UIManager::DrawContextMenu() {
     if (!contextMenuActive) return;
 
     DrawRectangle(contextMenuPos.x, contextMenuPos.y, MENU_WIDTH, MENU_HEIGHT, theme::PANEL_BG);
@@ -167,7 +161,7 @@ void UIManager::drawContextMenu() {
 
     float swatchStartX = x0 + DELETE_WIDTH + LABEL_SWATCH_GAP;
     float swatchY = y0 + (contentH - SWATCH_SIZE) / 2.0f;
-    const auto& types = highlighter.getTypes();
+    const auto& types = highlighter.GetTypes();
     for (size_t i = 0; i < types.size(); ++i) {
         float swatchX = swatchStartX + i * (SWATCH_SIZE + SWATCH_GAP);
         Color c = {types[i].color.r, types[i].color.g, types[i].color.b, 255};
@@ -176,9 +170,7 @@ void UIManager::drawContextMenu() {
     }
 }
 
-// ── Go-To Dialog ───────────────────────────────────────────────────────
-
-void UIManager::toggleGoToDialog() {
+void UIManager::ToggleGoToDialog() {
     goToDialogActive = !goToDialogActive;
     if (goToDialogActive) {
         goToInput.clear();
@@ -186,17 +178,17 @@ void UIManager::toggleGoToDialog() {
     }
 }
 
-void UIManager::dismissGoToDialog() {
+void UIManager::DismissGoToDialog() {
     goToDialogActive = false;
     goToInput.clear();
     goToError = false;
 }
 
-bool UIManager::isGoToDialogActive() const {
+bool UIManager::IsGoToDialogActive() const {
     return goToDialogActive;
 }
 
-bool UIManager::startsWithIgnoreCase(const std::string& str, const std::string& prefix) {
+bool UIManager::StartsWithIgnoreCase(const std::string& str, const std::string& prefix) {
     if (str.size() < prefix.size()) return false;
     for (size_t i = 0; i < prefix.size(); ++i) {
         if (std::tolower(static_cast<unsigned char>(str[i])) !=
@@ -206,12 +198,12 @@ bool UIManager::startsWithIgnoreCase(const std::string& str, const std::string& 
     return true;
 }
 
-std::vector<int> UIManager::getSuggestions() const {
+std::vector<int> UIManager::GetSuggestions() const {
     std::vector<int> results;
     if (goToInput.empty()) return results;
     for (int i = 0; i < (int)BOOKS.size(); ++i) {
-        if (startsWithIgnoreCase(goToInput, BOOKS[i].code) ||
-            startsWithIgnoreCase(goToInput, BOOKS[i].fullName)) {
+        if (StartsWithIgnoreCase(goToInput, BOOKS[i].code) ||
+            StartsWithIgnoreCase(goToInput, BOOKS[i].fullName)) {
             results.push_back(i);
             if (results.size() >= 5) break;
         }
@@ -219,18 +211,18 @@ std::vector<int> UIManager::getSuggestions() const {
     return results;
 }
 
-std::string UIManager::parseGoToInput(const std::string& input) const {
-    if (auto r = tryParseBookDotChapter(input); !r.empty()) return r;
-    if (auto r = tryParseFullNameThenChapter(input); !r.empty()) return r;
-    if (auto r = tryParseSpaceSeparated(input); !r.empty()) return r;
+std::string UIManager::ParseGoToInput(const std::string& input) const {
+    if (auto r = TryParseBookDotChapter(input); !r.empty()) return r;
+    if (auto r = TryParseFullNameThenChapter(input); !r.empty()) return r;
+    if (auto r = TryParseSpaceSeparated(input); !r.empty()) return r;
     return "";
 }
 
-std::string UIManager::tryParseBookDotChapter(const std::string& input) {
+std::string UIManager::TryParseBookDotChapter(const std::string& input) {
     for (const auto& book : BOOKS) {
         std::string code = book.code;
         if (input.size() > code.size() + 1 &&
-            startsWithIgnoreCase(input, code) && input[code.size()] == '.') {
+            StartsWithIgnoreCase(input, code) && input[code.size()] == '.') {
             int ch = std::atoi(input.c_str() + code.size() + 1);
             if (ch >= 1 && ch <= book.chapterCount)
                 return code + "." + std::to_string(ch);
@@ -239,11 +231,11 @@ std::string UIManager::tryParseBookDotChapter(const std::string& input) {
     return "";
 }
 
-std::string UIManager::tryParseFullNameThenChapter(const std::string& input) {
+std::string UIManager::TryParseFullNameThenChapter(const std::string& input) {
     for (const auto& book : BOOKS) {
         std::string name = book.fullName;
         if (input.size() > name.size() + 1 &&
-            startsWithIgnoreCase(input, name) && input[name.size()] == ' ') {
+            StartsWithIgnoreCase(input, name) && input[name.size()] == ' ') {
             int ch = std::atoi(input.c_str() + name.size() + 1);
             if (ch >= 1 && ch <= book.chapterCount)
                 return std::string(book.code) + "." + std::to_string(ch);
@@ -252,15 +244,15 @@ std::string UIManager::tryParseFullNameThenChapter(const std::string& input) {
     return "";
 }
 
-std::string UIManager::tryParseSpaceSeparated(const std::string& input) {
+std::string UIManager::TryParseSpaceSeparated(const std::string& input) {
     size_t space = input.rfind(' ');
     if (space != std::string::npos && space + 1 < input.size()) {
         int ch = std::atoi(input.c_str() + space + 1);
         if (ch > 0) {
             std::string bookPart = input.substr(0, space);
             for (const auto& candidate : BOOKS) {
-                if (startsWithIgnoreCase(bookPart, candidate.code) ||
-                    startsWithIgnoreCase(bookPart, candidate.fullName)) {
+                if (StartsWithIgnoreCase(bookPart, candidate.code) ||
+                    StartsWithIgnoreCase(bookPart, candidate.fullName)) {
                     if (ch <= candidate.chapterCount)
                         return std::string(candidate.code) + "." + std::to_string(ch);
                 }
@@ -270,7 +262,7 @@ std::string UIManager::tryParseSpaceSeparated(const std::string& input) {
     return "";
 }
 
-void UIManager::handleGoToKeyboardInput() {
+void UIManager::HandleGoToKeyboardInput() {
     if (!goToDialogActive) return;
 
     int ch = GetCharPressed();
@@ -288,7 +280,7 @@ void UIManager::handleGoToKeyboardInput() {
     }
 
     if (IsKeyPressed(key::DOWN)) {
-        auto suggestions = getSuggestions();
+        auto suggestions = GetSuggestions();
         goToSelection = std::min(goToSelection + 1, std::max(0, (int)suggestions.size() - 1));
     }
     if (IsKeyPressed(key::UP)) {
@@ -296,16 +288,16 @@ void UIManager::handleGoToKeyboardInput() {
     }
 
     if (IsKeyPressed(key::TAB)) {
-        auto suggestions = getSuggestions();
+        auto suggestions = GetSuggestions();
         if (!suggestions.empty() && goToSelection < (int)suggestions.size()) {
             goToInput = BOOKS[suggestions[goToSelection]].code;
         }
     }
 
     if (IsKeyPressed(key::ENTER) && !goToInput.empty()) {
-        std::string ref = parseGoToInput(goToInput);
+        std::string ref = ParseGoToInput(goToInput);
         if (!ref.empty()) {
-            docManager.loadInitialChapter(ref);
+            docManager.LoadInitialChapter(ref);
             goToDialogActive = false;
             goToInput.clear();
             goToError = false;
@@ -315,8 +307,8 @@ void UIManager::handleGoToKeyboardInput() {
     }
 }
 
-void UIManager::drawCloseButton(Rectangle panelRect) {
-    Rectangle closeBtn = getCloseButtonRect(panelRect);
+void UIManager::DrawCloseButton(Rectangle panelRect) {
+    Rectangle closeBtn = GetCloseButtonRect(panelRect);
     DrawRectangleRec(closeBtn, theme::BUTTON_BG);
     DrawRectangleLinesEx(closeBtn, 1, theme::BUTTON_BORDER);
     Vector2 closeLabelSize = MeasureTextEx(headingFont, "X", headingSize * theme::FONT_DETAIL, 1);
@@ -324,7 +316,7 @@ void UIManager::drawCloseButton(Rectangle panelRect) {
     DrawTextEx(headingFont, "X", {closeTextX, closeBtn.y + 1}, headingSize * theme::FONT_DETAIL, 1, theme::UI_TEXT);
 }
 
-void UIManager::drawGoToSuggestions(Rectangle dlg, const std::vector<int>& suggestions) {
+void UIManager::DrawGoToSuggestions(Rectangle dlg, const std::vector<int>& suggestions) {
     float sy = dlg.y + 80;
     for (size_t i = 0; i < suggestions.size(); ++i) {
         const auto& book = BOOKS[suggestions[i]];
@@ -336,17 +328,17 @@ void UIManager::drawGoToSuggestions(Rectangle dlg, const std::vector<int>& sugge
     }
 }
 
-void UIManager::drawGoToDialog() {
+void UIManager::DrawGoToDialog() {
     if (!goToDialogActive) return;
 
-    drawBackdrop();
-    Rectangle dlgRect = getGoToDialogRect();
+    DrawBackdrop();
+    Rectangle dlgRect = GetGoToDialogRect();
 
     DrawRectangleRec(dlgRect, theme::PANEL_BG);
     DrawRectangleLinesEx(dlgRect, 1, theme::PANEL_BORDER);
 
     DrawTextEx(headingFont, "Go to:", {dlgRect.x + SETTINGS_LABEL_X, dlgRect.y + SETTINGS_LABEL_X}, headingSize, 1, theme::UI_TITLE);
-    drawCloseButton(dlgRect);
+    DrawCloseButton(dlgRect);
 
     Rectangle inputBox = {dlgRect.x + SETTINGS_LABEL_X, dlgRect.y + SETTINGS_ROW1_Y, DIALOG_WIDTH - 20, INPUT_BOX_H};
     DrawRectangleRec(inputBox, theme::INPUT_BG);
@@ -356,39 +348,37 @@ void UIManager::drawGoToDialog() {
     if (fmod(GetTime() * 2.0, 1.0) < 0.5) display += "|";
     DrawTextEx(headingFont, display.c_str(), {inputBox.x + INPUT_BOX_INSET, inputBox.y + INPUT_BOX_INSET}, headingSize, 1, theme::UI_INPUT_TEXT);
 
-    drawGoToSuggestions(dlgRect, getSuggestions());
+    DrawGoToSuggestions(dlgRect, GetSuggestions());
 }
 
-void UIManager::handleGoToClick(Vector2 pos) {
+void UIManager::HandleGoToClick(Vector2 pos) {
     if (!goToDialogActive) return;
 
-    Rectangle dlgRect = getGoToDialogRect();
+    Rectangle dlgRect = GetGoToDialogRect();
     if (!CheckCollisionPointRec(pos, dlgRect)) {
-        dismissGoToDialog();
+        DismissGoToDialog();
         return;
     }
 
-    Rectangle closeBtn = getCloseButtonRect(dlgRect);
+    Rectangle closeBtn = GetCloseButtonRect(dlgRect);
     if (CheckCollisionPointRec(pos, closeBtn)) {
-        dismissGoToDialog();
+        DismissGoToDialog();
     }
 }
 
-// ── About Overlay ──────────────────────────────────────────────────────
-
-void UIManager::toggleAbout() {
+void UIManager::ToggleAbout() {
     aboutActive = !aboutActive;
 }
 
-void UIManager::dismissAbout() {
+void UIManager::DismissAbout() {
     aboutActive = false;
 }
 
-bool UIManager::isAboutActive() const {
+bool UIManager::IsAboutActive() const {
     return aboutActive;
 }
 
-Rectangle UIManager::getAboutRect() const {
+Rectangle UIManager::GetAboutRect() const {
     float screenW = (float)GetScreenWidth();
     float screenH = (float)GetScreenHeight();
     return {(screenW - ABOUT_WIDTH) / 2.0f,
@@ -396,15 +386,15 @@ Rectangle UIManager::getAboutRect() const {
             ABOUT_WIDTH, ABOUT_HEIGHT};
 }
 
-void UIManager::drawAbout() {
+void UIManager::DrawAbout() {
     if (!aboutActive) return;
 
-    drawBackdrop();
-    Rectangle panel = getAboutRect();
+    DrawBackdrop();
+    Rectangle panel = GetAboutRect();
     DrawRectangleRec(panel, theme::PANEL_BG);
     DrawRectangleLinesEx(panel, 1, theme::PANEL_BORDER);
     DrawTextEx(headingFont, "About", {panel.x + SETTINGS_LABEL_X, panel.y + SETTINGS_LABEL_X}, headingSize, 1, theme::UI_TITLE);
-    drawCloseButton(panel);
+    DrawCloseButton(panel);
 
     float y = panel.y + ABOUT_FIRST_LINE_Y;
     DrawTextEx(headingFont, "TheWord Bible Reader", {panel.x + SETTINGS_LABEL_X, y}, headingSize * theme::FONT_DETAIL, 1, theme::UI_TEXT);
@@ -418,51 +408,49 @@ void UIManager::drawAbout() {
     DrawTextEx(headingFont, "Keyboard: G/S/A/Esc", {panel.x + SETTINGS_LABEL_X, y}, headingSize * theme::FONT_DETAIL, 1, theme::UI_TEXT);
 }
 
-void UIManager::handleAboutClick(Vector2 pos) {
+void UIManager::HandleAboutClick(Vector2 pos) {
     if (!aboutActive) return;
 
-    Rectangle panel = getAboutRect();
+    Rectangle panel = GetAboutRect();
     if (!CheckCollisionPointRec(pos, panel)) {
-        dismissAbout();
+        DismissAbout();
         return;
     }
-    Rectangle closeBtn = getCloseButtonRect(panel);
+    Rectangle closeBtn = GetCloseButtonRect(panel);
     if (CheckCollisionPointRec(pos, closeBtn)) {
-        dismissAbout();
+        DismissAbout();
     }
 }
 
-// ── Settings Panel ─────────────────────────────────────────────────────
-
-void UIManager::toggleSettings() {
+void UIManager::ToggleSettings() {
     settingsActive = !settingsActive;
 }
 
-void UIManager::dismissSettings() {
+void UIManager::DismissSettings() {
     settingsActive = false;
 }
 
-bool UIManager::isSettingsActive() const {
+bool UIManager::IsSettingsActive() const {
     return settingsActive;
 }
 
-void UIManager::handleSettingsClick(Vector2 pos) {
+void UIManager::HandleSettingsClick(Vector2 pos) {
     if (!settingsActive) return;
 
-    Rectangle panelRect = getSettingsPanelRect();
+    Rectangle panelRect = GetSettingsPanelRect();
     if (!CheckCollisionPointRec(pos, panelRect)) {
         settingsActive = false;
         return;
     }
 
-    if (handleSettingsClickOnTitleClose(pos, panelRect)) return;
-    if (handleSettingsClickOnFontRow(pos, panelRect)) return;
-    if (compositeProv && handleSettingsClickOnSourceRow(pos, panelRect)) return;
-    handleSettingsClickOnColorRow(pos, panelRect);
+    if (HandleSettingsClickOnTitleClose(pos, panelRect)) return;
+    if (HandleSettingsClickOnFontRow(pos, panelRect)) return;
+    if (compositeProv && HandleSettingsClickOnSourceRow(pos, panelRect)) return;
+    HandleSettingsClickOnColorRow(pos, panelRect);
 }
 
-bool UIManager::handleSettingsClickOnTitleClose(Vector2 pos, Rectangle panel) {
-    Rectangle closeBtn = getCloseButtonRect(panel);
+bool UIManager::HandleSettingsClickOnTitleClose(Vector2 pos, Rectangle panel) {
+    Rectangle closeBtn = GetCloseButtonRect(panel);
     if (CheckCollisionPointRec(pos, closeBtn)) {
         settingsActive = false;
         return true;
@@ -470,76 +458,76 @@ bool UIManager::handleSettingsClickOnTitleClose(Vector2 pos, Rectangle panel) {
     return false;
 }
 
-bool UIManager::handleSettingsClickOnFontRow(Vector2 pos, Rectangle panel) {
+bool UIManager::HandleSettingsClickOnFontRow(Vector2 pos, Rectangle panel) {
     float rowY = panel.y + SETTINGS_ROW1_Y;
     Rectangle minusRect = {panel.x + FONT_BTN_X, rowY, FONT_BTN_W, FONT_BTN_H};
     if (CheckCollisionPointRec(pos, minusRect)) {
-        applyFontSize(std::max(config::FONT_SIZE_MIN, currentFontSize - config::FONT_SIZE_STEP));
+        ApplyFontSize(std::max(config::FONT_SIZE_MIN, currentFontSize - config::FONT_SIZE_STEP));
         return true;
     }
     Rectangle plusRect = {panel.x + FONT_PLUS_X, rowY, FONT_BTN_W, FONT_BTN_H};
     if (CheckCollisionPointRec(pos, plusRect)) {
-        applyFontSize(std::min(config::FONT_SIZE_MAX, currentFontSize + config::FONT_SIZE_STEP));
+        ApplyFontSize(std::min(config::FONT_SIZE_MAX, currentFontSize + config::FONT_SIZE_STEP));
         return true;
     }
     return false;
 }
 
-bool UIManager::handleSettingsClickOnSourceRow(Vector2 pos, Rectangle panel) {
+bool UIManager::HandleSettingsClickOnSourceRow(Vector2 pos, Rectangle panel) {
     float rowY = panel.y + SETTINGS_ROW1_Y + SETTINGS_ROW_GAP;
     Rectangle usfmRect = {panel.x + SRC_USFM_X, rowY, SRC_BTN_W, SRC_BTN_H};
     Rectangle onlineRect = {panel.x + SRC_ONLINE_X, rowY, SRC_BTN_W, SRC_BTN_H};
     if (CheckCollisionPointRec(pos, usfmRect)) {
-        compositeProv->setPrimary(offlineProv);
+        compositeProv->SetPrimary(offlineProv);
         versionOnline = false;
-        highlighter.setProvider("USFMParser");
-        docManager.loadInitialChapter(docManager.getCurrentChapterId());
-        persistence.setPreference("active_version", "offline");
+        highlighter.SetProvider("USFMParser");
+        docManager.LoadInitialChapter(docManager.GetCurrentChapterId());
+        persistence.SetPreference("active_version", "offline");
         return true;
     }
     if (CheckCollisionPointRec(pos, onlineRect)) {
-        compositeProv->setPrimary(onlineProv);
+        compositeProv->SetPrimary(onlineProv);
         versionOnline = true;
-        highlighter.setProvider("BibleClient");
-        docManager.loadInitialChapter(docManager.getCurrentChapterId());
-        persistence.setPreference("active_version", "online");
+        highlighter.SetProvider("BibleClient");
+        docManager.LoadInitialChapter(docManager.GetCurrentChapterId());
+        persistence.SetPreference("active_version", "online");
         return true;
     }
     return false;
 }
 
-void UIManager::handleSettingsClickOnColorRow(Vector2 pos, Rectangle panel) {
+void UIManager::HandleSettingsClickOnColorRow(Vector2 pos, Rectangle panel) {
     float rowY = panel.y + SETTINGS_ROW1_Y + (compositeProv ? SETTINGS_ROW_GAP : 0) + COLOR_ROW_SPACER;
-    const auto& types = highlighter.getTypes();
+    const auto& types = highlighter.GetTypes();
     for (size_t i = 0; i < types.size(); ++i) {
         float swatchX = panel.x + COLOR_SWATCH_START + i * (SWATCH_SIZE + SWATCH_GAP);
         Rectangle swatchRect = {swatchX, rowY, SWATCH_SIZE, SWATCH_SIZE};
         if (CheckCollisionPointRec(pos, swatchRect)) {
-            highlighter.setActiveTypeId(types[i].id);
-            persistence.setPreference("active_color", std::to_string(types[i].id));
+            highlighter.SetActiveTypeId(types[i].id);
+            persistence.SetPreference("active_color", std::to_string(types[i].id));
             return;
         }
     }
 }
 
-void UIManager::drawSettingsPanel() {
+void UIManager::DrawSettingsPanel() {
     if (!settingsActive) return;
 
-    drawBackdrop();
-    Rectangle panelRect = getSettingsPanelRect();
+    DrawBackdrop();
+    Rectangle panelRect = GetSettingsPanelRect();
 
     DrawRectangleRec(panelRect, theme::PANEL_BG);
     DrawRectangleLinesEx(panelRect, 1, theme::PANEL_BORDER);
 
     DrawTextEx(headingFont, "Settings", {panelRect.x + SETTINGS_LABEL_X, panelRect.y + SETTINGS_LABEL_X}, headingSize, 1, theme::UI_TITLE);
-    drawCloseButton(panelRect);
+    DrawCloseButton(panelRect);
 
-    drawSettingsFontRow(panelRect);
-    if (compositeProv) drawSettingsSourceRow(panelRect);
-    drawSettingsColorRow(panelRect);
+    DrawSettingsFontRow(panelRect);
+    if (compositeProv) DrawSettingsSourceRow(panelRect);
+    DrawSettingsColorRow(panelRect);
 }
 
-void UIManager::drawSettingsFontRow(Rectangle panel) {
+void UIManager::DrawSettingsFontRow(Rectangle panel) {
     float rowY = panel.y + SETTINGS_ROW1_Y;
     DrawTextEx(headingFont, "Font:", {panel.x + SETTINGS_LABEL_X, rowY}, headingSize * theme::FONT_LABEL, 1, theme::UI_TEXT);
     DrawRectangle(panel.x + FONT_BTN_X, rowY, FONT_BTN_W, FONT_BTN_H, theme::BUTTON_BG);
@@ -553,7 +541,7 @@ void UIManager::drawSettingsFontRow(Rectangle panel) {
     DrawTextEx(headingFont, "+", {panel.x + FONT_PLUS_X + 8, rowY + 1}, headingSize * theme::FONT_LABEL, 1, currentFontSize >= config::FONT_SIZE_MAX ? theme::UI_BUTTON_TEXT_DISABLED : theme::UI_BUTTON_TEXT);
 }
 
-void UIManager::drawSettingsSourceRow(Rectangle panel) {
+void UIManager::DrawSettingsSourceRow(Rectangle panel) {
     float rowY = panel.y + SETTINGS_ROW1_Y + SETTINGS_ROW_GAP;
     DrawTextEx(headingFont, "Source:", {panel.x + SETTINGS_LABEL_X, rowY}, headingSize * theme::FONT_LABEL, 1, theme::UI_TEXT);
     DrawRectangle(panel.x + SRC_USFM_X, rowY, SRC_BTN_W, SRC_BTN_H, versionOnline ? theme::SWITCH_OFF : theme::SWITCH_ON);
@@ -564,11 +552,11 @@ void UIManager::drawSettingsSourceRow(Rectangle panel) {
     DrawTextEx(headingFont, "API", {panel.x + SRC_ONLINE_X + 13, rowY + 2}, headingSize * theme::FONT_DETAIL, 1, theme::UI_TEXT);
 }
 
-void UIManager::drawSettingsColorRow(Rectangle panel) {
+void UIManager::DrawSettingsColorRow(Rectangle panel) {
     float rowY = panel.y + SETTINGS_ROW1_Y + (compositeProv ? SETTINGS_ROW_GAP : 0) + COLOR_ROW_SPACER;
     DrawTextEx(headingFont, "Color:", {panel.x + SETTINGS_LABEL_X, rowY}, headingSize * theme::FONT_LABEL, 1, theme::UI_TEXT);
-    const auto& types = highlighter.getTypes();
-    int activeId = highlighter.getActiveTypeId();
+    const auto& types = highlighter.GetTypes();
+    int activeId = highlighter.GetActiveTypeId();
     for (size_t i = 0; i < types.size(); ++i) {
         float swatchX = panel.x + COLOR_SWATCH_START + i * (SWATCH_SIZE + SWATCH_GAP);
         Color c = {types[i].color.r, types[i].color.g, types[i].color.b, 255};
@@ -581,11 +569,9 @@ void UIManager::drawSettingsColorRow(Rectangle panel) {
     }
 }
 
-// ── Dialog Dispatch ────────────────────────────────────────────────────
-
-void UIManager::dismissActiveDialog() {
-    if (aboutActive) dismissAbout();
-    else if (goToDialogActive) dismissGoToDialog();
-    else if (settingsActive) dismissSettings();
-    else if (contextMenuActive) hideContextMenu();
+void UIManager::DismissActiveDialog() {
+    if (aboutActive) DismissAbout();
+    else if (goToDialogActive) DismissGoToDialog();
+    else if (settingsActive) DismissSettings();
+    else if (contextMenuActive) HideContextMenu();
 }

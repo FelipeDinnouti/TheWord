@@ -12,7 +12,7 @@ DocumentManager::DocumentManager(LayoutEngine& engine, float viewportHeight,
     , viewportHeight(viewportHeight)
     , contentTop(contentTop) {}
 
-void DocumentManager::loadInitialChapter(const std::string& chapterId) {
+void DocumentManager::LoadInitialChapter(const std::string& chapterId) {
     chapters.clear();
 
     std::string book;
@@ -22,7 +22,7 @@ void DocumentManager::loadInitialChapter(const std::string& chapterId) {
     auto result = primaryProvider.LoadChapter(book, chapter);
     if (!result) return;
 
-    ChapterLayout layout = layoutEngine.layoutChapter(chapterId, *result);
+    ChapterLayout layout = layoutEngine.LayoutChapter(chapterId, *result);
 
     LoadedChapter lc;
     lc.chapterId = chapterId;
@@ -37,7 +37,7 @@ void DocumentManager::loadInitialChapter(const std::string& chapterId) {
     targetScrollY = 0.0f;
 }
 
-void DocumentManager::update(float deltaTime) {
+void DocumentManager::Update(float deltaTime) {
     float diff = targetScrollY - scrollY;
     if (std::abs(diff) > 0.5f) {
         scrollY += diff * (1.0f - std::exp(-SMOOTH_SPEED * deltaTime));
@@ -46,18 +46,18 @@ void DocumentManager::update(float deltaTime) {
     }
 
     if (scrollY <= 0.0f) {
-        tryLoadAdjacent(true);
+        TryLoadAdjacent(true);
     }
 
-    float maxScroll = getTotalHeight() - viewportHeight;
+    float maxScroll = GetTotalHeight() - viewportHeight;
     if (maxScroll < 0.0f) maxScroll = 0.0f;
     if (scrollY >= maxScroll - AUTO_LOAD_MARGIN) {
-        tryLoadAdjacent(false);
+        TryLoadAdjacent(false);
     }
 }
 
-void DocumentManager::scrollBy(float delta) {
-    float maxScroll = getTotalHeight() - viewportHeight;
+void DocumentManager::ScrollBy(float delta) {
+    float maxScroll = GetTotalHeight() - viewportHeight;
     if (maxScroll < 0.0f) maxScroll = 0.0f;
 
     float newTarget = targetScrollY + delta;
@@ -67,38 +67,38 @@ void DocumentManager::scrollBy(float delta) {
     targetScrollY = newTarget;
 }
 
-void DocumentManager::scrollTo(float y) {
+void DocumentManager::ScrollTo(float y) {
     scrollY = y;
     targetScrollY = y;
 }
 
-float DocumentManager::getScrollY() const {
+float DocumentManager::GetScrollY() const {
     return scrollY;
 }
 
-float DocumentManager::getTotalHeight() const {
+float DocumentManager::GetTotalHeight() const {
     if (chapters.empty()) return 0.0f;
     return chapters.back().startY + chapters.back().height;
 }
 
-float DocumentManager::getViewportHeight() const {
+float DocumentManager::GetViewportHeight() const {
     return viewportHeight;
 }
 
-void DocumentManager::setViewportHeight(float height) {
+void DocumentManager::SetViewportHeight(float height) {
     viewportHeight = height;
 }
 
-void DocumentManager::invalidateLayouts() {
-    layoutEngine.invalidateCache();
+void DocumentManager::InvalidateLayouts() {
+    layoutEngine.InvalidateCache();
     for (auto& chapter : chapters) {
-        chapter.layout = layoutEngine.layoutChapter(chapter.chapterId, chapter.data);
+        chapter.layout = layoutEngine.LayoutChapter(chapter.chapterId, chapter.data);
         chapter.height = chapter.layout.totalHeight;
     }
-    recalculateChapterPositions();
+    RecalculateChapterPositions();
 }
 
-void DocumentManager::getVisibleSpans(std::vector<std::pair<Span, float>>& docSpans) const {
+void DocumentManager::GetVisibleSpans(std::vector<std::pair<Span, float>>& docSpans) const {
     docSpans.clear();
 
     float visibleTop = scrollY - viewportHeight;
@@ -125,28 +125,28 @@ void DocumentManager::getVisibleSpans(std::vector<std::pair<Span, float>>& docSp
     }
 }
 
-int DocumentManager::hitTestWord(float screenX, float screenY, float scrollY) const {
+int DocumentManager::HitTestWord(float screenX, float screenY, float scrollY) const {
     float docY = screenY + scrollY - contentTop;
     for (const auto& chapter : chapters) {
         if (docY < chapter.startY || docY > chapter.startY + chapter.height) continue;
         float relY = docY - chapter.startY;
-        return layoutEngine.hitTestLine(chapter.layout, relY, screenX);
+        return layoutEngine.HitTestLine(chapter.layout, relY, screenX);
     }
     return -1;
 }
 
-const std::string& DocumentManager::getCurrentChapterId() const {
+const std::string& DocumentManager::GetCurrentChapterId() const {
     static const std::string empty = "";
     if (chapters.empty()) return empty;
     return chapters.front().chapterId;
 }
 
-std::string DocumentManager::getChapterTitle() const {
+std::string DocumentManager::GetChapterTitle() const {
     if (chapters.empty()) return "";
     return ChapterIdToTitle(chapters.front().chapterId);
 }
 
-void DocumentManager::recalculateChapterPositions() {
+void DocumentManager::RecalculateChapterPositions() {
     float currentY = 0.0f;
     for (auto& chapter : chapters) {
         chapter.startY = currentY;
@@ -154,7 +154,7 @@ void DocumentManager::recalculateChapterPositions() {
     }
 }
 
-bool DocumentManager::tryLoadAdjacent(bool prepend) {
+bool DocumentManager::TryLoadAdjacent(bool prepend) {
     if (chapters.empty()) return false;
 
     const std::string& currentId = prepend ? chapters.front().chapterId : chapters.back().chapterId;
@@ -169,15 +169,15 @@ bool DocumentManager::tryLoadAdjacent(bool prepend) {
     if (!result) return false;
 
     if (prepend) {
-        prependChapter(adjacent, std::move(*result));
+        PrependChapter(adjacent, std::move(*result));
     } else {
-        appendChapter(adjacent, std::move(*result));
+        AppendChapter(adjacent, std::move(*result));
     }
     return true;
 }
 
-void DocumentManager::prependChapter(const std::string& chapterId, ChapterData&& data) {
-    ChapterLayout layout = layoutEngine.layoutChapter(chapterId, data);
+void DocumentManager::PrependChapter(const std::string& chapterId, ChapterData&& data) {
+    ChapterLayout layout = layoutEngine.LayoutChapter(chapterId, data);
     float prependHeight = layout.totalHeight;
 
     LoadedChapter lc;
@@ -187,14 +187,14 @@ void DocumentManager::prependChapter(const std::string& chapterId, ChapterData&&
     lc.height = prependHeight;
 
     chapters.insert(chapters.begin(), std::move(lc));
-    recalculateChapterPositions();
+    RecalculateChapterPositions();
 
     targetScrollY += prependHeight;
     scrollY = targetScrollY;
 }
 
-void DocumentManager::appendChapter(const std::string& chapterId, ChapterData&& data) {
-    ChapterLayout layout = layoutEngine.layoutChapter(chapterId, data);
+void DocumentManager::AppendChapter(const std::string& chapterId, ChapterData&& data) {
+    ChapterLayout layout = layoutEngine.LayoutChapter(chapterId, data);
 
     float lastEnd = 0.0f;
     if (!chapters.empty()) {

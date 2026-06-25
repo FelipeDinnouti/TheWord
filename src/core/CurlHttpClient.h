@@ -13,9 +13,9 @@ public:
     CurlHttpClient(CurlHttpClient&&) = default;
     CurlHttpClient& operator=(CurlHttpClient&&) = default;
 
-    std::string get(const std::string& url) override;
-    void setAppKey(const std::string& key) override;
-    std::string getAppKey() const override;
+    std::string Get(const std::string& url) override;
+    void SetAppKey(const std::string& key) override;
+    std::string GetAppKey() const override;
 
 private:
     void* curl;

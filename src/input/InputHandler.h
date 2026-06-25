@@ -13,7 +13,7 @@ public:
     InputHandler(DocumentManager& docManager, Highlighter& highlighter,
                  LayoutEngine& layoutEngine, UIManager& uiManager, float contentTop);
 
-    void handleInput(float deltaTime);
+    void HandleInput(float deltaTime);
 
 private:
     enum class PressState { Idle, Pending, Dragging, LongPress };
@@ -41,13 +41,13 @@ private:
     float lastTouchDelta;
     float lastPinchDist;
 
-    void handleScroll();
-    void handlePressFSM();
-    void handleWindowResize();
-    void handleRightClick();
-    void handleTouchScroll();
-    void handleTouchPressFSM();
-    void handlePinch();
+    void HandleScroll();
+    void HandlePressFSM();
+    void HandleWindowResize();
+    void HandleRightClick();
+    void HandleTouchScroll();
+    void HandleTouchPressFSM();
+    void HandlePinch();
 };
 
 #endif

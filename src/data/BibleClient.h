@@ -22,10 +22,10 @@ private:
     int bibleId;
     const std::string baseUrl;
 
-    static std::string extractJsonString(const std::string& json, const std::string& key);
-    std::optional<ChapterData> parseHtmlChapter(const std::string& html,
+    static std::string ExtractJsonString(const std::string& json, const std::string& key);
+    std::optional<ChapterData> ParseHtmlChapter(const std::string& html,
                                                   const std::string& bookId, int chapter);
-    static std::string stripHtml(const std::string& html);
+    static std::string StripHtml(const std::string& html);
 };
 
 #endif // BIBLECLIENT_H
