@@ -1,6 +1,6 @@
 #include "FontHelper.h"
+#include <raylib.h>
 #include <cstdint>
-#include <fstream>
 #include <algorithm>
 #include <string>
 
@@ -16,16 +16,13 @@ static uint32_t ReadU32(const uint8_t* data, size_t offset) {
 }
 
 std::vector<int> LoadFontCodepoints(const char* fontPath) {
-    std::ifstream file(fontPath, std::ios::binary | std::ios::ate);
-    if (!file) return {};
+    int dataSize = 0;
+    unsigned char* data = LoadFileData(fontPath, &dataSize);
+    if (!data || dataSize <= 0) return {};
 
-    size_t size = (size_t)file.tellg();
-    file.seekg(0, std::ios::beg);
-
-    std::vector<uint8_t> data(size);
-    if (!file.read((char*)data.data(), size)) return {};
-
-    return LoadFontCodepointsFromData(data.data(), size);
+    auto result = LoadFontCodepointsFromData(data, (size_t)dataSize);
+    UnloadFileData(data);
+    return result;
 }
 
 std::vector<int> LoadFontCodepointsFromData(const uint8_t* data, size_t size) {

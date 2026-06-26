@@ -50,7 +50,7 @@ This is the single format the LayoutEngine consumes. Neither its inner loop nor 
 - Reads `assets/usfm/*.usfm` files (one per book, 66 files)
 - Parses USFM markers into `Segment[]` + `Word[]`
 - Always available, no network required
-- **Primary source** during development
+- **Fallback** when the API is unavailable or the device is offline
 
 ## Online Source: BibleClient
 
@@ -58,21 +58,21 @@ This is the single format the LayoutEngine consumes. Neither its inner loop nor 
 - Parses HTML `<div>` classes (`p`, `q1`, `q2`, `s1`, `s2`) into `Segment[]` + `Word[]`
 - Strips footnotes/notes from the HTML
 - Requires network + API key
-- **Secondary source** for versions not available offline
+- **Primary source** when online
 
 ## Source Selection Strategy
 
 | Scenario | Source Used |
 |----------|-------------|
 | Development (no API key) | USFMParser only |
-| Release (API key present, online) | BibleClient for licensed versions, USFMParser fallback |
-| Release (API key present, offline) | USFMParser only |
+| Production (API key present, online) | BibleClient (primary), USFMParser fallback |
+| Production (API key present, offline) | USFMParser fallback only |
 
 The `DocumentManager` can be configured with a preferred `ChapterProvider`. If that provider returns `nullopt` for a chapter, it falls back to the secondary provider.
 
 ## Why Dual Source?
 
-1. **Development speed**: USFM files let us work offline without API calls
-2. **Licensing flexibility**: Start with CC BY 4.0 (Bíblia Livre), add NVI/NAA via API later
-3. **Resilience**: App works fully offline, but can use premium versions when online
+1. **Online-first**: Rich API provides licensed versions (NVI, NAA) when online; USFM fallback ensures the app is never empty
+2. **Development convenience**: USFM files let us iterate offline without API calls during development
+3. **Resilience**: If the API is unreachable, the app degrades gracefully to the offline USFM source
 4. **Same pipeline**: Both sources produce `ChapterData` — no code duplication in the layout/rendering path

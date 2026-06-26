@@ -44,6 +44,7 @@ mkdir -p "$APK_DIR/lib/x86_64"
 cp "$BUILD_DIR/libtheword.so" "$APK_DIR/lib/x86_64/"
 cp -rL assets "$APK_DIR/"
 cp -rL shaders "$APK_DIR/" 2>/dev/null || true
+[ -f .env ] && cp .env "$APK_DIR/assets/"
 (cd "$APK_DIR" && zip -r /tmp/theword-unsigned-$$.apk lib/ assets/ shaders/ 2>/dev/null)
 
 $BUILD_TOOLS/zipalign -f -v 4 /tmp/theword-unsigned-$$.apk /tmp/theword-aligned-$$.apk

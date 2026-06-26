@@ -10,13 +10,13 @@
 - [x] Rich text rendering (headings, poetry, paragraphs)
 - [x] Text rendered with word wrapping
 - [x] Layout caching for performance
-- [x] Offline USFM Bible text (Bíblia Livre)
+- [x] Offline USFM Bible text (Bíblia Livre) — fallback when offline
+- [x] Online API Bible text (YouVersion) — primary source when online
 - [ ] Infinite scroll (bidirectional, chapters load dynamically)
 - [ ] Per-word highlighting (one color)
 - [ ] Highlights persist across sessions
 
 ### Should Have
-- [ ] Dual data source support (USFM offline + API online)
 - [ ] Smooth scrolling with momentum
 - [ ] Chapter title display
 - [ ] Font size configuration

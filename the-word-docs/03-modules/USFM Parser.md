@@ -6,7 +6,7 @@ Files: `src/data/USFMParser.h/cpp`
 
 ## Overview
 
-The USFM parser is the **primary offline data source**. It reads USFM Bible files from `assets/usfm/` and produces `ChapterData` with rich-text structure.
+The USFM parser is the **offline data source**. It reads USFM Bible files from `assets/usfm/` and produces `ChapterData` with rich-text structure. When the YouVersion API is available, BibleClient is the primary source and USFMParser acts as the fallback.
 
 USFM (Unfolding Scripture Format Marked) is a plain-text markup format for encoding Bible text used by most Bible translation projects.
 

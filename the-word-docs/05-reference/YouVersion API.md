@@ -73,4 +73,4 @@ The API is consumed by `BibleClient` (implementing `ChapterProvider`). The HTML 
 YVP_APP_KEY=your_app_key_here
 ```
 
-Only needed when using `BibleClient` (online source). The app works fully offline without it.
+Required for `BibleClient` (online primary source). Without it, the app falls back to the offline USFM source (Bíblia Livre).

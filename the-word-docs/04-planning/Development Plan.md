@@ -63,7 +63,7 @@
 
 ### Phase 5: USFM Parser ✅
 
-**Goal:** App reads Bíblia Livre USFM files, works fully offline.
+**Goal:** App reads Bíblia Livre USFM files as offline data source.
 
 **Status:** Complete.
 

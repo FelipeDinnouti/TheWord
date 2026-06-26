@@ -95,8 +95,8 @@ The `data` field replaces the old `rawText`. It stores the full `ChapterData` so
 ## Source Selection
 
 At construction, the DocumentManager receives:
-- `primaryProvider` — The preferred data source (e.g., `USFMParser` for offline)
-- `fallbackProvider` — An optional secondary source (e.g., `BibleClient` for API)
+- `primaryProvider` — The preferred data source (e.g., `BibleClient` for online API)
+- `fallbackProvider` — An optional secondary source (e.g., `USFMParser` for offline fallback)
 
 If `primaryProvider.LoadChapter()` returns `nullopt`, the manager tries `fallbackProvider`. If both return `nullopt`, the chapter is skipped with a logged warning.
 

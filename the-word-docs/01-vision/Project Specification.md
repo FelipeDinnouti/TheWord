@@ -37,7 +37,7 @@ The goal is a mobile app, but the proof-of-concept targets desktop with a mobile
 
 | Dimension | Choice |
 |-----------|--------|
-| Text Source | **Dual**: USFM files (offline primary) + HTML API (online secondary) |
+| Text Source | **Dual**: HTML API (online primary) + USFM files (offline fallback) |
 | Data Abstraction | `ChapterProvider` interface with two implementations |
 | Rich Text Model | `Segment[]` + `Word[]` in `ChapterData` |
 | Persistence | SQLite for user data |
