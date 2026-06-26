@@ -7,73 +7,19 @@
 ## Priority Order
 
 ```
-Phase 0 (Docs) → Phase 1 (Naming) → Phase 2 (Quality) → Phase 3 (Build) → Phase 4 (Platform) → Phase 5 (Re-Architecture)
+Phase 0 (Naming) → Phase 1 (Docs) → Phase 2 (Quality) → Phase 3 (Build) → Phase 4 (Platform) → Phase 5 (Re-Architecture)
 ```
 
-**Phase 0 MUST be completed first** — incorrect docs mislead contributors and create compounding tech debt. Phase 1 is already complete but kept in timeline for context.
+Phase 0 is already complete. Phase 1 (Docs) was completed 2026-06-26.
 
 ---
 
-## Phase 0 — Doc Freshness Audit & Build Flow Documentation
-
-**Goal:** Every doc matches the actual codebase. Build flow (artifacts, output locations, platform commands) is fully documented. New contributors can go from zero to running on any platform using only `the-word-docs/`.
-
-**Why this is Phase 0:** The code has sprinted far ahead of documentation. Outdated docs are worse than no docs — they actively mislead. This phase touches no source code, just `the-word-docs/` and `README.md`.
-
-### 0.1 Ops Fixes (Build Flow)
-
-| Doc | Problem | Fix |
-|-----|---------|-----|
-| `06-ops/Build Guide.md` | Says Android is "planned Phase 8", missing WASM, no artifact locations, no test build | Rewrite entirely: document all 4 platforms (Linux, Windows, Android, WASM), where each artifact lands, how to run tests |
-| `06-ops/Environment Setup.md` | No Android NDK, no Emscripten, no WASM SDK setup | Add setup steps for NDK (both ABIs) and Emscripten SDK |
-| `06-ops/Troubleshooting.md` | No Android/WASM entries, no asset-not-found fix | Add Android lifecycle issues, WASM fetch, asset path troubleshooting |
-
-### 0.2 Planning Reconciliation
-
-| Doc | Problem | Fix |
-|-----|---------|-----|
-| `04-planning/Progress Tracking.md` | Phase 10 labelled "⬜ Planned" but Android build, touch gestures, lifecycle exist | Update Phase 10 to reflect actual state; add Phase A + B to status table |
-| `04-planning/Development Plan.md` | Phase 9 says "⬜ Planned" — it's done | Mark Phase 9 ✅ Complete; update Phase 10 reality |
-| `04-planning/Roadmap.md` | Phase 9 sprints described as future; Phase 10 as September+ | Mark Phase 9 complete, Phase 10 as in-progress/polish |
-
-### 0.3 Vision & Feature Accuracy
-
-| Doc | Problem | Fix |
-|-----|---------|-----|
-| `01-vision/Product Requirements.md` | ~8 items marked `[ ]` that are implemented (infinite scroll, highlighting, smooth scroll, font config, touch input, resize, multiple colors, version switching) | Audit and check off all implemented items |
-| `README.md` | Says highlighting "in development", mentions "John 3:16-18 fallback text" | Rewrite feature list; remove fallback reference; add controls summary |
-
-### 0.4 Module Doc Status Headers
-
-| Doc | Problem | Fix |
-|-----|---------|-----|
-| `03-modules/Highlighting System.md` | Header says "Planned (Phase 7)" — Phase 7 is complete | Change to "Complete"; remove future-tense language |
-| `03-modules/Persistence.md` | Schema missing `provider_name` column (added Sprint 3.5) | Add column to schema; update status to include Sprint 3.5 changes |
-| `03-modules/UI Layer.md` | Header says "Sprint 3" — Sprint 4 polish done | Update header; add Sprint 4 content (heading diff, splash, about, theme, layout constants) |
-
-### 0.5 Architecture Doc Touch-Ups
-
-| Doc | Problem | Fix |
-|-----|---------|-----|
-| `02-architecture/Architecture Overview.md` | "Android requires a fundamentally different build" section is dated — build now exists | Update section to reflect working Android build; keep migration path advice as reference |
-| `02-architecture/Data Flow.md` | No Android/WASM-specific flow paths | Add note about touch input flow and Android lifecycle |
-
-### 0.6 Verify
-
-- [ ] Every doc listed above is updated
-- [ ] `06-ops/Build Guide.md` contains accurate build commands for all 4 platforms
-- [ ] Artifact locations (`build/theword`, `build-android/libtheword.so`, `build-wasm/theword.html`) documented
-- [ ] Cross-references in `00-INDEX.md` still valid
-- [ ] No stale "planned", "future", "not yet" language remains for completed features
-
----
-
-## Phase 1 — Method Naming Convention Fix ✅ Complete (2026-06-24)
+## Phase 0 — Method Naming Convention Fix ✅ Complete (2026-06-24)
 
 **Goal:** Rename all methods from `camelCase` to `PascalCase` per convention.
 **Status:** ✅ All ~80+ methods renamed. Build clean, 64/64 tests pass.
 
-### 1.1 Verified Files
+### 0.1 Verified Files
 - `src/text/LayoutEngine.h/.cpp` — 9 methods
 - `src/document/DocumentManager.h/.cpp` — 18 methods
 - `src/renderer/Renderer.h/.cpp` — 7 methods
@@ -85,6 +31,30 @@ Phase 0 (Docs) → Phase 1 (Naming) → Phase 2 (Quality) → Phase 3 (Build) �
 - `src/core/` — file-static functions
 - `tests/` — MockHttpClient methods
 - All call sites updated in `main.cpp`, `test_main.cpp`, `UIManager.cpp`, `InputHandler.cpp`, `Renderer.cpp`
+
+---
+
+## Phase 1 — Doc Freshness Audit & Build Flow Documentation ✅ Complete (2026-06-26)
+
+**Goal:** Every doc matches the actual codebase. Build flow (artifacts, output locations, platform commands) is fully documented. New contributors can go from zero to running on any platform using only `the-word-docs/`.
+
+**Why this matters:** The code had sprinted far ahead of documentation. Outdated docs mislead contributors and create compounding tech debt. This phase touched no source code, just `the-word-docs/` and `README.md`.
+
+### 1.1 Edited Files
+
+- `06-ops/Build Guide.md` — Complete rewrite: artifact locations, all 4 platforms, test commands
+- `06-ops/Environment Setup.md` — Added Android NDK + Emscripten setup
+- `06-ops/Troubleshooting.md` — Added Android, WASM, Windows entries
+- `04-planning/Progress Tracking.md` — Phase 10 status corrected to In Progress
+- `04-planning/Development Plan.md` — Phase 9 status corrected to Complete
+- `04-planning/Roadmap.md` — Updated to reflect completed phases
+- `01-vision/Product Requirements.md` — Checked off all implemented features
+- `03-modules/Persistence.md` — Added `provider_name` column to schema
+- `03-modules/UI Layer.md` — Added Sprint 4 polish content
+- `03-modules/Highlighting System.md` — Status changed to Complete
+- `02-architecture/Architecture Overview.md` — Android build section updated
+- `02-architecture/Data Flow.md` — Added Android render loop variant
+- `README.md` — Updated feature list and controls
 
 ---
 
@@ -260,12 +230,12 @@ Create `CMakePresets.json` with presets:
 
 | Phase | Criterion |
 |-------|-----------|
-| 0 | Every doc in `the-word-docs/` accurately reflects the codebase. No stale "planned" language for completed features. Build flow fully documented for all platforms. |
-| 1 | `cmake --build build` succeeds, `./build/theword_test` passes all 64 tests, app runs. |
-| 2 | Same as above + no compiler warnings, no unused includes, no `void*` ownership. |
+| 0 | `cmake --build build` succeeds, `./build/theword_test` passes all 64 tests, app runs. |
+| 1 | Every doc in `the-word-docs/` accurately reflects the codebase. Build flow fully documented for all platforms. |
+| 2 | No compiler warnings, no unused includes, no `void*` ownership, monoliths split. |
 | 3 | `cmake --preset <name>` works for all target platforms, no deprecation warnings. |
-| 4 | Android APK installs and runs on emulator + ARM device; WASM persists state; libcurl truly optional. |
-| 5 | All docs reviewed and consistent with current codebase state. Re-architecture proposal available for future planning. |
+| 4 | Android APK builds for both x86_64 and arm64-v8a; WASM persists state; libcurl truly optional. |
+| 5 | Re-architecture proposal available for future planning. All docs consistent with codebase. |
 
 ---
 
@@ -273,9 +243,9 @@ Create `CMakePresets.json` with presets:
 
 | Phase | Status | Notes |
 |-------|--------|-------|
-| **Phase 0: Docs Freshness** | ✅ Complete | Edited 2026-06-26 — all stale docs updated, build flow documented |
-| **Phase 1: Naming Convention** | ✅ Complete | 64/64 tests pass, build clean |
-| **Phase 2: Code Quality** | ⬜ Not started | |
+| **Phase 0: Naming Convention** | ✅ Complete | 64/64 tests pass, build clean |
+| **Phase 1: Docs Freshness** | ✅ Complete | Edited 2026-06-26 — all stale docs updated, build flow documented |
+| **Phase 2: Code Quality** | 🔴 In Progress | Actively working |
 | **Phase 3: Build System** | ⬜ Not started | |
 | **Phase 4: Cross-Platform** | ⬜ Not started | |
 | **Phase 5: Re-Architecture** | ⬜ Not started | |
