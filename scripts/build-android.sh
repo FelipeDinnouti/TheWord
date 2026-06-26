@@ -1,7 +1,9 @@
 #!/bin/bash
 # Build TheWord for Android: cross-compile C++ → .so → signed APK
 #
-# Usage: ./scripts/build-android.sh [x86_64|arm64-v8a|armeabi-v7a]
+# Usage: ./scripts/build-android.sh [x86_64|arm64-v8a]
+#   Default: x86_64 (emulator). arm64-v8a for physical devices.
+#   armeabi-v7a dropped because raylib 5.0 NEON half-float intrinsics require ARMv8+.
 #   Default: x86_64 (emulator)
 #
 # Pipeline overview:
@@ -24,12 +26,15 @@ ABI="${1:-x86_64}"
 case "$ABI" in
     x86_64)        LIB_DIR="x86_64"    ;;
     arm64-v8a)     LIB_DIR="arm64-v8a"  ;;
-    armeabi-v7a)   LIB_DIR="armeabi-v7a";;
     *)
-        echo "Usage: $0 [x86_64|arm64-v8a|armeabi-v7a]"
+        echo "Usage: $0 [x86_64|arm64-v8a]"
         exit 1
         ;;
 esac
+
+# Read version from CMakeLists.txt (project() line, not cmake_minimum_required)
+VERSION=$(grep -oP 'project\(\w+ VERSION \K[0-9.]+' CMakeLists.txt)
+[ -z "$VERSION" ] && VERSION="0.0.0"
 
 ANDROID_NDK="${ANDROID_NDK:-$HOME/Android/Sdk/ndk/25.2.9519653}"
 ANDROID_SDK="${ANDROID_SDK:-$HOME/Android/Sdk}"
@@ -70,16 +75,23 @@ cmake --build "$BUILD_DIR" --parallel
 #
 # javac compiles .java → .class.
 # d8 converts .class → classes.dex (Dalvik Executable, what ART actually runs).
+#
+# BUILD_TOOLS and PLATFORM_JAR are defined here (before step 4) so javac can use
+# $PLATFORM_JAR and $BUILD_TOOLS/* are available for d8.
 echo "=== Compiling Java Activity ==="
+BUILD_TOOLS="$ANDROID_SDK/build-tools/34.0.0"
+PLATFORM_JAR="$ANDROID_SDK/platforms/android-24/android.jar"
 JAVA_SRC="src/main/java/com/theword/app/TheWordActivity.java"
 JAVA_OBJ="/tmp/java-obj-$$"
 mkdir -p "$JAVA_OBJ"
 if [ -f "$JAVA_SRC" ] && command -v javac &>/dev/null; then
     javac -cp "$PLATFORM_JAR" -d "$JAVA_OBJ" "$JAVA_SRC"
-    if command -v d8 &>/dev/null; then
-        d8 --lib "$PLATFORM_JAR" --output "$JAVA_OBJ" "$JAVA_OBJ/com/theword/app/TheWordActivity.class"
-    elif command -v dx &>/dev/null; then
-        dx --dex --output="$JAVA_OBJ/classes.dex" "$JAVA_OBJ"
+    D8="$BUILD_TOOLS/d8"
+    DX="$BUILD_TOOLS/dx"
+    if [ -x "$D8" ]; then
+        "$D8" --lib "$PLATFORM_JAR" --output "$JAVA_OBJ" "$JAVA_OBJ/com/theword/app/TheWordActivity.class"
+    elif [ -x "$DX" ]; then
+        "$DX" --dex --output="$JAVA_OBJ/classes.dex" "$JAVA_OBJ"
     else
         echo "Warning: Neither d8 nor dx found. Skipping Java compilation."
         rm -rf "$JAVA_OBJ"
@@ -96,9 +108,6 @@ fi
 # Then we manually insert native libs, classes.dex, and assets into a ZIP.
 # Required structure: lib/<abi>/libtheword.so, classes.dex (root), assets/.
 echo "=== Packaging APK ==="
-BUILD_TOOLS="$ANDROID_SDK/build-tools/34.0.0"
-PLATFORM_JAR="$ANDROID_SDK/platforms/android-24/android.jar"
-
 $BUILD_TOOLS/aapt package -f -M AndroidManifest.xml \
     -I "$PLATFORM_JAR" \
     -F /tmp/theword-base-$$.apk
@@ -135,8 +144,8 @@ fi
 $BUILD_TOOLS/apksigner sign --ks "$KEYSTORE" \
     --ks-pass pass:android --key-pass pass:android \
     --min-sdk-version 24 \
-    --out "theword-${ABI}.apk" /tmp/theword-aligned-$$.apk
+    --out "theword-${ABI}-v${VERSION}.apk" /tmp/theword-aligned-$$.apk
 
 rm -rf "$APK_DIR" /tmp/theword-*-$$.apk
 
-echo "=== APK ready: theword-${ABI}.apk ($(stat -c%s "theword-${ABI}.apk") bytes) ==="
+echo "=== APK ready: theword-${ABI}-v${VERSION}.apk ($(stat -c%s "theword-${ABI}-v${VERSION}.apk") bytes) ==="

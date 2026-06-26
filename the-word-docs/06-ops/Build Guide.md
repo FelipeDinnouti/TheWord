@@ -108,12 +108,9 @@ The Android build requires the NDK and SDK (see Environment Setup). The build sc
 # One-command build for device (arm64-v8a)
 ./scripts/build-android.sh arm64-v8a
 
-# One-command build for older devices (32-bit ARM)
-./scripts/build-android.sh armeabi-v7a
-
 # Install on connected device
-adb install theword-x86_64.apk     # emulator
-adb install theword-arm64-v8a.apk  # device
+adb install theword-x86_64-v1.1.0.apk     # emulator
+adb install theword-arm64-v8a-v1.1.0.apk  # device
 ```
 
 Or step-by-step using a preset:

@@ -186,7 +186,7 @@
 - [x] Keyboard input patch — `patches/raylib-android-keycodes.patch` translates AKEYCODE → raylib KEY
 
 ### Remaining
-- [ ] Multi-ABI build: `x86_64` + `arm64-v8a` + `armeabi-v7a` in build script
+- [x] Multi-ABI build: `x86_64` + `arm64-v8a` in build script (armeabi-v7a dropped — raylib NEON half-float intrinsics require ARMv8+)
 - [ ] Java activity stub (`TheWordActivity.java`) for IME/splash
 - [ ] Soft keyboard integration for go-to dialog
 - [ ] Immersive mode (hide nav bar)

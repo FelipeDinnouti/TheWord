@@ -162,7 +162,7 @@ Create `CMakePresets.json` with presets:
 
 ### 4.1 Android ARM Support
 
-- [x] Update `scripts/build-android.sh` to build for `x86_64`, `arm64-v8a`, `armeabi-v7a` (parameterized with `$1`)
+- [x] Update `scripts/build-android.sh` to build for `x86_64`, `arm64-v8a` (armeabi-v7a dropped — raylib NEON half-float intrinsics require ARMv8+)
 - [x] Create `src/main/java/com/theword/app/TheWordActivity.java` (Java activity stub for splash/IME)
 - [x] Fix Android DB path: confirmed `/data/data/com.theword.app/app_storage/` works on all API 24+ (moved to Platform.cpp)
 - [ ] Verify `GetAndroidApp()` resolves correctly from raylib's Android backend (requires NDK)
