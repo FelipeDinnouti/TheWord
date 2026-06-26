@@ -1,0 +1,74 @@
+--- src/platforms/rcore_android.c
++++ src/platforms/rcore_android.c
+@@ -86,6 +86,7 @@
+ static void AndroidCommandCallback(struct android_app *app, int32_t cmd);           // Process Android activity lifecycle commands
+ static int32_t AndroidInputCallback(struct android_app *app, AInputEvent *event);   // Process Android inputs
+ static GamepadButton AndroidTranslateGamepadButton(int button);                     // Map Android gamepad button to raylib gamepad button
++static int AndroidTranslateKey(int keycode);                                         // Map Android keycode to raylib keycode
+ 
+ //----------------------------------------------------------------------------------
+ // Module Functions Declaration
+@@ -130,9 +131,62 @@
+     return platform.app;
+ }
+ 
++// Translate Android keycodes to raylib keycodes
++static int AndroidTranslateKey(int keycode)
++{
++    switch (keycode)
++    {
++        case 4:     return 256;   // AKEYCODE_BACK -> KEY_ESCAPE
++        case 19:    return 265;   // AKEYCODE_DPAD_UP -> KEY_UP
++        case 20:    return 264;   // AKEYCODE_DPAD_DOWN -> KEY_DOWN
++        case 21:    return 263;   // AKEYCODE_DPAD_LEFT -> KEY_LEFT
++        case 22:    return 262;   // AKEYCODE_DPAD_RIGHT -> KEY_RIGHT
++        case 23:    return 32;    // AKEYCODE_DPAD_CENTER -> KEY_SPACE
++        case 29:    return 65;    // AKEYCODE_A -> KEY_A
++        case 30:    return 66;    // AKEYCODE_B -> KEY_B
++        case 31:    return 67;    // AKEYCODE_C -> KEY_C
++        case 32:    return 68;    // AKEYCODE_D -> KEY_D
++        case 33:    return 69;    // AKEYCODE_E -> KEY_E
++        case 34:    return 70;    // AKEYCODE_F -> KEY_F
++        case 35:    return 71;    // AKEYCODE_G -> KEY_G
++        case 36:    return 72;    // AKEYCODE_H -> KEY_H
++        case 37:    return 73;    // AKEYCODE_I -> KEY_I
++        case 38:    return 74;    // AKEYCODE_J -> KEY_J
++        case 39:    return 75;    // AKEYCODE_K -> KEY_K
++        case 40:    return 76;    // AKEYCODE_L -> KEY_L
++        case 41:    return 77;    // AKEYCODE_M -> KEY_M
++        case 42:    return 78;    // AKEYCODE_N -> KEY_N
++        case 43:    return 79;    // AKEYCODE_O -> KEY_O
++        case 44:    return 80;    // AKEYCODE_P -> KEY_P
++        case 45:    return 81;    // AKEYCODE_Q -> KEY_Q
++        case 46:    return 82;    // AKEYCODE_R -> KEY_R
++        case 47:    return 83;    // AKEYCODE_S -> KEY_S
++        case 48:    return 84;    // AKEYCODE_T -> KEY_T
++        case 49:    return 85;    // AKEYCODE_U -> KEY_U
++        case 50:    return 86;    // AKEYCODE_V -> KEY_V
++        case 51:    return 87;    // AKEYCODE_W -> KEY_W
++        case 52:    return 88;    // AKEYCODE_X -> KEY_X
++        case 53:    return 89;    // AKEYCODE_Y -> KEY_Y
++        case 54:    return 90;    // AKEYCODE_Z -> KEY_Z
++        case 61:    return 258;   // AKEYCODE_TAB -> KEY_TAB
++        case 62:    return 32;    // AKEYCODE_SPACE -> KEY_SPACE
++        case 66:    return 257;   // AKEYCODE_ENTER -> KEY_ENTER
++        case 67:    return 259;   // AKEYCODE_DEL -> KEY_BACKSPACE
++        case 111:   return 256;   // AKEYCODE_ESCAPE -> KEY_ESCAPE
++        default:    return keycode;
++    }
++}
++
+ //----------------------------------------------------------------------------------
+ // Module Functions Definition: Window and Graphics Device
+ //----------------------------------------------------------------------------------
+ 
++// Initialize platform: graphics, inputs and more
++int InitPlatform(void)
++{
++    // Initialize display basic configuration
++    //----------------------------------------------------------------------------
++    CORE.Window.currentFbo.width = CORE.Window.screen.width;
++    CORE.Window.currentFbo.height = CORE.Window.screen.height;
++
+ // Check if application should close
+ bool WindowShouldClose(void)
