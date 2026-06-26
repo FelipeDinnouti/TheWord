@@ -1,5 +1,7 @@
 #include "AboutOverlay.h"
 #include "core/Theme.h"
+#include "Version.h"
+#include <string>
 
 namespace theword::renderer {
 
@@ -57,7 +59,8 @@ void AboutOverlay::Draw() {
     float contentX = dx + PADDING * scale;
     float y = dy + PADDING * scale + CLOSE_BUTTON_SIZE * scale + 4;
 
-    DrawTextEx(headingFont, "TheWord Bible Study v1.0",
+    std::string versionLabel = std::string("TheWord Bible Study v") + theword::core::APP_VERSION;
+    DrawTextEx(headingFont, versionLabel.c_str(),
                {contentX, y}, headingSize, 1, theme::UI_TEXT);
     y += 28 * scale;
     DrawTextEx(headingFont, "Built with Raylib & C++17",

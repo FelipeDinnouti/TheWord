@@ -1,5 +1,12 @@
 cmake_minimum_required(VERSION 3.16)
-project(theword C CXX)
+project(theword VERSION 1.0.0 LANGUAGES C CXX)
+
+# Auto-generate Version.h from template (substitutes @PROJECT_VERSION@ etc.)
+configure_file(
+    "${CMAKE_CURRENT_SOURCE_DIR}/src/core/Version.h.in"
+    "${CMAKE_CURRENT_BINARY_DIR}/generated/Version.h"
+    @ONLY
+)
 
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
@@ -189,6 +196,7 @@ add_library(theword_objects OBJECT
 
 target_compile_features(theword_objects PUBLIC cxx_std_17)
 target_include_directories(theword_objects PUBLIC src)
+target_include_directories(theword_objects PRIVATE "${CMAKE_CURRENT_BINARY_DIR}/generated")
 
 if(EMSCRIPTEN OR ANDROID OR CURL_FOUND)
     target_compile_definitions(theword_objects PRIVATE THEWORD_HAS_HTTP)
@@ -212,6 +220,7 @@ target_compile_definitions(theword PRIVATE THEWORD_VERSION="1.0.0")
 if(NOT EMSCRIPTEN AND NOT ANDROID)
     add_executable(theword_test tests/test_main.cpp $<TARGET_OBJECTS:theword_objects> $<TARGET_OBJECTS:sqlite3_obj>)
     target_include_directories(theword_test PRIVATE src ${doctest_SOURCE_DIR})
+    target_include_directories(theword_test PRIVATE "${CMAKE_CURRENT_BINARY_DIR}/generated")
 endif()
 
 # ── Asset copying (build-time, recopies every build) ──────────────────────

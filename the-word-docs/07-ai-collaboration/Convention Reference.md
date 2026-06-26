@@ -109,3 +109,12 @@ Optional body with details.
 ```
 
 Types: `feat`, `fix`, `docs`, `refactor`, `test`, `chore`
+
+## Versioning
+
+- **Source of truth**: `project(theword VERSION X.Y.Z)` in `CMakeLists.txt`
+- **SemVer**: bump MAJOR (breaking API changes), MINOR (new features), PATCH (bug fixes, refactors)
+- **Default bump**: PATCH for any `feat:`, `fix:`, or `refactor:` commit; no bump for `docs:`, `test:`, `chore:`
+- **Tagging**: Annotated tag after bumping: `git tag -a "v$(grep -oP 'VERSION \K[0-9.]+' CMakeLists.txt)" -m "$(git log -1 --pretty=%s)"`
+- **Generated header**: `Version.h` is auto-generated from `src/core/Version.h.in` via `configure_file()`. Reconfigure to pick up version changes.
+- **Runtime access**: `#include "Version.h"` → `theword::core::APP_VERSION` (string), `APP_VERSION_MAJOR`/`MINOR`/`PATCH` (int)

@@ -28,6 +28,7 @@ cmake --build build --parallel
 3. **Implement** — Follow conventions below, write tests (doctest)
 4. **Verify** — Build and run
 5. **Document** — Update `the-word-docs/` with anything new
+6. **Version** — Bump version in `CMakeLists.txt` and tag (see [Versioning](#versioning) below)
 
 ## Coding Conventions
 
@@ -70,6 +71,18 @@ rm -rf build && cmake -B build -DCMAKE_BUILD_TYPE=Release -G "Unix Makefiles"
 | libcurl not found | Install `libcurl4-openssl-dev` (optional, only for online API) |
 | No USFM files | Download Bíblia Livre from ebible.org and place in `assets/usfm/` |
 | API "Access denied" | Use Bible ID 3034 (BSB), not 111 (NIV) |
+
+## Versioning
+
+- **Source of truth**: `project(theword VERSION X.Y.Z)` in `CMakeLists.txt`
+- **SemVer**: bump MAJOR on breaking API changes, MINOR on new features, PATCH on bug fixes and refactors
+- **Default bump**: PATCH for any `feat:`, `fix:`, or `refactor:` commit; no bump for `docs:`, `test:`, `chore:`
+- **Tagging**: After bumping, create an annotated tag:
+  ```bash
+  git tag -a "v$(grep -oP 'VERSION \K[0-9.]+' CMakeLists.txt | head -1)" -m "$(git log -1 --pretty=%s)"
+  ```
+- Generated `Version.h` is updated automatically on reconfigure (`cmake -B build ...`)
+- Version is displayed in the About overlay and accessible at runtime via `theword::core::APP_VERSION`
 
 ## See Also
 
