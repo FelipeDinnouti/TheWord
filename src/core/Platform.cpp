@@ -1,4 +1,5 @@
 #include "Platform.h"
+#include "IHttpClient.h"
 #include "raylib.h"
 #include "Config.h"
 #include "EnvLoader.h"
@@ -8,8 +9,10 @@
 #if defined(__ANDROID__)
 #include <android_native_app_glue.h>
 #include <android/asset_manager.h>
+#include <android/log.h>
 #include <jni.h>
 #include "AndroidAssetProvider.h"
+#include "CurlHttpClient.h"
 extern "C" struct android_app* GetAndroidApp(void);
 #elif defined(__EMSCRIPTEN__)
 #include <emscripten.h>
