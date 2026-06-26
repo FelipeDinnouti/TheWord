@@ -1,0 +1,130 @@
+{
+    "version": 6,
+    "cmakeMinimumRequired": {
+        "major": 3,
+        "minor": 16,
+        "patch": 0
+    },
+    "configurePresets": [
+        {
+            "name": "default",
+            "displayName": "Linux Desktop Release",
+            "description": "Standard Linux desktop release build",
+            "generator": "Unix Makefiles",
+            "binaryDir": "${sourceDir}/build",
+            "cacheVariables": {
+                "CMAKE_BUILD_TYPE": "Release",
+                "CMAKE_EXPORT_COMPILE_COMMANDS": "ON"
+            }
+        },
+        {
+            "name": "debug",
+            "displayName": "Linux Desktop Debug",
+            "description": "Linux desktop debug build with optional AddressSanitizer",
+            "generator": "Unix Makefiles",
+            "binaryDir": "${sourceDir}/build-debug",
+            "cacheVariables": {
+                "CMAKE_BUILD_TYPE": "Debug",
+                "CMAKE_EXPORT_COMPILE_COMMANDS": "ON"
+            }
+        },
+        {
+            "name": "android-x86_64",
+            "displayName": "Android x86_64",
+            "description": "Android build for x86_64 emulator via NDK",
+            "generator": "Ninja",
+            "binaryDir": "${sourceDir}/build-android",
+            "cacheVariables": {
+                "CMAKE_TOOLCHAIN_FILE": {
+                    "type": "FILEPATH",
+                    "value": "$env{ANDROID_NDK}/build/cmake/android.toolchain.cmake"
+                },
+                "ANDROID_ABI": "x86_64",
+                "ANDROID_PLATFORM": "android-24",
+                "PLATFORM": "Android",
+                "ANDROID_NDK": {
+                    "type": "PATH",
+                    "value": "$env{ANDROID_NDK}"
+                },
+                "CMAKE_BUILD_TYPE": "Release"
+            }
+        },
+        {
+            "name": "android-arm64",
+            "displayName": "Android arm64-v8a",
+            "description": "Android build for arm64-v8a devices via NDK",
+            "generator": "Ninja",
+            "binaryDir": "${sourceDir}/build-android-arm64",
+            "cacheVariables": {
+                "CMAKE_TOOLCHAIN_FILE": {
+                    "type": "FILEPATH",
+                    "value": "$env{ANDROID_NDK}/build/cmake/android.toolchain.cmake"
+                },
+                "ANDROID_ABI": "arm64-v8a",
+                "ANDROID_PLATFORM": "android-24",
+                "PLATFORM": "Android",
+                "ANDROID_NDK": {
+                    "type": "PATH",
+                    "value": "$env{ANDROID_NDK}"
+                },
+                "CMAKE_BUILD_TYPE": "Release"
+            }
+        },
+        {
+            "name": "wasm",
+            "displayName": "WebAssembly (Emscripten)",
+            "description": "WebAssembly build via Emscripten SDK",
+            "generator": "Ninja",
+            "binaryDir": "${sourceDir}/build-wasm",
+            "cacheVariables": {
+                "CMAKE_TOOLCHAIN_FILE": {
+                    "type": "FILEPATH",
+                    "value": "$env{EMSDK}/upstream/emscripten/cmake/Modules/Platform/Emscripten.cmake"
+                },
+                "CMAKE_BUILD_TYPE": "Release",
+                "CMAKE_EXPORT_COMPILE_COMMANDS": "ON"
+            }
+        },
+        {
+            "name": "windows-mingw",
+            "displayName": "Windows (MinGW cross-compile)",
+            "description": "Windows cross-compile from Linux host via MinGW toolchain",
+            "generator": "MinGW Makefiles",
+            "binaryDir": "${sourceDir}/build-windows",
+            "cacheVariables": {
+                "CMAKE_TOOLCHAIN_FILE": {
+                    "type": "FILEPATH",
+                    "value": "$env{MINGW_CMAKE_TOOLCHAIN}"
+                },
+                "CMAKE_BUILD_TYPE": "Release",
+                "CMAKE_EXPORT_COMPILE_COMMANDS": "ON"
+            }
+        }
+    ],
+    "buildPresets": [
+        {
+            "name": "default",
+            "configurePreset": "default"
+        },
+        {
+            "name": "debug",
+            "configurePreset": "debug"
+        },
+        {
+            "name": "android-x86_64",
+            "configurePreset": "android-x86_64"
+        },
+        {
+            "name": "android-arm64",
+            "configurePreset": "android-arm64"
+        },
+        {
+            "name": "wasm",
+            "configurePreset": "wasm"
+        },
+        {
+            "name": "windows-mingw",
+            "configurePreset": "windows-mingw"
+        }
+    ]
+}

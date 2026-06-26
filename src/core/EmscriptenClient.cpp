@@ -1,36 +1,28 @@
 #include "EmscriptenClient.h"
 #include "Logger.h"
 #include <emscripten/fetch.h>
-#include <cstring>
 
-EmscriptenClient::EmscriptenClient() {}
-
-void EmscriptenClient::SetAppKey(const std::string& key) {
-    appKey = key;
-}
-
-std::string EmscriptenClient::GetAppKey() const {
-    return appKey;
-}
-
+namespace theword::core {
+namespace {
 struct FetchBuffer {
     std::string data;
     bool done;
 };
 
-static void OnSuccess(emscripten_fetch_t* fetch) {
+void OnSuccess(emscripten_fetch_t* fetch) {
     auto* buf = static_cast<FetchBuffer*>(fetch->userData);
     buf->data.assign(fetch->data, fetch->numBytes);
     buf->done = true;
     emscripten_fetch_close(fetch);
 }
 
-static void OnError(emscripten_fetch_t* fetch) {
+void OnError(emscripten_fetch_t* fetch) {
     auto* buf = static_cast<FetchBuffer*>(fetch->userData);
     Logger::Error("WASM fetch failed: " + std::string(fetch->statusText));
     buf->done = true;
     emscripten_fetch_close(fetch);
 }
+} // namespace
 
 std::string EmscriptenClient::Get(const std::string& url) {
     FetchBuffer buf;
@@ -52,3 +44,5 @@ std::string EmscriptenClient::Get(const std::string& url) {
     emscripten_fetch(&attr, url.c_str());
     return buf.data;
 }
+
+} // namespace theword::core

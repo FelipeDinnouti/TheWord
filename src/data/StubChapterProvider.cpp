@@ -2,21 +2,24 @@
 #include "core/GlobalId.h"
 #include <sstream>
 
-static std::vector<Word> TokenizeText(const std::string& text, int verseId) {
+namespace theword::data {
+namespace {
+std::vector<Word> TokenizeText(const std::string& text, int verseId) {
     std::vector<Word> words;
     std::istringstream stream(text);
     std::string word;
     while (stream >> word) {
         Word w;
-        w.id = GetNextWordId();
+        w.id = theword::core::GetNextWordId();
         w.verseId = verseId;
         w.text = word;
         words.push_back(w);
     }
     return words;
 }
+} // namespace
 
-bool StubChapterProvider::HasChapter(const std::string& bookId, int chapter) const {
+bool StubChapterProvider::HasChapter(const std::string& bookId, int chapter) {
     return (bookId == "JHN" && chapter == 3);
 }
 
@@ -58,3 +61,5 @@ std::optional<ChapterData> StubChapterProvider::LoadChapter(
 
     return data;
 }
+
+} // namespace theword::data

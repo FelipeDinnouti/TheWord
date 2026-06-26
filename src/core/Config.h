@@ -1,7 +1,7 @@
 #ifndef CONFIG_H
 #define CONFIG_H
 
-namespace config {
+namespace theword::core { namespace config {
 
 constexpr int WINDOW_WIDTH = 450;
 constexpr int WINDOW_HEIGHT = 800;
@@ -46,11 +46,11 @@ constexpr const char* YVP_APP_KEY = "YVP_APP_KEY";
 constexpr const char* DB_DIR = ".theword";
 constexpr const char* DB_FILE = "highlights.db";
 
-} // namespace config
+} } // namespace theword::core::config
 
 // On Android, raylib stores raw AKEYCODE values instead of raylib KEY_* constants.
 // Use key::ESCAPE, key::G, etc. for platform-agnostic key codes.
-namespace key {
+namespace theword::core { namespace key {
 #ifdef __ANDROID__
     constexpr int ESCAPE = config::KEY_ESCAPE_ANDROID;
     constexpr int G = config::KEY_G_ANDROID;
@@ -76,6 +76,6 @@ namespace key {
     constexpr int TAB = KEY_TAB;
     constexpr int BACKSPACE = KEY_BACKSPACE;
 #endif
-} // namespace key
+} } // namespace theword::core::key
 
 #endif // CONFIG_H

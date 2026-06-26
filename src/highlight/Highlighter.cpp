@@ -1,11 +1,16 @@
 #include "Highlighter.h"
+#include "event/EventBus.h"
+#include "event/Events.h"
 #include <algorithm>
 
-static const HighlightType DEFAULT_HIGHLIGHT_TYPE { 1, "Yellow", {255, 255, 0, 100} };
-static Color ToColor(const SimpleColor& c) { return {c.r, c.g, c.b, c.a}; }
+namespace theword::highlight {
+namespace {
+const HighlightType DEFAULT_HIGHLIGHT_TYPE { 1, "Yellow", {255, 255, 0, 100} };
+Color ToColor(const SimpleColor& c) { return {c.r, c.g, c.b, c.a}; }
+} // namespace
 
-Highlighter::Highlighter(PersistenceInterface& persistence)
-    : persistence(persistence)
+Highlighter::Highlighter(theword::event::EventBus& eventBus, PersistenceInterface& persistence)
+    : eventBus_(eventBus), persistence(persistence)
     , selectionStart(-1)
     , selectionEnd(-1)
     , selecting(false)
@@ -17,6 +22,25 @@ Highlighter::Highlighter(PersistenceInterface& persistence)
     }
     activeTypeId = types[0].id;
     Load();
+
+    eventBus_.On<theword::event::SelectionEvent>([this](const auto& e) { OnSelection(e); });
+}
+
+void Highlighter::OnSelection(const theword::event::SelectionEvent& e) {
+    switch (e.action) {
+        case theword::event::SelectionEvent::Action::Start:
+            StartSelection(e.startWordId);
+            break;
+        case theword::event::SelectionEvent::Action::Update:
+            UpdateSelection(e.endWordId);
+            break;
+        case theword::event::SelectionEvent::Action::End:
+            EndSelection();
+            break;
+        case theword::event::SelectionEvent::Action::Cancel:
+            selecting = false;
+            break;
+    }
 }
 
 void Highlighter::SetProvider(const std::string& name) {
@@ -132,3 +156,5 @@ const std::vector<Highlight>& Highlighter::GetHighlights() const {
 const std::vector<HighlightType>& Highlighter::GetTypes() const {
     return types;
 }
+
+} // namespace theword::highlight

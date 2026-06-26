@@ -1,19 +1,23 @@
 #include "FontHelper.h"
+#include "IAssetProvider.h"
 #include <raylib.h>
 #include <cstdint>
 #include <algorithm>
 #include <string>
 
-static uint16_t ReadU16(const uint8_t* data, size_t offset) {
+namespace theword::core {
+namespace {
+uint16_t ReadU16(const uint8_t* data, size_t offset) {
     return (uint16_t)data[offset] << 8 | (uint16_t)data[offset + 1];
 }
 
-static uint32_t ReadU32(const uint8_t* data, size_t offset) {
+uint32_t ReadU32(const uint8_t* data, size_t offset) {
     return (uint32_t)data[offset] << 24 |
            (uint32_t)data[offset + 1] << 16 |
            (uint32_t)data[offset + 2] << 8 |
            (uint32_t)data[offset + 3];
 }
+} // namespace
 
 std::vector<int> LoadFontCodepoints(const char* fontPath) {
     int dataSize = 0;
@@ -25,11 +29,17 @@ std::vector<int> LoadFontCodepoints(const char* fontPath) {
     return result;
 }
 
+std::vector<int> LoadFontCodepoints(IAssetProvider& assets, const std::string& fontPath) {
+    auto data = assets.readFileBinary(fontPath);
+    if (!data || data->empty()) return {};
+
+    return LoadFontCodepointsFromData(data->data(), data->size());
+}
+
 std::vector<int> LoadFontCodepointsFromData(const uint8_t* data, size_t size) {
     std::vector<int> result;
     if (!data || size < 12) return result;
 
-    // Parse TrueType/OpenType offset table
     uint16_t numTables = ReadU16(data, 4);
 
     size_t cmapOffset = 0;
@@ -52,7 +62,6 @@ std::vector<int> LoadFontCodepointsFromData(const uint8_t* data, size_t size) {
     for (uint16_t i = 0; i < numCmapTables; i++) {
         size_t entry = cmapOffset + 4 + i * 8;
         uint16_t platformID = ReadU16(data, entry);
-        uint16_t encodingID = ReadU16(data, entry + 2);
         uint32_t subOffset = ReadU32(data, entry + 4);
 
         size_t sub = cmapOffset + subOffset;
@@ -89,3 +98,5 @@ std::vector<int> LoadFontCodepointsFromData(const uint8_t* data, size_t size) {
 
     return result;
 }
+
+} // namespace theword::core

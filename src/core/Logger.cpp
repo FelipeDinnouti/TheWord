@@ -1,42 +1,27 @@
 #include "Logger.h"
+#include "Platform.h"
 #include <cstdio>
 
-#ifdef __ANDROID__
-#include <android/log.h>
-#endif
+namespace theword::core {
 
 void Logger::Info(const std::string& msg) {
-#ifdef __ANDROID__
-    __android_log_print(ANDROID_LOG_INFO, "TheWord", "%s", msg.c_str());
-#else
-    std::fprintf(stdout, "%s\n", msg.c_str());
-#endif
+    platform::WriteLog(platform::LogLevel::INFO, msg.c_str());
 }
 
 #ifndef NDEBUG
 void Logger::Debug(const std::string& msg) {
-#ifdef __ANDROID__
-    __android_log_print(ANDROID_LOG_DEBUG, "TheWord", "%s", msg.c_str());
-#else
-    std::fprintf(stdout, "%s\n", msg.c_str());
-#endif
+    platform::WriteLog(platform::LogLevel::DEBUG, msg.c_str());
 }
 #else
 void Logger::Debug(const std::string&) {}
 #endif
 
 void Logger::Warning(const std::string& msg) {
-#ifdef __ANDROID__
-    __android_log_print(ANDROID_LOG_WARN, "TheWord", "%s", msg.c_str());
-#else
-    std::fprintf(stderr, "%s\n", msg.c_str());
-#endif
+    platform::WriteLog(platform::LogLevel::WARN, msg.c_str());
 }
 
 void Logger::Error(const std::string& msg) {
-#ifdef __ANDROID__
-    __android_log_print(ANDROID_LOG_ERROR, "TheWord", "%s", msg.c_str());
-#else
-    std::fprintf(stderr, "%s\n", msg.c_str());
-#endif
+    platform::WriteLog(platform::LogLevel::ERROR, msg.c_str());
 }
+
+} // namespace theword::core

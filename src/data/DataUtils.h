@@ -7,6 +7,8 @@
 #include "core/GlobalId.h"
 #include "ChapterProvider.h"
 
+namespace theword::data {
+
 inline void TokenizeToWords(const std::string& text, int verseId,
                             std::vector<Word>& chapterWords,
                             std::vector<Word>& segmentWords) {
@@ -14,7 +16,7 @@ inline void TokenizeToWords(const std::string& text, int verseId,
     std::string word;
     while (stream >> word) {
         Word w;
-        w.id = GetNextWordId();
+        w.id = theword::core::GetNextWordId();
         w.verseId = verseId;
         w.text = word;
         chapterWords.push_back(w);
@@ -48,5 +50,7 @@ inline std::string DecodeHtmlEntities(const std::string& input) {
     }
     return result;
 }
+
+} // namespace theword::data
 
 #endif

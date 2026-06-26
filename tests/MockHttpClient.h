@@ -1,10 +1,12 @@
-#ifndef MOCKHTTPCLIENT_H
-#define MOCKHTTPCLIENT_H
+#ifndef MOCK_HTTP_CLIENT_H
+#define MOCK_HTTP_CLIENT_H
 
 #include "core/IHttpClient.h"
 #include <string>
 
-class MockHttpClient : public IHttpClient {
+namespace theword::test {
+
+class MockHttpClient : public theword::core::IHttpClient {
 public:
     void SetResponse(const std::string& r) { response = r; }
     std::string Get(const std::string&) override { return response; }
@@ -13,5 +15,7 @@ public:
 private:
     std::string response;
 };
+
+} // namespace theword::test
 
 #endif

@@ -1,6 +1,8 @@
 #include "InMemoryStorage.h"
 #include <algorithm>
 
+namespace theword::highlight {
+
 std::vector<Highlight> InMemoryStorage::LoadHighlights() {
     return highlights;
 }
@@ -26,4 +28,4 @@ std::vector<HighlightType> InMemoryStorage::LoadHighlightTypes() {
     return types;
 }
 
-
+} // namespace theword::highlight

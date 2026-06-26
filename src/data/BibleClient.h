@@ -1,31 +1,39 @@
-#ifndef BIBLECLIENT_H
-#define BIBLECLIENT_H
+#ifndef BIBLE_CLIENT_H
+#define BIBLE_CLIENT_H
 
 #include <string>
 #include <optional>
-#include "../core/IHttpClient.h"
+#include <unordered_map>
+#include "core/IHttpClient.h"
 #include "ChapterProvider.h"
+
+class BibleClientTest;  // test helper, defined in test_main.cpp
+
+namespace theword::data {
 
 class BibleClient : public ChapterProvider {
 public:
-    BibleClient(IHttpClient& apiClient, int bibleId);
+    BibleClient(theword::core::IHttpClient& apiClient, int bibleId);
 
-    bool HasChapter(const std::string& bookId, int chapter) const override;
+    bool HasChapter(const std::string& bookId, int chapter) override;
     std::optional<ChapterData> LoadChapter(
         const std::string& bookId, int chapter) override;
     const char* ProviderName() const override;
 
 private:
-    friend class BibleClientTest;
+    friend class ::BibleClientTest;
 
-    IHttpClient& apiClient;
+    theword::core::IHttpClient& apiClient;
     int bibleId;
     const std::string baseUrl;
+    std::unordered_map<std::string, bool> cachedHasChapter;
 
     static std::string ExtractJsonString(const std::string& json, const std::string& key);
     std::optional<ChapterData> ParseHtmlChapter(const std::string& html,
-                                                  const std::string& bookId, int chapter);
+                                                  const std::string& bookId, int chapter) const;
     static std::string StripHtml(const std::string& html);
 };
 
-#endif // BIBLECLIENT_H
+} // namespace theword::data
+
+#endif // BIBLE_CLIENT_H

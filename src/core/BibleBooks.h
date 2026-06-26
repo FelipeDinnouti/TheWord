@@ -1,8 +1,10 @@
-#ifndef BIBLEBOOKS_H
-#define BIBLEBOOKS_H
+#ifndef BIBLE_BOOKS_H
+#define BIBLE_BOOKS_H
 
 #include <string>
 #include <array>
+
+namespace theword::core {
 
 struct BookInfo {
     const char* code;
@@ -127,5 +129,7 @@ inline std::string ChapterIdToTitle(const std::string& id) {
     if (idx < 0) return id;
     return std::string(BOOKS[idx].fullName) + " " + std::to_string(chapter);
 }
+
+} // namespace theword::core
 
 #endif

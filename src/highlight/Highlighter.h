@@ -5,13 +5,18 @@
 #include <vector>
 #include <raylib.h>
 
+namespace theword::event {
+    class EventBus;
+    struct SelectionEvent;
+}
+
+namespace theword::highlight {
+
 class Highlighter {
 public:
-    explicit Highlighter(PersistenceInterface& persistence);
+    Highlighter(theword::event::EventBus& eventBus, PersistenceInterface& persistence);
 
-    void StartSelection(int wordId);
-    void UpdateSelection(int wordId);
-    void EndSelection();
+    void OnSelection(const theword::event::SelectionEvent& e);
 
     bool IsWordHighlighted(int wordId) const;
     Color GetHighlightForWord(int wordId) const;
@@ -31,6 +36,7 @@ public:
     const std::vector<HighlightType>& GetTypes() const;
 
 private:
+    theword::event::EventBus& eventBus_;
     PersistenceInterface& persistence;
     std::vector<Highlight> highlights;
     std::vector<HighlightType> types;
@@ -41,6 +47,12 @@ private:
     int nextId;
     int activeTypeId;
     std::string currentProvider;
+
+    void StartSelection(int wordId);
+    void UpdateSelection(int wordId);
+    void EndSelection();
 };
+
+} // namespace theword::highlight
 
 #endif

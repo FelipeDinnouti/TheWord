@@ -1,5 +1,7 @@
 #include "CompositeProvider.h"
 
+namespace theword::data {
+
 CompositeProvider::CompositeProvider(ChapterProvider& primary, ChapterProvider& fallback)
     : primary(&primary), fallback(fallback) {}
 
@@ -7,7 +9,7 @@ void CompositeProvider::SetPrimary(ChapterProvider& provider) {
     primary = &provider;
 }
 
-bool CompositeProvider::HasChapter(const std::string& bookId, int chapter) const {
+bool CompositeProvider::HasChapter(const std::string& bookId, int chapter) {
     return primary->HasChapter(bookId, chapter) || fallback.HasChapter(bookId, chapter);
 }
 
@@ -21,3 +23,5 @@ std::optional<ChapterData> CompositeProvider::LoadChapter(
 const char* CompositeProvider::ProviderName() const {
     return "CompositeProvider";
 }
+
+} // namespace theword::data

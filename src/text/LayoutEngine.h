@@ -1,16 +1,26 @@
-#ifndef LAYOUTENGINE_H
-#define LAYOUTENGINE_H
+#ifndef LAYOUT_ENGINE_H
+#define LAYOUT_ENGINE_H
 
 #include <string>
 #include <vector>
 #include <raylib.h>
 #include "data/ChapterProvider.h"
 
+namespace theword::event {
+    class EventBus;
+    struct ResizeEvent;
+    struct FontSizeEvent;
+}
+
+namespace theword::text {
+
 class LayoutEngine {
 public:
-    LayoutEngine(float maxWidth, const Font& font, float fontSize, float lineSpacing, float scaleFactor = 1.0f);
+    LayoutEngine(theword::event::EventBus& eventBus,
+                 float maxWidth, const Font& font, float fontSize,
+                 float lineSpacing, float scaleFactor = 1.0f);
 
-    ChapterLayout LayoutChapter(const std::string& chapterId, const ChapterData& data);
+    theword::data::ChapterLayout LayoutChapter(const std::string& chapterId, const theword::data::ChapterData& data);
 
     float GetFontSize() const;
     void SetFontSize(float size);
@@ -19,9 +29,10 @@ public:
     void SetMaxWidth(float width);
     void InvalidateCache();
 
-    int HitTestLine(const ChapterLayout& layout, float chapterRelativeY, float screenX) const;
+    int HitTestLine(const theword::data::ChapterLayout& layout, float chapterRelativeY, float screenX) const;
 
 private:
+    theword::event::EventBus& eventBus_;
     float maxWidth;
     const Font& font;
     float fontSize;
@@ -33,11 +44,16 @@ private:
     float headingBottomGap;
     float poetryIndent;
 
-    std::vector<ChapterLayout> cachedLayouts;
+    std::vector<theword::data::ChapterLayout> cachedLayouts;
 
-    float LayoutWords(const Segment& seg, const ChapterData& data, float startY,
-                      std::vector<Line>& lines, float indent, SegmentType spanType);
-    float LayoutHeading(const Segment& seg, float startY, std::vector<Line>& lines, float fontScale);
+    void OnResize(const theword::event::ResizeEvent& e);
+    void OnFontSize(const theword::event::FontSizeEvent& e);
+
+    float LayoutWords(const theword::data::Segment& seg, const theword::data::ChapterData& data, float startY,
+                      std::vector<theword::data::Line>& lines, float indent, theword::data::SegmentType spanType);
+    float LayoutHeading(const theword::data::Segment& seg, float startY, std::vector<theword::data::Line>& lines, float fontScale);
 };
+
+} // namespace theword::text
 
 #endif // LAYOUTENGINE_H

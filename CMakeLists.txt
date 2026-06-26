@@ -1,8 +1,7 @@
 cmake_minimum_required(VERSION 3.16)
 project(theword C CXX)
 
-set(CMAKE_CXX_STANDARD 17)
-set(CMAKE_CXX_STANDARD_REQUIRED ON)
+set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
 include(FetchContent)
 
@@ -39,6 +38,11 @@ FetchContent_Declare(
 
 FetchContent_MakeAvailable(doctest)
 
+# ── libcurl (optional, for online Bible API) ──────────────────────────────
+if(NOT EMSCRIPTEN AND NOT ANDROID)
+    find_package(CURL QUIET)
+endif()
+
 # ── SQLite amalgamation (bundled, no system dependency) ──────────────────
 FetchContent_Declare(
     sqlite3
@@ -51,71 +55,128 @@ if(NOT sqlite3_POPULATED)
     FetchContent_Populate(sqlite3)
 endif()
 
+# ── SQLite object library (compiled once, linked to both targets) ─────────
+add_library(sqlite3_obj OBJECT ${sqlite3_SOURCE_DIR}/sqlite3.c)
+target_include_directories(sqlite3_obj SYSTEM PUBLIC ${sqlite3_SOURCE_DIR})
+
 # ── Source files (explicit list — no GLOB_RECURSE) ────────────────────────
+set(EVENT_SOURCES
+    src/event/EventBus.h
+    src/event/Events.h
+)
+
 set(CORE_BASE_SOURCES
     src/core/Logger.cpp
+    src/core/Logger.h
     src/core/EnvLoader.cpp
+    src/core/EnvLoader.h
     src/core/FontHelper.cpp
+    src/core/FontHelper.h
     src/core/FileAssetProvider.cpp
+    src/core/FileAssetProvider.h
+    src/core/Platform.cpp
+    src/core/Platform.h
+    src/core/Config.h
+    src/core/Theme.h
+    src/core/BibleBooks.h
+    src/core/GlobalId.h
+    src/core/IHttpClient.h
+    src/core/IAssetProvider.h
 )
 
 if(EMSCRIPTEN)
     set(CORE_SOURCES
         src/core/EmscriptenClient.cpp
+        src/core/EmscriptenClient.h
         ${CORE_BASE_SOURCES}
     )
 elseif(ANDROID)
     set(CORE_SOURCES
-        src/core/AndroidClient.cpp
+        src/core/CurlHttpClient.cpp
+        src/core/CurlHttpClient.h
         src/core/AndroidAssetProvider.cpp
+        src/core/AndroidAssetProvider.h
         ${CORE_BASE_SOURCES}
     )
 else()
-    set(CORE_SOURCES
-        src/core/CurlHttpClient.cpp
-        ${CORE_BASE_SOURCES}
-    )
+    if(CURL_FOUND)
+        set(CORE_SOURCES
+            src/core/CurlHttpClient.cpp
+            src/core/CurlHttpClient.h
+            ${CORE_BASE_SOURCES}
+        )
+    else()
+        set(CORE_SOURCES
+            ${CORE_BASE_SOURCES}
+        )
+    endif()
 endif()
 
 set(DATA_SOURCES
     src/data/BibleClient.cpp
+    src/data/BibleClient.h
+    src/data/ChapterProvider.h
     src/data/CompositeProvider.cpp
+    src/data/CompositeProvider.h
     src/data/StubChapterProvider.cpp
+    src/data/StubChapterProvider.h
     src/data/USFMParser.cpp
+    src/data/USFMParser.h
+    src/data/DataUtils.h
 )
 
 set(TEXT_SOURCES
     src/text/LayoutEngine.cpp
+    src/text/LayoutEngine.h
 )
 
 set(DOCUMENT_SOURCES
     src/document/DocumentManager.cpp
+    src/document/DocumentManager.h
 )
 
 set(HIGHLIGHT_SOURCES
     src/highlight/Highlighter.cpp
+    src/highlight/Highlighter.h
     src/highlight/InMemoryStorage.cpp
+    src/highlight/InMemoryStorage.h
+    src/highlight/PersistenceInterface.h
 )
 
 set(INPUT_SOURCES
     src/input/InputHandler.cpp
+    src/input/InputHandler.h
 )
 
 set(RENDERER_SOURCES
     src/renderer/Renderer.cpp
+    src/renderer/Renderer.h
     src/renderer/UIManager.cpp
+    src/renderer/UIManager.h
+    src/renderer/ContextMenu.cpp
+    src/renderer/ContextMenu.h
+    src/renderer/SettingsPanel.cpp
+    src/renderer/SettingsPanel.h
+    src/renderer/GoToDialog.cpp
+    src/renderer/GoToDialog.h
+    src/renderer/AboutOverlay.cpp
+    src/renderer/AboutOverlay.h
 )
 
-# ── SQLite object library (compiled once, linked to both targets) ─────────
-add_library(sqlite3_obj OBJECT ${sqlite3_SOURCE_DIR}/sqlite3.c)
-target_include_directories(sqlite3_obj PRIVATE ${sqlite3_SOURCE_DIR})
+set(APP_SOURCES
+    src/app/App.h
+    src/app/App.cpp
+)
 
 set(PERSISTENCE_SOURCES
     src/persistence/PersistenceManager.cpp
+    src/persistence/PersistenceManager.h
 )
 
-set(THEWORD_SOURCES
-    src/main.cpp
+# ── Object library (shared sources compiled once for both targets) ────────
+add_library(theword_objects OBJECT
+    ${APP_SOURCES}
+    ${EVENT_SOURCES}
     ${CORE_SOURCES}
     ${DATA_SOURCES}
     ${TEXT_SOURCES}
@@ -124,36 +185,45 @@ set(THEWORD_SOURCES
     ${INPUT_SOURCES}
     ${PERSISTENCE_SOURCES}
     ${RENDERER_SOURCES}
-    $<TARGET_OBJECTS:sqlite3_obj>
 )
 
-if(ANDROID)
-    add_library(theword SHARED ${THEWORD_SOURCES})
-else()
-    add_executable(theword ${THEWORD_SOURCES})
+target_compile_features(theword_objects PUBLIC cxx_std_17)
+target_include_directories(theword_objects PUBLIC src)
+
+if(EMSCRIPTEN OR ANDROID OR CURL_FOUND)
+    target_compile_definitions(theword_objects PRIVATE THEWORD_HAS_HTTP)
 endif()
 
-target_include_directories(theword PRIVATE src ${sqlite3_SOURCE_DIR})
+if(NOT MSVC)
+    target_compile_options(theword_objects PRIVATE -Wall -Wextra -Wpedantic)
+endif()
+
+# ── Executables ────────────────────────────────────────────────────────────
+if(ANDROID)
+    add_library(theword SHARED src/main.cpp $<TARGET_OBJECTS:theword_objects> $<TARGET_OBJECTS:sqlite3_obj>)
+else()
+    add_executable(theword src/main.cpp $<TARGET_OBJECTS:theword_objects> $<TARGET_OBJECTS:sqlite3_obj>)
+endif()
+
+target_include_directories(theword PRIVATE src)
+
+target_compile_definitions(theword PRIVATE THEWORD_VERSION="1.0.0")
 
 if(NOT EMSCRIPTEN AND NOT ANDROID)
-    add_executable(theword_test
-        tests/test_main.cpp
-        ${CORE_SOURCES}
-        ${DATA_SOURCES}
-        ${TEXT_SOURCES}
-        ${DOCUMENT_SOURCES}
-        ${HIGHLIGHT_SOURCES}
-        ${INPUT_SOURCES}
-        ${PERSISTENCE_SOURCES}
-        ${RENDERER_SOURCES}
-        $<TARGET_OBJECTS:sqlite3_obj>
-    )
-    target_include_directories(theword_test PRIVATE src ${doctest_SOURCE_DIR} ${sqlite3_SOURCE_DIR})
+    add_executable(theword_test tests/test_main.cpp $<TARGET_OBJECTS:theword_objects> $<TARGET_OBJECTS:sqlite3_obj>)
+    target_include_directories(theword_test PRIVATE src ${doctest_SOURCE_DIR})
 endif()
 
-# ── Asset copying ─────────────────────────────────────────────────────────
-file(COPY assets DESTINATION ${CMAKE_BINARY_DIR})
-file(COPY shaders DESTINATION ${CMAKE_BINARY_DIR})
+# ── Asset copying (build-time, recopies every build) ──────────────────────
+add_custom_command(TARGET theword POST_BUILD
+    COMMAND ${CMAKE_COMMAND} -E copy_directory
+        ${CMAKE_SOURCE_DIR}/assets
+        $<TARGET_FILE_DIR:theword>/assets
+    COMMAND ${CMAKE_COMMAND} -E copy_directory
+        ${CMAKE_SOURCE_DIR}/shaders
+        $<TARGET_FILE_DIR:theword>/shaders
+    COMMENT "Copying assets and shaders to build directory"
+)
 
 # ── Linking ───────────────────────────────────────────────────────────────
 if(EMSCRIPTEN)
@@ -164,6 +234,7 @@ if(EMSCRIPTEN)
         "-sMAX_WEBGL_VERSION=2"
         "-sFORCE_FILESYSTEM=1"
         "-sFETCH=1"
+        "-lidbfs.js"
         "--preload-file" "assets"
         "--shell-file" "${CMAKE_SOURCE_DIR}/wasm_shell.html"
     )
@@ -207,6 +278,15 @@ elseif(ANDROID)
         "-Wl,-u,ANativeActivity_onCreate"
         "-Wl,-undefined,dynamic_lookup"
     )
+elseif(APPLE)
+    target_link_libraries(theword PRIVATE
+        raylib
+        "-framework Cocoa"
+        "-framework IOKit"
+    )
+    if(CURL_FOUND)
+        target_link_libraries(theword PRIVATE CURL::libcurl)
+    endif()
 elseif(WIN32)
     target_link_libraries(theword PRIVATE
         raylib
@@ -220,11 +300,13 @@ elseif(WIN32)
         gdi32
         winmm
     )
+    if(CURL_FOUND)
+        target_link_libraries(theword PRIVATE CURL::libcurl)
+        target_link_libraries(theword_test PRIVATE CURL::libcurl)
+    endif()
 else()
-    find_package(CURL REQUIRED)
     target_link_libraries(theword PRIVATE
         raylib
-        ${CURL_LIBRARIES}
         m
         pthread
         dl
@@ -236,7 +318,6 @@ else()
     )
     target_link_libraries(theword_test PRIVATE
         raylib
-        ${CURL_LIBRARIES}
         m
         pthread
         dl
@@ -246,4 +327,8 @@ else()
         Xrandr
         Xi
     )
+    if(CURL_FOUND)
+        target_link_libraries(theword PRIVATE CURL::libcurl)
+        target_link_libraries(theword_test PRIVATE CURL::libcurl)
+    endif()
 endif()

@@ -1,7 +1,9 @@
-#ifndef ANDROIDASSETPROVIDER_H
-#define ANDROIDASSETPROVIDER_H
+#ifndef ANDROID_ASSET_PROVIDER_H
+#define ANDROID_ASSET_PROVIDER_H
 
 #include "IAssetProvider.h"
+
+namespace theword::core {
 
 class AndroidAssetProvider : public IAssetProvider {
 public:
@@ -12,5 +14,7 @@ public:
 private:
     void* assetManager;
 };
+
+} // namespace theword::core
 
 #endif

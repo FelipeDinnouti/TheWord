@@ -1,15 +1,22 @@
 #include "BibleClient.h"
 #include "DataUtils.h"
-#include <iostream>
 #include <algorithm>
 #include <cctype>
 
-BibleClient::BibleClient(IHttpClient& client, int bibleId)
+namespace theword::data {
+
+BibleClient::BibleClient(theword::core::IHttpClient& client, int bibleId)
     : apiClient(client), bibleId(bibleId), baseUrl("https://api.youversion.com/v1") {
 }
 
-bool BibleClient::HasChapter(const std::string& /*bookId*/, int /*chapter*/) const {
-    return true;
+bool BibleClient::HasChapter(const std::string& bookId, int chapter) {
+    auto key = bookId + "." + std::to_string(chapter);
+    auto cached = cachedHasChapter.find(key);
+    if (cached != cachedHasChapter.end()) return cached->second;
+
+    auto result = LoadChapter(bookId, chapter);
+    cachedHasChapter[key] = result.has_value();
+    return result.has_value();
 }
 
 const char* BibleClient::ProviderName() const {
@@ -62,299 +69,9 @@ std::optional<ChapterData> BibleClient::LoadChapter(
     return ParseHtmlChapter(htmlContent, bookId, chapter);
 }
 
-std::optional<ChapterData> BibleClient::ParseHtmlChapter(const std::string& html,
-        const std::string& bookId, int chapter) {
-    ChapterData data;
-    data.bookId = bookId;
-    data.chapterNum = chapter;
+namespace {
 
-    // Parse div blocks from HTML using character-by-character scanning
-    // We're looking for <div class="..."> ... </div> blocks
-
-    size_t pos = 0;
-    std::vector<Word> currentWords;
-    int currentVerse = 1;
-    int segmentVerseStart = 1;
-    size_t segmentStartWordIndex = 0;
-    SegmentType currentSegType = SegmentType::VerseText;
-    int currentSegLevel = 0;
-    bool inParagraphContent = false;
-    bool inFootnote = false;
-
-    auto flushWordsToSegment = [&]() {
-        if (currentWords.empty()) return;
-
-        Segment seg;
-        seg.type = currentSegType;
-        seg.level = currentSegLevel;
-        seg.verseStart = segmentVerseStart;
-        seg.verseEnd = currentVerse;
-        seg.startWordIndex = segmentStartWordIndex;
-        seg.wordCount = currentWords.size();
-
-        data.segments.push_back(seg);
-    };
-
-    while (pos < html.size()) {
-        // Look for <div
-        size_t divStart = html.find("<div", pos);
-        if (divStart == std::string::npos) break;
-
-        // Find the end of the opening div tag
-        size_t tagEnd = html.find('>', divStart);
-        if (tagEnd == std::string::npos) break;
-
-        std::string openTag = html.substr(divStart, tagEnd - divStart);
-
-        // Extract class from the opening tag
-        std::string divClass;
-        size_t classPos = openTag.find("class=\"");
-        if (classPos != std::string::npos) {
-            classPos += 7; // skip class="
-            size_t classEnd = openTag.find('\"', classPos);
-            if (classEnd != std::string::npos) {
-                divClass = openTag.substr(classPos, classEnd - classPos);
-            }
-        }
-
-        // Determine segment type from class
-        SegmentType segType = SegmentType::VerseText;
-        int segLevel = 0;
-        bool isDivBlock = true;
-
-        if (divClass.find("s1") != std::string::npos) {
-            segType = SegmentType::SectionHeading;
-            segLevel = 1;
-        } else if (divClass.find("s2") != std::string::npos) {
-            segType = SegmentType::SectionHeading;
-            segLevel = 2;
-        } else if (divClass.find("q1") != std::string::npos) {
-            segType = SegmentType::PoetryLine;
-            segLevel = 1;
-        } else if (divClass.find("q2") != std::string::npos) {
-            segType = SegmentType::PoetryLine;
-            segLevel = 2;
-        } else if (divClass.find("q3") != std::string::npos) {
-            segType = SegmentType::PoetryLine;
-            segLevel = 3;
-        } else if (divClass.find("p") != std::string::npos ||
-                   divClass.find("m") != std::string::npos) {
-            segType = SegmentType::ParagraphBreak;
-        } else {
-            isDivBlock = false;
-        }
-
-        if (!isDivBlock) {
-            pos = tagEnd + 1;
-            continue;
-        }
-
-        // Find the matching closing div tag (simplified: find next </div>)
-        size_t closeDiv = html.find("</div>", tagEnd);
-        if (closeDiv == std::string::npos) break;
-
-        std::string innerHtml = html.substr(tagEnd + 1, closeDiv - tagEnd - 1);
-
-        pos = closeDiv + 6; // skip </div>
-
-        if (segType == SegmentType::ParagraphBreak) {
-            // Emit ParagraphBreak segment
-            Segment pb;
-            pb.type = SegmentType::ParagraphBreak;
-            pb.level = 0;
-            data.segments.push_back(pb);
-
-            // Parse verse content within the paragraph
-            size_t innerPos = 0;
-            currentVerse = 1;
-            currentWords.clear();
-            segmentStartWordIndex = data.words.size();
-            currentSegType = SegmentType::VerseText;
-            currentSegLevel = 0;
-            segmentVerseStart = 1;
-            inFootnote = false;
-
-            while (innerPos < innerHtml.size()) {
-                // Check for tags
-                if (innerHtml[innerPos] == '<') {
-                    size_t closeTag = innerHtml.find('>', innerPos);
-                    if (closeTag == std::string::npos) break;
-
-                    std::string tag = innerHtml.substr(innerPos + 1, closeTag - innerPos - 1);
-
-                    // Check if this is a verse number span
-                    if (tag.find("yv-v") != std::string::npos) {
-                        // Extract verse number from v="N" attribute
-                        size_t vPos = tag.find("v=\"");
-                        if (vPos != std::string::npos) {
-                            vPos += 3;
-                            size_t vEnd = tag.find('\"', vPos);
-                            if (vEnd != std::string::npos) {
-                                flushWordsToSegment();
-                                currentVerse = std::stoi(tag.substr(vPos, vEnd - vPos));
-                                segmentStartWordIndex = data.words.size();
-                                segmentVerseStart = currentVerse;
-                                currentWords.clear();
-                            }
-                        }
-                    }
-
-                    // Check for footnote start
-                    if (tag.find("yv-n") != std::string::npos) {
-                        inFootnote = true;
-                    }
-
-                    // Check for footnote end
-                    if (tag[0] == '/' && tag.find("span") != std::string::npos) {
-                        // Closing span might end footnote context
-                        // We'll handle this differently — skip entire footnote spans
-                    }
-
-                    // Skip verse labels
-                    if (tag.find("yv-vlbl") != std::string::npos) {
-                        innerPos = closeTag + 1;
-                        // Skip content until </span>
-                        size_t spanEnd = innerHtml.find("</span>", innerPos);
-                        if (spanEnd != std::string::npos) {
-                            innerPos = spanEnd + 7;
-                        }
-                        continue;
-                    }
-
-                    innerPos = closeTag + 1;
-                } else {
-                    if (inFootnote) {
-                        // Check if we're exiting the footnote
-                        if (innerHtml.substr(innerPos, 7) == "</span>") {
-                            inFootnote = false;
-                            innerPos += 7;
-                            continue;
-                        }
-                        innerPos++;
-                        continue;
-                    }
-
-                    // Collect text until next tag or end
-                    size_t nextTag = innerHtml.find('<', innerPos);
-                    std::string textChunk;
-                    if (nextTag == std::string::npos) {
-                        textChunk = innerHtml.substr(innerPos);
-                        innerPos = innerHtml.size();
-                    } else {
-                        textChunk = innerHtml.substr(innerPos, nextTag - innerPos);
-                        innerPos = nextTag;
-                    }
-
-                    std::string decoded = DecodeHtmlEntities(textChunk);
-                    TokenizeToWords(decoded, currentVerse, data.words, currentWords);
-                }
-            }
-
-            flushWordsToSegment();
-        } else if (segType == SegmentType::SectionHeading) {
-            // Extract text from inner HTML (strip tags)
-            std::string headingText = StripHtml(innerHtml);
-
-            // Remove leading verse labels if present
-            while (!headingText.empty() && std::isdigit(static_cast<unsigned char>(headingText[0]))) {
-                size_t spacePos = headingText.find(' ');
-                if (spacePos == std::string::npos) break;
-                // Check if this is a verse label like "1 "
-                std::string prefix = headingText.substr(0, spacePos);
-                bool allDigits = !prefix.empty() &&
-                    std::all_of(prefix.begin(), prefix.end(),
-                        [](char c) { return std::isdigit(static_cast<unsigned char>(c)); });
-                if (allDigits) {
-                    headingText = headingText.substr(spacePos + 1);
-                } else {
-                    break;
-                }
-            }
-
-            // Trim whitespace
-            while (!headingText.empty() && headingText[0] == ' ') {
-                headingText = headingText.substr(1);
-            }
-
-            if (!headingText.empty()) {
-                Segment seg;
-                seg.type = SegmentType::SectionHeading;
-                seg.level = segLevel;
-                seg.text = headingText;
-                data.segments.push_back(seg);
-            }
-        } else if (segType == SegmentType::PoetryLine) {
-            // Parse text from inner html
-            inFootnote = false;
-            currentVerse = 1;
-            currentWords.clear();
-            segmentStartWordIndex = data.words.size();
-            currentSegType = SegmentType::PoetryLine;
-            currentSegLevel = segLevel;
-
-            // Simple text extraction from inner html
-            std::string poetryText;
-            size_t innerPos = 0;
-            while (innerPos < innerHtml.size()) {
-                if (innerHtml[innerPos] == '<') {
-                    size_t closeTag = innerHtml.find('>', innerPos);
-                    if (closeTag == std::string::npos) break;
-                    std::string tag = innerHtml.substr(innerPos + 1, closeTag - innerPos - 1);
-
-                    if (tag.find("yv-n") != std::string::npos) {
-                        inFootnote = true;
-                    } else if (tag[0] == '/' && inFootnote) {
-                        if (tag.find("span") != std::string::npos) {
-                            inFootnote = false;
-                        }
-                    } else if (tag.find("yv-v") != std::string::npos) {
-                        size_t vPos = tag.find("v=\"");
-                        if (vPos != std::string::npos) {
-                            vPos += 3;
-                            size_t vEnd = tag.find('\"', vPos);
-                            if (vEnd != std::string::npos) {
-                                currentVerse = std::stoi(tag.substr(vPos, vEnd - vPos));
-                            }
-                        }
-                    }
-
-                    innerPos = closeTag + 1;
-                } else if (inFootnote) {
-                    innerPos++;
-                } else {
-                    size_t nextTag = innerHtml.find('<', innerPos);
-                    std::string chunk;
-                    if (nextTag == std::string::npos) {
-                        chunk = innerHtml.substr(innerPos);
-                        innerPos = innerHtml.size();
-                    } else {
-                        chunk = innerHtml.substr(innerPos, nextTag - innerPos);
-                        innerPos = nextTag;
-                    }
-                    poetryText += chunk;
-                }
-            }
-
-            TokenizeToWords(poetryText, currentVerse, data.words, currentWords);
-
-            if (!currentWords.empty()) {
-                Segment seg;
-                seg.type = SegmentType::PoetryLine;
-                seg.level = segLevel;
-                seg.verseStart = segmentVerseStart;
-                seg.verseEnd = currentVerse;
-                seg.startWordIndex = segmentStartWordIndex;
-                seg.wordCount = currentWords.size();
-                data.segments.push_back(seg);
-                currentWords.clear();
-            }
-        }
-    }
-
-    return data;
-}
-
-std::string BibleClient::StripHtml(const std::string& html) {
+std::string StripHtmlImpl(const std::string& html) {
     std::string result;
     bool inTag = false;
     for (size_t i = 0; i < html.size(); ++i) {
@@ -368,3 +85,263 @@ std::string BibleClient::StripHtml(const std::string& html) {
     }
     return DecodeHtmlEntities(result);
 }
+
+std::string StripFootnotes(const std::string& html) {
+    std::string result;
+    size_t pos = 0;
+    int depth = 0;
+    while (pos < html.size()) {
+        if (html[pos] == '<') {
+            size_t tagEnd = html.find('>', pos);
+            if (tagEnd == std::string::npos) break;
+            std::string tag = html.substr(pos + 1, tagEnd - pos - 1);
+
+            if (tag.find("yv-n") != std::string::npos && depth == 0) {
+                depth = 1;
+                pos = tagEnd + 1;
+                continue;
+            }
+
+            if (depth > 0) {
+                if (tag[0] == '/' && tag.find("span") != std::string::npos) {
+                    depth--;
+                } else if (tag.find("span") != std::string::npos && tag[0] != '/') {
+                    depth++;
+                }
+                pos = tagEnd + 1;
+                continue;
+            }
+
+            result += html.substr(pos, tagEnd - pos + 1);
+            pos = tagEnd + 1;
+        } else {
+            if (depth == 0) {
+                result += html[pos];
+            }
+            pos++;
+        }
+    }
+    return result;
+}
+
+void FlushWordsToSegment(ChapterData& data, SegmentType segType, int segLevel,
+                         int verseStart, int verseEnd,
+                         const std::vector<Word>& words, size_t startWordIndex) {
+    if (words.empty()) return;
+    Segment seg;
+    seg.type = segType;
+    seg.level = segLevel;
+    seg.verseStart = verseStart;
+    seg.verseEnd = verseEnd;
+    seg.startWordIndex = startWordIndex;
+    seg.wordCount = words.size();
+    data.segments.push_back(seg);
+}
+
+int ParseVerseNumber(const std::string& tag) {
+    size_t vPos = tag.find("v=\"");
+    if (vPos == std::string::npos) return -1;
+    vPos += 3;
+    size_t vEnd = tag.find('\"', vPos);
+    if (vEnd == std::string::npos) return -1;
+    return std::stoi(tag.substr(vPos, vEnd - vPos));
+}
+
+SegmentType ClassifyDiv(const std::string& divClass, int& outLevel) {
+    if (divClass.find("s1") != std::string::npos) { outLevel = 1; return SegmentType::SectionHeading; }
+    if (divClass.find("s2") != std::string::npos) { outLevel = 2; return SegmentType::SectionHeading; }
+    if (divClass.find("q1") != std::string::npos) { outLevel = 1; return SegmentType::PoetryLine; }
+    if (divClass.find("q2") != std::string::npos) { outLevel = 2; return SegmentType::PoetryLine; }
+    if (divClass.find("q3") != std::string::npos) { outLevel = 3; return SegmentType::PoetryLine; }
+    if (divClass.find("p") != std::string::npos || divClass.find("m") != std::string::npos) {
+        outLevel = 0;
+        return SegmentType::ParagraphBreak;
+    }
+    return SegmentType::VerseText;
+}
+
+void ParseParagraphContent(const std::string& html, ChapterData& data) {
+    Segment pb;
+    pb.type = SegmentType::ParagraphBreak;
+    pb.level = 0;
+    data.segments.push_back(pb);
+
+    std::string cleaned = StripFootnotes(html);
+    size_t pos = 0;
+    int currentVerse = 1;
+    std::vector<Word> currentWords;
+    int segmentVerseStart = 1;
+    size_t segmentStartWordIndex = data.words.size();
+
+    while (pos < cleaned.size()) {
+        if (cleaned[pos] != '<') {
+            size_t nextTag = cleaned.find('<', pos);
+            std::string chunk = (nextTag == std::string::npos)
+                ? cleaned.substr(pos) : cleaned.substr(pos, nextTag - pos);
+            std::string decoded = DecodeHtmlEntities(chunk);
+            TokenizeToWords(decoded, currentVerse, data.words, currentWords);
+            pos = (nextTag == std::string::npos) ? cleaned.size() : nextTag;
+            continue;
+        }
+
+        size_t closeTag = cleaned.find('>', pos);
+        if (closeTag == std::string::npos) break;
+        std::string tag = cleaned.substr(pos + 1, closeTag - pos - 1);
+
+        if (tag.find("yv-v") != std::string::npos) {
+            int newVerse = ParseVerseNumber(tag);
+            if (newVerse > 0) {
+                FlushWordsToSegment(data, SegmentType::VerseText, 0,
+                                    segmentVerseStart, currentVerse,
+                                    currentWords, segmentStartWordIndex);
+                currentVerse = newVerse;
+                segmentStartWordIndex = data.words.size();
+                segmentVerseStart = currentVerse;
+                currentWords.clear();
+            }
+        }
+
+        if (tag.find("yv-vlbl") != std::string::npos) {
+            size_t spanEnd = cleaned.find("</span>", closeTag);
+            pos = (spanEnd != std::string::npos) ? spanEnd + 7 : closeTag + 1;
+            continue;
+        }
+
+        pos = closeTag + 1;
+    }
+
+    FlushWordsToSegment(data, SegmentType::VerseText, 0,
+                        segmentVerseStart, currentVerse,
+                        currentWords, segmentStartWordIndex);
+}
+
+void ParseSectionHeading(const std::string& innerHtml, int segLevel, ChapterData& data) {
+    std::string text = StripHtmlImpl(innerHtml);
+
+    while (!text.empty() && std::isdigit(static_cast<unsigned char>(text[0]))) {
+        size_t spacePos = text.find(' ');
+        if (spacePos == std::string::npos) break;
+        std::string prefix = text.substr(0, spacePos);
+        bool allDigits = !prefix.empty() &&
+            std::all_of(prefix.begin(), prefix.end(),
+                [](char c) { return std::isdigit(static_cast<unsigned char>(c)); });
+        if (!allDigits) break;
+        text = text.substr(spacePos + 1);
+    }
+
+    while (!text.empty() && text[0] == ' ') {
+        text = text.substr(1);
+    }
+
+    if (text.empty()) return;
+
+    Segment seg;
+    seg.type = SegmentType::SectionHeading;
+    seg.level = segLevel;
+    seg.text = text;
+    data.segments.push_back(seg);
+}
+
+void ParsePoetryLine(const std::string& innerHtml, int segLevel, ChapterData& data) {
+    std::string cleaned = StripFootnotes(innerHtml);
+    std::string text;
+    size_t pos = 0;
+    int verse = 1;
+
+    while (pos < cleaned.size()) {
+        if (cleaned[pos] != '<') {
+            size_t nextTag = cleaned.find('<', pos);
+            std::string chunk = (nextTag == std::string::npos)
+                ? cleaned.substr(pos) : cleaned.substr(pos, nextTag - pos);
+            text += chunk;
+            pos = (nextTag == std::string::npos) ? cleaned.size() : nextTag;
+            continue;
+        }
+
+        size_t closeTag = cleaned.find('>', pos);
+        if (closeTag == std::string::npos) break;
+        std::string tag = cleaned.substr(pos + 1, closeTag - pos - 1);
+
+        if (tag.find("yv-v") != std::string::npos) {
+            int v = ParseVerseNumber(tag);
+            if (v > 0) verse = v;
+        }
+
+        pos = closeTag + 1;
+    }
+
+    std::vector<Word> words;
+    size_t startWordIndex = data.words.size();
+    std::string decoded = DecodeHtmlEntities(text);
+    TokenizeToWords(decoded, verse, data.words, words);
+
+    if (words.empty()) return;
+
+    Segment seg;
+    seg.type = SegmentType::PoetryLine;
+    seg.level = segLevel;
+    seg.verseStart = verse;
+    seg.verseEnd = verse;
+    seg.startWordIndex = startWordIndex;
+    seg.wordCount = words.size();
+    data.segments.push_back(seg);
+}
+
+} // anonymous namespace
+
+std::optional<ChapterData> BibleClient::ParseHtmlChapter(const std::string& html,
+        const std::string& bookId, int chapter) const {
+    ChapterData data;
+    data.bookId = bookId;
+    data.chapterNum = chapter;
+
+    size_t pos = 0;
+    while (pos < html.size()) {
+        size_t divStart = html.find("<div", pos);
+        if (divStart == std::string::npos) break;
+
+        size_t tagEnd = html.find('>', divStart);
+        if (tagEnd == std::string::npos) break;
+
+        std::string openTag = html.substr(divStart, tagEnd - divStart);
+
+        std::string divClass;
+        size_t classPos = openTag.find("class=\"");
+        if (classPos != std::string::npos) {
+            classPos += 7;
+            size_t classEnd = openTag.find('\"', classPos);
+            if (classEnd != std::string::npos) {
+                divClass = openTag.substr(classPos, classEnd - classPos);
+            }
+        }
+
+        int segLevel = 0;
+        SegmentType segType = ClassifyDiv(divClass, segLevel);
+        if (segType == SegmentType::VerseText) {
+            pos = tagEnd + 1;
+            continue;
+        }
+
+        size_t closeDiv = html.find("</div>", tagEnd);
+        if (closeDiv == std::string::npos) break;
+
+        std::string innerHtml = html.substr(tagEnd + 1, closeDiv - tagEnd - 1);
+        pos = closeDiv + 6;
+
+        if (segType == SegmentType::ParagraphBreak) {
+            ParseParagraphContent(innerHtml, data);
+        } else if (segType == SegmentType::SectionHeading) {
+            ParseSectionHeading(innerHtml, segLevel, data);
+        } else if (segType == SegmentType::PoetryLine) {
+            ParsePoetryLine(innerHtml, segLevel, data);
+        }
+    }
+
+    return data;
+}
+
+std::string BibleClient::StripHtml(const std::string& html) {
+    return StripHtmlImpl(html);
+}
+
+} // namespace theword::data

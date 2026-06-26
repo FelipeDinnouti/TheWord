@@ -1,16 +1,68 @@
 #include "DocumentManager.h"
-#include "../core/BibleBooks.h"
+#include "event/EventBus.h"
+#include "event/Events.h"
+#include "text/LayoutEngine.h"
+#include "core/BibleBooks.h"
 #include <algorithm>
 #include <cmath>
 
-DocumentManager::DocumentManager(LayoutEngine& engine, float viewportHeight,
-                                  ChapterProvider& provider, float contentTop)
-    : layoutEngine(engine)
+namespace theword::document {
+
+using namespace theword::core;
+using namespace theword::data;
+
+DocumentManager::DocumentManager(theword::event::EventBus& eventBus,
+                                  theword::text::LayoutEngine& engine, float viewportHeight,
+                                  theword::data::ChapterProvider& provider, float contentTop)
+    : eventBus_(eventBus)
+    , layoutEngine(engine)
     , primaryProvider(provider)
     , scrollY(0.0f)
     , targetScrollY(0.0f)
     , viewportHeight(viewportHeight)
-    , contentTop(contentTop) {}
+    , contentTop(contentTop) {
+
+    eventBus_.On<theword::event::ScrollEvent>([this](const auto& e) { OnScroll(e); });
+    eventBus_.On<theword::event::ResizeEvent>([this](const auto& e) { OnResize(e); });
+    eventBus_.On<theword::event::FontSizeEvent>([this](const auto& e) { OnFontSize(e); });
+    eventBus_.On<theword::event::SourceSwitchEvent>([this](const auto& e) { OnSourceSwitch(e); });
+}
+
+void DocumentManager::OnScroll(const theword::event::ScrollEvent& e) {
+    float maxScroll = GetTotalHeight() - viewportHeight;
+    if (maxScroll < 0.0f) maxScroll = 0.0f;
+
+    float newTarget = targetScrollY + e.delta;
+    if (newTarget < 0.0f) newTarget = 0.0f;
+    if (newTarget > maxScroll) newTarget = maxScroll;
+
+    targetScrollY = newTarget;
+}
+
+void DocumentManager::OnResize(const theword::event::ResizeEvent& e) {
+    float newContentWidth = e.width - 60.0f;
+    layoutEngine.SetMaxWidth(newContentWidth);
+    layoutEngine.InvalidateCache();
+
+    float scrollFraction = 0.0f;
+    if (GetTotalHeight() > 0.0f) {
+        scrollFraction = scrollY / GetTotalHeight();
+    }
+
+    viewportHeight = e.height - contentTop;
+    InvalidateLayouts();
+
+    float newTotal = GetTotalHeight();
+    scrollY = scrollFraction * newTotal;
+    targetScrollY = scrollY;
+}
+
+void DocumentManager::OnFontSize(const theword::event::FontSizeEvent& /*e*/) {
+    InvalidateLayouts();
+}
+
+void DocumentManager::OnSourceSwitch(const theword::event::SourceSwitchEvent& /*e*/) {
+}
 
 void DocumentManager::LoadInitialChapter(const std::string& chapterId) {
     chapters.clear();
@@ -54,22 +106,6 @@ void DocumentManager::Update(float deltaTime) {
     if (scrollY >= maxScroll - AUTO_LOAD_MARGIN) {
         TryLoadAdjacent(false);
     }
-}
-
-void DocumentManager::ScrollBy(float delta) {
-    float maxScroll = GetTotalHeight() - viewportHeight;
-    if (maxScroll < 0.0f) maxScroll = 0.0f;
-
-    float newTarget = targetScrollY + delta;
-    if (newTarget < 0.0f) newTarget = 0.0f;
-    if (newTarget > maxScroll) newTarget = maxScroll;
-
-    targetScrollY = newTarget;
-}
-
-void DocumentManager::ScrollTo(float y) {
-    scrollY = y;
-    targetScrollY = y;
 }
 
 float DocumentManager::GetScrollY() const {
@@ -193,7 +229,7 @@ void DocumentManager::PrependChapter(const std::string& chapterId, ChapterData&&
     scrollY = targetScrollY;
 }
 
-void DocumentManager::AppendChapter(const std::string& chapterId, ChapterData&& data) {
+void DocumentManager::AppendChapter(const std::string& chapterId, theword::data::ChapterData&& data) {
     ChapterLayout layout = layoutEngine.LayoutChapter(chapterId, data);
 
     float lastEnd = 0.0f;
@@ -211,3 +247,5 @@ void DocumentManager::AppendChapter(const std::string& chapterId, ChapterData&& 
 
     chapters.push_back(std::move(lc));
 }
+
+} // namespace theword::document

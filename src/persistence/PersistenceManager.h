@@ -4,9 +4,11 @@
 #include "highlight/PersistenceInterface.h"
 #include <string>
 
-struct sqlite3;
+struct sqlite3; // opaque pointer matches sqlite3 typedef in sqlite3.h
 
-class PersistenceManager : public PersistenceInterface {
+namespace theword::persistence {
+
+class PersistenceManager : public theword::highlight::PersistenceInterface {
 public:
     explicit PersistenceManager(const std::string& dbPath);
     ~PersistenceManager() override;
@@ -15,13 +17,13 @@ public:
     PersistenceManager(PersistenceManager&&) = delete;
     PersistenceManager& operator=(PersistenceManager&&) = delete;
 
-    std::vector<Highlight> LoadHighlights() override;
-    void SaveHighlight(const Highlight& h) override;
+    std::vector<theword::highlight::Highlight> LoadHighlights() override;
+    void SaveHighlight(const theword::highlight::Highlight& h) override;
     void RemoveHighlight(int id) override;
-    std::vector<HighlightType> LoadHighlightTypes() override;
-    void SaveHighlightType(const HighlightType& t);
+    std::vector<theword::highlight::HighlightType> LoadHighlightTypes() override;
+    void SaveHighlightType(const theword::highlight::HighlightType& t);
 
-    std::string GetPreference(const std::string& key, const std::string& defaultValue);
+    std::string GetPreference(const std::string& key, const std::string& defaultValue) const;
     void SetPreference(const std::string& key, const std::string& value);
 
 private:
@@ -29,5 +31,7 @@ private:
     void InitSchema();
     void EnsureDirectory(const std::string& dbPath);
 };
+
+} // namespace theword::persistence
 
 #endif

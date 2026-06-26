@@ -60,6 +60,20 @@ export ANDROID_NDK=$HOME/Android/Sdk/ndk/25.2.9519653
 export ANDROID_SDK=$HOME/Android/Sdk
 ```
 
+### Java Development Kit (JDK)
+
+The Android Java compilation step (`TheWordActivity.java` → `classes.dex`) requires JDK 11 or later:
+
+```bash
+# Linux
+sudo apt install openjdk-11-jdk
+
+# Verify
+javac --version
+```
+
+Without a JDK, the build script skips Java compilation and falls back to `android.app.NativeActivity` (no custom splash/IME).
+
 ## WebAssembly (Emscripten)
 
 ```bash

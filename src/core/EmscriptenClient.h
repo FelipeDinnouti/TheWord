@@ -1,8 +1,10 @@
-#ifndef EMSCRIPTENCLIENT_H
-#define EMSCRIPTENCLIENT_H
+#ifndef EMSCRIPTEN_CLIENT_H
+#define EMSCRIPTEN_CLIENT_H
 
 #include "IHttpClient.h"
 #include <string>
+
+namespace theword::core {
 
 class EmscriptenClient : public IHttpClient {
 public:
@@ -16,5 +18,7 @@ public:
 private:
     std::string appKey;
 };
+
+} // namespace theword::core
 
 #endif

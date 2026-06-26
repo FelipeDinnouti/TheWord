@@ -41,6 +41,10 @@ On Linux, always use `-G "Unix Makefiles"`. The default or Ninja generators may 
 | Back button doesn't dismiss dialogs | Same keycode patch needed; `Config.h` has fallback `key::ESCAPE` mapping |
 | Touch scroll feels wrong | Touch input is behind `#ifdef __EMSCRIPTEN__`; Android uses desktop mouse path — being addressed in Phase 4 |
 | Database path wrong | `main.cpp` uses `/data/data/com.theword.app/app_storage/` — verify app package name matches manifest |
+| `javac` not found for Java compilation | Install JDK 11+: `sudo apt install openjdk-11-jdk` (the script falls back gracefully to NativeActivity-only) |
+| `d8` not found for `.class` → `.dex` | Install Android SDK build-tools 34.0.0 via sdkmanager: `sdkmanager "build-tools;34.0.0"` |
+| APK packaging fails with "aapt: command not found" | Ensure `ANDROID_SDK` is set and `$ANDROID_SDK/build-tools/34.0.0/` exists |
+| Debug keystore error during signing | Create it manually: `keytool -genkey -v -keystore ~/.android/debug.keystore -alias androiddebugkey -keyalg RSA -keysize 2048 -validity 10000 -storepass android -keypass android -dname "CN=, OU=, O=, L=, S=, C="` |
 
 ## WebAssembly
 

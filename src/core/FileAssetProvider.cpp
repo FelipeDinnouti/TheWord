@@ -2,6 +2,8 @@
 #include <fstream>
 #include <sstream>
 
+namespace theword::core {
+
 std::optional<std::string> FileAssetProvider::readFileText(const std::string& path) {
     std::ifstream file(path);
     if (!file.is_open()) return std::nullopt;
@@ -19,3 +21,5 @@ std::optional<std::vector<uint8_t>> FileAssetProvider::readFileBinary(const std:
     if (!file.read(reinterpret_cast<char*>(data.data()), size)) return std::nullopt;
     return data;
 }
+
+} // namespace theword::core

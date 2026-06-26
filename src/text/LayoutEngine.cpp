@@ -1,13 +1,42 @@
 #include "LayoutEngine.h"
+#include "event/EventBus.h"
+#include "event/Events.h"
 #include "core/Theme.h"
 #include <algorithm>
 #include <cmath>
 
-LayoutEngine::LayoutEngine(float maxWidth, const Font& font, float fontSize, float lineSpacing, float scaleFactor)
-    : maxWidth(maxWidth), font(font), fontSize(fontSize), lineSpacing(lineSpacing),
+namespace theword::text {
+
+using namespace theword::core;
+using namespace theword::data;
+
+LayoutEngine::LayoutEngine(theword::event::EventBus& eventBus,
+                           float maxWidth, const Font& font, float fontSize,
+                           float lineSpacing, float scaleFactor)
+    : eventBus_(eventBus), maxWidth(maxWidth), font(font), fontSize(fontSize),
+      lineSpacing(lineSpacing),
       leftMargin(10.0f * scaleFactor), rightMargin(10.0f * scaleFactor),
       paragraphGap(8.0f * scaleFactor), headingTopGap(12.0f * scaleFactor),
-      headingBottomGap(6.0f * scaleFactor), poetryIndent(20.0f * scaleFactor) {}
+      headingBottomGap(6.0f * scaleFactor), poetryIndent(20.0f * scaleFactor) {
+
+    eventBus_.On<theword::event::ResizeEvent>([this](const auto& e) { OnResize(e); });
+    eventBus_.On<theword::event::FontSizeEvent>([this](const auto& e) { OnFontSize(e); });
+}
+
+void LayoutEngine::OnResize(const theword::event::ResizeEvent& e) {
+    maxWidth = e.width - 60.0f;
+    InvalidateCache();
+}
+
+void LayoutEngine::OnFontSize(const theword::event::FontSizeEvent& e) {
+    if (e.newSize > 0.0f) {
+        fontSize = e.newSize;
+    } else if (e.delta != 0.0f) {
+        fontSize += e.delta;
+        if (fontSize < 12.0f) fontSize = 12.0f;
+    }
+    InvalidateCache();
+}
 
 float LayoutEngine::GetFontSize() const {
     return fontSize;
@@ -182,3 +211,5 @@ float LayoutEngine::LayoutHeading(const Segment& seg, float startY, std::vector<
 
     return y - startY;
 }
+
+} // namespace theword::text

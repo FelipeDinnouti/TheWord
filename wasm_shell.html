@@ -11,6 +11,18 @@
 </head>
 <body>
     <canvas id="canvas" oncontextmenu="event.preventDefault()"></canvas>
+    <script>
+    var Module = {
+        preRun: [function() {
+            FS.mkdir('/persistent');
+            FS.mount(IDBFS, {}, '/persistent');
+            FS.syncfs(true, function(err) {});
+        }],
+        postRun: [function() {
+            FS.syncfs(function(err) {});
+        }]
+    };
+    </script>
     {{{ SCRIPT }}}
 </body>
 </html>

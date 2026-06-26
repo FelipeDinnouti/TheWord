@@ -1,30 +1,31 @@
-#ifndef INPUTHANDLER_H
-#define INPUTHANDLER_H
+#ifndef INPUT_HANDLER_H
+#define INPUT_HANDLER_H
 
 #include <raylib.h>
+#include <functional>
 
-class DocumentManager;
-class Highlighter;
-class LayoutEngine;
-class UIManager;
+namespace theword::event { class EventBus; }
+
+namespace theword::input {
 
 class InputHandler {
 public:
-    InputHandler(DocumentManager& docManager, Highlighter& highlighter,
-                 LayoutEngine& layoutEngine, UIManager& uiManager,
-                 float contentTop, float scale = 1.0f);
+    InputHandler(theword::event::EventBus& eventBus,
+                 float contentTop, float scale = 1.0f,
+                 std::function<int(float, float)> hitTestFn = nullptr);
 
-    void HandleInput(float deltaTime);
+    void Poll(float deltaTime);
+    bool IsDialogActive() const { return dialogActive_; }
 
 private:
     enum class PressState { Idle, Pending, Dragging, LongPress };
 
-    DocumentManager& docManager;
-    Highlighter& highlighter;
-    LayoutEngine& layoutEngine;
-    UIManager& uiManager;
+    theword::event::EventBus& eventBus_;
     float contentTop;
     float scale;
+
+    std::function<int(float, float)> hitTestFn;
+    bool dialogActive_ = false;
 
     float scrollVelocity;
     static constexpr float SCROLL_SENSITIVITY = 30.0f;
@@ -51,5 +52,7 @@ private:
     void HandleTouchPressFSM();
     void HandlePinch();
 };
+
+} // namespace theword::input
 
 #endif

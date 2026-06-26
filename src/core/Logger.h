@@ -3,6 +3,8 @@
 
 #include <string>
 
+namespace theword::core {
+
 class Logger {
 public:
     static void Info(const std::string& msg);
@@ -10,5 +12,7 @@ public:
     static void Warning(const std::string& msg);
     static void Error(const std::string& msg);
 };
+
+} // namespace theword::core
 
 #endif

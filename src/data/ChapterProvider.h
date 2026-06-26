@@ -5,6 +5,8 @@
 #include <vector>
 #include <optional>
 
+namespace theword::data {
+
 struct Word {
     int id;
     int verseId;
@@ -63,10 +65,12 @@ struct ChapterData {
 class ChapterProvider {
 public:
     virtual ~ChapterProvider() = default;
-    virtual bool HasChapter(const std::string& bookId, int chapter) const = 0;
+    virtual bool HasChapter(const std::string& bookId, int chapter) = 0;
     virtual std::optional<ChapterData> LoadChapter(
         const std::string& bookId, int chapter) = 0;
     virtual const char* ProviderName() const = 0;
 };
+
+} // namespace theword::data
 
 #endif

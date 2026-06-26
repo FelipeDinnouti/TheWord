@@ -1,6 +1,8 @@
 #include "AndroidAssetProvider.h"
 #include <android/asset_manager.h>
 
+namespace theword::core {
+
 AndroidAssetProvider::AndroidAssetProvider(void* assetManager)
     : assetManager(assetManager) {}
 
@@ -25,3 +27,5 @@ std::optional<std::vector<uint8_t>> AndroidAssetProvider::readFileBinary(const s
     AAsset_close(asset);
     return result;
 }
+
+} // namespace theword::core

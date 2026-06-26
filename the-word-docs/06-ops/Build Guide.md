@@ -4,14 +4,16 @@
 
 ## Build Artifacts Overview
 
-| Platform | Build Directory | Output Artifacts |
-|----------|----------------|------------------|
-| Linux Desktop | `build/` | `theword` (executable), `theword_test` (test executable) |
-| Windows (MSYS2) | `build/` | `theword.exe`, `theword_test.exe` |
-| Android | `build-android/` | `libtheword.so` → `theword.apk` (signed, in project root) |
-| WebAssembly | `build-wasm/` | `theword.html`, `theword.js`, `theword.wasm`, `theword.data` |
+| Platform | Build Directory | How to configure | Output Artifacts |
+|----------|----------------|------------------|------------------|
+| Linux Desktop | `build/` | `cmake --preset default` | `theword` (executable), `theword_test` (test executable) |
+| Linux Debug | `build-debug/` | `cmake --preset debug` | `theword`, `theword_test` |
+| Android (x86_64) | `build-android-x86_64/` | `cmake --preset android-x86_64` or `./scripts/build-android.sh x86_64` | `libtheword.so` → `theword-x86_64.apk` |
+| Android (arm64) | `build-android-arm64/` | `cmake --preset android-arm64` or `./scripts/build-android.sh arm64-v8a` | `libtheword.so` → `theword-arm64-v8a.apk` |
+| WebAssembly | `build-wasm/` | `cmake --preset wasm` or `./scripts/build-wasm.sh` | `theword.html`, `theword.js`, `theword.wasm`, `theword.data` |
+| Windows (cross) | `build-windows/` | `cmake --preset windows-mingw` | `theword.exe` |
 
-Assets (`assets/` and `shaders/`) are copied into the build directory automatically during CMake configure.
+Assets (`assets/` and `shaders/`) are copied into the build directory automatically during build.
 
 ---
 
@@ -23,17 +25,20 @@ sudo apt install build-essential cmake git libcurl4-openssl-dev
 sudo apt install libgl1-mesa-dev libx11-dev libxcursor-dev libxi-dev pkg-config
 ```
 
+libcurl is optional — the app works in USFM-only mode without it.
+
 ### Windows (MSYS2)
 ```bash
 pacman -S mingw-w64-x86_64-gcc mingw-w64-x86_64-cmake mingw-w64-x86_64-make mingw-w64-x86_64-raylib
 ```
 
-### Android NDK
+### Android NDK + SDK
 ```bash
-# Download NDK 25.2.9519653 (or later) via Android Studio SDK Manager,
-# or manually from developer.android.com/ndk
+# Required: NDK 25.2.9519653 (or later)
 export ANDROID_NDK=$HOME/Android/Sdk/ndk/25.2.9519653
+# Required for APK packaging: Android SDK build-tools + platform
 export ANDROID_SDK=$HOME/Android/Sdk
+# Required for Java compilation step: JDK 11+ (for javac and d8)
 ```
 See `the-word-docs/06-ops/Environment Setup.md` for full NDK setup.
 
@@ -50,29 +55,41 @@ source ./emsdk_env.sh
 
 ## Build & Run
 
+### Quick Reference — CMake Presets
+
+All presets are defined in `CMakePresets.json` at the project root.
+
+```bash
+# List available presets
+cmake --list-presets
+
+# Configure + build with a preset
+cmake --preset <name>
+cmake --build --preset <name>
+```
+
 ### Linux Desktop (default)
 ```bash
-# Configure
-cmake -B build -DCMAKE_BUILD_TYPE=Release -G "Unix Makefiles"
-
-# Build
-cmake --build build --parallel
-
-# Run
+cmake --preset default
+cmake --build --preset default
 ./build/theword
-
-# Run tests
-./build/theword_test
 ```
 
 ### Linux Desktop (debug)
 ```bash
-cmake -B build-debug -DCMAKE_BUILD_TYPE=Debug -G "Unix Makefiles"
-cmake --build build-debug --parallel
+cmake --preset debug
+cmake --build --preset debug
 ./build-debug/theword
 ```
 
-### Windows
+### Linux Desktop (legacy — without presets)
+```bash
+cmake -B build -DCMAKE_BUILD_TYPE=Release -G "Unix Makefiles"
+cmake --build build --parallel
+./build/theword
+```
+
+### Windows (MSYS2)
 ```bash
 # In MSYS2 MINGW64 terminal:
 cmake -B build -G "MinGW Makefiles"
@@ -80,45 +97,54 @@ cmake --build build
 ./build/theword.exe
 ```
 
-### Android (x86_64 emulator)
-```bash
-# One-step build + package + sign
-./scripts/build-android.sh
+### Android
 
-# Or step-by-step:
-cmake -B build-android \
-  -DCMAKE_TOOLCHAIN_FILE=$ANDROID_NDK/build/cmake/android.toolchain.cmake \
-  -DANDROID_ABI=x86_64 \
-  -DANDROID_PLATFORM=android-24 \
-  -DCMAKE_BUILD_TYPE=Release \
-  -G "Ninja"
-cmake --build build-android --parallel
-# → produces build-android/libtheword.so
-# The build-android.sh script handles APK packaging + signing
+The Android build requires the NDK and SDK (see Environment Setup). The build script handles everything: CMake configure → native build → Java compilation → APK packaging → signing.
+
+```bash
+# One-command build for emulator (x86_64)
+./scripts/build-android.sh x86_64
+
+# One-command build for device (arm64-v8a)
+./scripts/build-android.sh arm64-v8a
+
+# One-command build for older devices (32-bit ARM)
+./scripts/build-android.sh armeabi-v7a
+
+# Install on connected device
+adb install theword-x86_64.apk     # emulator
+adb install theword-arm64-v8a.apk  # device
 ```
 
-### Android (arm64-v8a device)
+Or step-by-step using a preset:
+
 ```bash
-cmake -B build-android-arm64 \
-  -DCMAKE_TOOLCHAIN_FILE=$ANDROID_NDK/build/cmake/android.toolchain.cmake \
-  -DANDROID_ABI=arm64-v8a \
-  -DANDROID_PLATFORM=android-24 \
-  -DCMAKE_BUILD_TYPE=Release \
-  -G "Ninja"
-cmake --build build-android-arm64 --parallel
-# Package into APK (see scripts/build-android.sh for reference)
+# Configure (requires ANDROID_NDK and ANDROID_SDK env vars)
+cmake --preset android-arm64
+
+# Build native library
+cmake --build --preset android-arm64
+
+# The shared library is at build-android-arm64/libtheword.so
+# Package into APK manually:
+#   (see scripts/build-android.sh for the full packaging pipeline)
 ```
 
 ### WebAssembly
+
+Requires Emscripten SDK (`emsdk_env.sh` sourced). The build script wraps configure + build:
+
 ```bash
-# Requires Emscripten SDK (emsdk_env.sh sourced)
-cmake -B build-wasm \
-  -DCMAKE_TOOLCHAIN_FILE=$EMSDK/upstream/emscripten/cmake/Modules/Platform/Emscripten.cmake \
-  -DCMAKE_BUILD_TYPE=Release \
-  -G "Ninja"
-cmake --build build-wasm --parallel
-# → produces build-wasm/theword.html, .js, .wasm, .data
-# Serve with: python3 -m http.server 8080 (from build-wasm/)
+# One-command build
+./scripts/build-wasm.sh
+
+# Or step-by-step:
+cmake --preset wasm
+cmake --build --preset wasm
+
+# Serve locally
+python3 -m http.server 8080 -d build-wasm
+# Then open http://localhost:8080/theword.html
 ```
 
 ---
@@ -153,7 +179,7 @@ cmake --build build --parallel && ./build/theword_test
 ./build/theword_test --list-tests
 ```
 
-Current test count: **64 tests** (verified after Phase 1).
+Current test count: **64 tests**.
 
 ---
 
@@ -164,7 +190,7 @@ CMake uses explicit file lists (no `GLOB_RECURSE`). After adding a new `.cpp`:
 ```bash
 # 1. Add the file to the corresponding source list in CMakeLists.txt
 # 2. Delete build cache and reconfigure:
-rm -rf build && cmake -B build -DCMAKE_BUILD_TYPE=Release -G "Unix Makefiles"
+rm -rf build && cmake --preset default
 ```
 
 ---
@@ -174,9 +200,13 @@ rm -rf build && cmake -B build -DCMAKE_BUILD_TYPE=Release -G "Unix Makefiles"
 | Issue | Solution |
 |-------|----------|
 | `CMAKE_CXX_COMPILE_OBJECT not set` | Add `CXX` to project languages: `project(theword C CXX)` |
-| New .cpp not compiled | `rm -rf build && cmake -B build ...` |
-| libcurl not found | Install `libcurl4-openssl-dev` (Linux) or ensure MSYS2 package |
+| New .cpp not compiled | `rm -rf build && cmake --preset default` |
+| libcurl not found | Install `libcurl4-openssl-dev` (Linux) or ensure MSYS2 package — the build continues without it (USFM-only mode) |
 | API returns "Access denied" | Use Bible ID 3034 (BSB), not 111 (NIV) |
 | `libraylib.so: cannot open shared` | Run `sudo ldconfig` or set `LD_LIBRARY_PATH` |
 | Android NDK not found | Set `ANDROID_NDK` env var; install NDK 25.2+ |
+| `javac` not found (Android) | Install JDK 11+: `sudo apt install openjdk-11-jdk` |
+| `d8` not found (Android) | Install Android SDK build-tools 34.0.0 via sdkmanager |
+| APK packaging fails (Android) | Ensure `ANDROID_SDK` is set and points to valid SDK directory |
 | Emscripten toolchain not found | Source `emsdk_env.sh` before configuring |
+| `ninja` not found | Install `ninja-build` (Linux) or `ninja` (MSYS2) |

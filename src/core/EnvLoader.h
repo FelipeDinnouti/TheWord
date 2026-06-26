@@ -1,8 +1,10 @@
-#ifndef ENVLOADER_H
-#define ENVLOADER_H
+#ifndef ENV_LOADER_H
+#define ENV_LOADER_H
 
 #include <string>
 #include <map>
+
+namespace theword::core {
 
 class EnvLoader {
 public:
@@ -14,5 +16,7 @@ public:
 private:
     static std::map<std::string, std::string> variables;
 };
+
+} // namespace theword::core
 
 #endif // ENVLOADER_H

@@ -4,6 +4,8 @@
 #include <string>
 #include <vector>
 
+namespace theword::highlight {
+
 struct SimpleColor {
     unsigned char r, g, b, a;
 };
@@ -30,5 +32,7 @@ public:
     virtual void RemoveHighlight(int id) = 0;
     virtual std::vector<HighlightType> LoadHighlightTypes() = 0;
 };
+
+} // namespace theword::highlight
 
 #endif

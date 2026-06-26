@@ -4,6 +4,8 @@
 #include "PersistenceInterface.h"
 #include <vector>
 
+namespace theword::highlight {
+
 class InMemoryStorage : public PersistenceInterface {
 public:
     std::vector<Highlight> LoadHighlights() override;
@@ -15,5 +17,7 @@ private:
     std::vector<Highlight> highlights;
     std::vector<HighlightType> types;
 };
+
+} // namespace theword::highlight
 
 #endif

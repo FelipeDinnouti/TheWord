@@ -9,11 +9,10 @@
 
     <application
         android:label="TheWord"
-        android:hasCode="false"
         android:allowBackup="true">
 
         <activity
-            android:name="android.app.NativeActivity"
+            android:name="com.theword.app.TheWordActivity"
             android:configChanges="orientation|keyboardHidden|screenSize"
             android:exported="true">
             <meta-data

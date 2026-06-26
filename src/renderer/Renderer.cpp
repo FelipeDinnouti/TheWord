@@ -1,8 +1,31 @@
 #include "Renderer.h"
+#include "event/EventBus.h"
+#include "event/Events.h"
 #include <algorithm>
 
-Renderer::Renderer(const Font& bodyFont, const Font& headingFont, float contentTop, float fontSize)
-    : bodyFont(bodyFont), headingFont(headingFont), contentTop(contentTop), fontSize(fontSize), headingSize(fontSize * theme::FONT_HEADING) {}
+namespace theword::renderer {
+
+using namespace theword::core;
+using namespace theword::data;
+
+Renderer::Renderer(theword::event::EventBus& eventBus,
+                   const Font& bodyFont, const Font& headingFont,
+                   float contentTop, float fontSize)
+    : eventBus_(eventBus), bodyFont(bodyFont), headingFont(headingFont),
+      contentTop(contentTop), fontSize(fontSize),
+      headingSize(fontSize * theme::FONT_HEADING) {
+
+    eventBus_.On<theword::event::FontSizeEvent>([this](const auto& e) { OnFontSize(e); });
+}
+
+void Renderer::OnFontSize(const theword::event::FontSizeEvent& e) {
+    if (e.newSize > 0.0f) {
+        fontSize = e.newSize;
+    } else if (e.delta != 0.0f) {
+        fontSize += e.delta;
+    }
+    headingSize = fontSize * theme::FONT_HEADING;
+}
 
 void Renderer::SetFontSize(float size) {
     fontSize = size;
@@ -78,3 +101,5 @@ void Renderer::DrawScrollbar(float scrollY, float totalHeight, float viewportHei
 void Renderer::DrawFpsCounter(int x, int y) {
     DrawFPS(x, y);
 }
+
+} // namespace theword::renderer
