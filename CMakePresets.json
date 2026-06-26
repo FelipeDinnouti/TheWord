@@ -71,27 +71,6 @@
             }
         },
         {
-            "name": "android-armv7a",
-            "displayName": "Android armeabi-v7a",
-            "description": "Android build for 32-bit ARM devices via NDK",
-            "generator": "Ninja",
-            "binaryDir": "${sourceDir}/build-android-armv7a",
-            "cacheVariables": {
-                "CMAKE_TOOLCHAIN_FILE": {
-                    "type": "FILEPATH",
-                    "value": "$env{ANDROID_NDK}/build/cmake/android.toolchain.cmake"
-                },
-                "ANDROID_ABI": "armeabi-v7a",
-                "ANDROID_PLATFORM": "android-24",
-                "PLATFORM": "Android",
-                "ANDROID_NDK": {
-                    "type": "PATH",
-                    "value": "$env{ANDROID_NDK}"
-                },
-                "CMAKE_BUILD_TYPE": "Release"
-            }
-        },
-        {
             "name": "wasm",
             "displayName": "WebAssembly (Emscripten)",
             "description": "WebAssembly build via Emscripten SDK",
@@ -138,10 +117,6 @@
         {
             "name": "android-arm64",
             "configurePreset": "android-arm64"
-        },
-        {
-            "name": "android-armv7a",
-            "configurePreset": "android-armv7a"
         },
         {
             "name": "wasm",
