@@ -1,6 +1,6 @@
 # Product Requirements
 
-> Status: Updated 2026-06-22
+> Status: Updated 2026-06-26 | All MVP features implemented
 
 ## MVP Requirements
 
@@ -12,27 +12,31 @@
 - [x] Layout caching for performance
 - [x] Offline USFM Bible text (Bíblia Livre) — fallback when offline
 - [x] Online API Bible text (YouVersion) — primary source when online
-- [ ] Infinite scroll (bidirectional, chapters load dynamically)
-- [ ] Per-word highlighting (one color)
-- [ ] Highlights persist across sessions
+- [x] Infinite scroll (bidirectional, chapters load dynamically)
+- [x] Per-word highlighting (multiple colors)
+- [x] Highlights persist across sessions (SQLite)
+- [x] Chapter navigation across all 66 books
 
 ### Should Have
-- [ ] Smooth scrolling with momentum
-- [ ] Chapter title display
-- [ ] Font size configuration
-- [ ] Touch input support
-- [ ] Window resize handling
+- [x] Smooth scrolling with momentum
+- [x] Chapter title display (top bar)
+- [x] Font size configuration (A–/A+ buttons, 12–36 range, persisted)
+- [x] Touch input support (scroll, tap, pinch, long-press)
+- [x] Window resize handling (scroll-anchored re-layout)
+- [x] Book/chapter go-to dialog with auto-complete
+- [x] Bible version switching (USFM/Online toggle, persisted)
+- [x] Multiple highlight colors (Yellow, Pink, Green, Blue, Orange)
+- [x] Context menu (delete/recolor highlights)
+- [x] Android NDK build (APK generation)
 
 ### Could Have
-- [ ] Multiple highlight colors
 - [ ] Search across books
 - [ ] Dark mode
-- [ ] Bible version switching (online NVI/NAA)
+- [ ] Cloud sync
 
 ### Won't Have (MVP)
 - [ ] Notes and annotations
 - [ ] Cross-reference linking
-- [ ] Cloud sync
 - [ ] iOS support
 
 ## User Stories
@@ -43,3 +47,6 @@
 4. As a student, I want my highlights to be saved so I don't lose them when I close the app.
 5. As a reader, I want to navigate to any book and chapter so I can find specific passages.
 6. As a reader, I want section headings and poetry formatting so the text is structured and readable.
+7. As a reader, I want to change font size for comfortable reading.
+8. As a reader, I want to switch between Bible versions.
+9. As a mobile user, I want touch gestures to scroll and select text.

@@ -1,6 +1,6 @@
 # Development Plan
 
-> Status: Updated 2026-06-22
+> Status: Updated 2026-06-26
 
 ## Phase Overview
 
@@ -14,8 +14,8 @@
 | 6. BibleClient (HTML API) | ✅ Complete | Online data source |
 | 7. Highlighting System | ✅ Complete | Per-word selection, highlight rendering |
 | 8. SQLite Persistence | ✅ Complete | Save/load highlights and preferences |
-| 9. UI Layer | ⬜ Planned | Navigation, font controls, smooth scroll, heading differentiation |
-| 10. Mobile Preparation | ⬜ Planned | Android build, touch input, lifecycle |
+| 9. UI Layer | ✅ Complete | Navigation, font controls, smooth scroll, heading differentiation, theme consolidation |
+| 10. Mobile Preparation | 🔄 In Progress | Android NDK build, touch input, lifecycle, WASM, multi-ABI |
 
 ## Detailed Phase Descriptions
 
@@ -119,9 +119,11 @@
 
 **See:** `03-modules/Persistence.md`
 
-### Phase 9: UI Layer ⬜
+### Phase 9: UI Layer ✅
 
 **Goal:** Navigation, font controls, smooth scrolling polish, heading differentiation.
+
+**Status:** Complete. See `04-planning/Progress Tracking.md` for full Sprint breakdown.
 
 - InputHandler class (extract mouse/keyboard/wheel from main.cpp)
 - UIManager (chapter title, font controls, navigation UI)
@@ -129,11 +131,21 @@
 - Smooth scroll refinements
 - Window resize polish
 - Heading differentiation — split BookTitle, SectionHeading, ChapterLabel into distinct render styles
+- Theme consolidation (Theme.h with 27 color constants)
+- Splash screen, about overlay, error feedback
+- 64/64 tests passing
 
 **See:** `03-modules/UI Layer.md`
 
-### Phase 10: Mobile Preparation ⬜
+### Phase 10: Mobile Preparation 🔄 In Progress
 
-- WebAssembly build + test
-- Touch gesture system
-- Android NDK build + lifecycle
+**Status:** Android NDK build works (x86_64), WASM build works, touch gestures implemented. Remaining work: multi-ABI (arm64-v8a), WASM persistence, lifecycle polish, libcurl optional.
+
+- WebAssembly build + test — ✅ Done
+- Touch gesture system — ✅ Done
+- Android NDK build + lifecycle — ✅ Build works, lifecycle polish pending
+- Multi-ABI APK (arm64-v8a + x86_64) — ⬜
+- Soft keyboard for go-to dialog — ⬜
+- Immersive mode — ⬜
+
+**See:** `04-planning/Progress Tracking.md#phase-10--mobileandroid-in-progress`

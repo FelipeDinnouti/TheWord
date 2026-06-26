@@ -1,6 +1,6 @@
 # Roadmap
 
-> Status: Updated 2026-06-22 (Phase 9 plan finalized)
+> Status: Updated 2026-06-26 (Phase 9 complete, Phase 10 in progress)
 
 ## ✅ Completed
 
@@ -37,50 +37,27 @@
 - 4 unit tests (save/load, remove, types, preferences)
 - 53/53 tests passing
 
-## Phase 9 — MVP Final UI (July 2026)
+## Phase 9 — MVP Final UI ✅ Complete
 
-### Sprint 1: Foundation
+All 4 sprints (Foundation, Highlight UX, Navigation & Settings, Polish) completed.
+- 64/64 tests passing
+- InputHandler, UIManager, Renderer extracted from main.cpp
+- Context menu, go-to dialog, settings panel, about overlay
+- Heading differentiation, splash screen, theme consolidation
+- See `04-planning/Progress Tracking.md` for full Sprint breakdown
 
-| Task | Priority | Est. Effort |
-|------|----------|-------------|
-| 9a: InputHandler class (extract from main.cpp) | 🟡 Medium | 1d |
-| 9b: UIManager (top bar, settings, dialogs) | 🟡 Medium | 2d |
-| 9c: Smooth scroll refinements | 🟢 Low | 1d |
-| 9d: Window resize polish | 🟢 Low | 0.5d |
+## Phase 10 — Mobile 🔄 In Progress
 
-### Sprint 2: Highlight UX
-
-| Task | Priority | Est. Effort |
-|------|----------|-------------|
-| 9e: Highlight hit-testing (`highlightAtWord`) | 🔴 High | 0.5d |
-| 9f: Context menu (trash + 5 pastel color swatches) | 🔴 High | 1.5d |
-| 9g: Multiple highlight colors + seeding | 🟡 Medium | 1d |
-| 9h: Delete highlight flow | 🔴 High | 0.5d |
-
-### Sprint 3: Navigation & Settings
-
-| Task | Priority | Est. Effort |
-|------|----------|-------------|
-| 9i: Book/chapter navigation dialog | 🟡 Medium | 2d |
-| 9j: Font size controls (live update + persist) | 🟢 Low | 1d |
-| 9k: Bible version switching (settings toggle) | 🟡 Medium | 1d |
-| 9l: Preferences persistence (font, version, color) | 🟢 Low | 0.5d |
-
-### Sprint 4: Polish
-
-| Task | Priority | Est. Effort |
-|------|----------|-------------|
-| 9m: Heading differentiation (3 styles) | 🟢 Low | 0.5d |
-| 9n: Splash screen (text-only) | 🟢 Low | 0.5d |
-| 9o: About/credits overlay | 🟢 Low | 0.5d |
-
-## Phase 10 — Mobile (September+)
-
-| Task | Priority | Est. Effort |
-|------|----------|-------------|
-| Phase 10a: WebAssembly build (Emscripten) | 🟢 Low | 2d |
-| Phase 10b: Touch gesture system | 🟢 Low | 2d |
-| Phase 10c: Android NDK + lifecycle | 🟢 Low | 3d |
+| Task | Status | Notes |
+|------|--------|-------|
+| Phase 10a: WebAssembly build (Emscripten) | ✅ Done | `build-wasm/` produces .html + .wasm |
+| Phase 10b: Touch gesture system | ✅ Done | `InputHandler` has touch scroll, press FSM, pinch |
+| Phase 10c: Android NDK build | ✅ Done | `build-android/` + `scripts/build-android.sh` |
+| Phase 10d: Multi-ABI (arm64-v8a) | ⬜ | Script hardcoded to x86_64 |
+| Phase 10e: WASM persistence (IDBFS) | ⬜ | DB path, shell mount |
+| Phase 10f: Soft keyboard (IME) | ⬜ | JNI for go-to dialog |
+| Phase 10g: Lifecycle save/restore | ⬜ | Scroll position on pause |
+| Phase 10h: libcurl optional | ⬜ | `QUIET` find_package |
 
 ## Dependency Notes
 

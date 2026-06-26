@@ -48,13 +48,14 @@ main()
   └── Enter render loop
 ```
 
-## Render Loop Flow (per frame)
+## Render Loop Flow (per frame — desktop)
 
 ```
 while (!WindowShouldClose())
   ├── Handle input
   │     ├── GetMouseWheelMove() → update scrollVelocity
   │     ├── Keyboard input → update scrollVelocity
+  │     ├── Touch gestures (Android/WASM) → HandleTouchScroll, HandleTouchPressFSM, HandlePinch
   │     └── Apply friction to scrollVelocity
   │
   ├── DocumentManager::scrollBy(scrollVelocity)
@@ -91,10 +92,31 @@ while (!WindowShouldClose())
   │     │     ├── VerseText/PoetryLine → bodyFont (atlas 24px, 1:1)
   │     │     ├── SectionHeading/ChapterLabel/BookTitle → headingFont (atlas 31px, 1:1)
   │     │     └── DrawTextEx(selectedFont, span.text, {x, screenY}, ...)
+  │     ├── Draw highlight rectangles (query Highlighter for visible word range)
+  │     ├── Draw UI overlays (context menu, go-to dialog, settings, about)
   │     ├── Draw scrollbar
-  │     └── DrawFPS(...)
+  │     └── DrawFPS(...) (debug builds only)
   └── EndDrawing()
 ```
+
+## Render Loop Flow (per frame — Android)
+
+```
+while (!WindowShouldClose())
+  ├── Check Android lifecycle (GetAndroidApp()->window not null)
+  ├── Handle input
+  │     ├── Touch scroll (single-finger drag) → HandleTouchScroll
+  │     ├── Touch press FSM (Idle→Pending→Dragging/LongPress) → HandleTouchPressFSM
+  │     ├── Pinch zoom → HandlePinch (future use)
+  │     └── Mouse events (ChromeOS with mouse) → desktop mouse path
+  │
+  ├── ... (same as desktop: DocumentManager, auto-load, BeginDrawing, EndDrawing)
+  └── EndDrawing()
+```
+
+On Android, keyboard events come as raw AKEYCODE values (not raylib KEY_* constants).
+A patch (`patches/raylib-android-keycodes.patch`) adds translation in the raylib platform layer.
+Without the patch, `Config.h` provides fallback constants in `namespace key`.
 
 ## Prepend Flow (detailed)
 

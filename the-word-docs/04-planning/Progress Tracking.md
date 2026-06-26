@@ -1,21 +1,21 @@
 # Progress Tracking
 
-> Status: Phase 9 Complete | Last Updated: 2026-06-23
+> Status: Phase 9 Complete, Phase 10 In Progress | Last Updated: 2026-06-26
 
 ## Overall Progress
 
-| Phase | Status | Target |
-|-------|--------|--------|
-| Phase A: Documentation Restructure | ✅ Complete | 2026-06 |
-| Phase B: Code Restructure | ✅ Complete | 2026-06 |
-| Phases 1-3: Core Features | ✅ Complete | 2026-06 |
-| Phase 4: Architecture Foundation | ✅ Complete | 2026-06 |
-| Phase 5: USFM Parser | ✅ Complete | 2026-06 |
-| Phase 6: BibleClient (HTML API) | ✅ Complete | 2026-07 |
-| Phase 7: Highlighting System | ✅ Complete | 2026-08 |
-| Phase 8: SQLite Persistence | ✅ Complete | 2026-08 |
-| Phase 9: UI Layer | ✅ Complete | 2026-06 |
-| Phase 10: Mobile Preparation | ⬜ Planned | 2026-09 |
+| Phase | Status | Notes |
+|-------|--------|-------|
+| Phase A: Documentation Restructure | ✅ Complete | Doc tree created, cross-referenced |
+| Phase B: Code Restructure | ✅ Complete | CMake fixed, assets moved, tests integrated |
+| Phases 1-3: Core Features | ✅ Complete | Build, layout engine, document manager |
+| Phase 4: Architecture Foundation | ✅ Complete | ChapterProvider, Segment model, Renderer extraction |
+| Phase 5: USFM Parser | ✅ Complete | 66 books, 16 markers, 26 tests |
+| Phase 6: BibleClient (HTML API) | ✅ Complete | Dual-source, CompositeProvider, 40 tests |
+| Phase 7: Highlighting System | ✅ Complete | Per-word highlights, 9 tests |
+| Phase 8: SQLite Persistence | ✅ Complete | Schema, preferences, 53 tests |
+| Phase 9: UI Layer | ✅ Complete | InputHandler, UIManager, dialogs, polish, 64 tests |
+| Phase 10: Mobile/Android | 🔄 In Progress | Build works (x86_64); touch, lifecycle, multi-ABI pending |
 
 ## Phase A — Documentation Restructure ✅
 
@@ -66,7 +66,7 @@
 - [x] BibleClient rewritten — implements ChapterProvider, HTML format, segment parsing
 - [x] Renderer extracted from main.cpp — drawFrame, scrollbar, span rendering
 - [x] Segment-aware rendering — headings centered/bold, poetry indented
-- [x] main.cpp is thin orchestrator (~60 lines)
+- [x] main.cpp is thin orchestrator (~250 lines)
 - [x] Removed unused BibleVerse.h
 
 ## Phase 5 — USFM Parser ✅
@@ -98,7 +98,7 @@
 - [x] PersistenceInterface abstract base class defined
 - [x] InMemoryStorage implements PersistenceInterface for lightweight testing
 - [x] Highlighter class — startSelection, updateSelection, endSelection with word-to-word range
-- [x] Highlight highlighting in renderer via HighlightRect
+- [x] Highlight rendering in Renderer via HighlightRect
 - [x] 7 Highlighter unit tests + 2 InMemoryStorage tests
 - [x] Highlights persist within session (in-memory)
 
@@ -114,10 +114,9 @@
 - [x] 53/53 tests passing
 - [x] Highlights survive app restart (SQLite-backed)
 
-## Phase 9 — UI Layer Polish
+## Phase 9 — UI Layer ✅
 
 ### Sprint 1: Foundation ✅
-
 - [x] InputHandler class — extracted mouse/keyboard/wheel/highlight/resize from main.cpp into `src/input/InputHandler.h/cpp`
 - [x] UIManager class — created `src/renderer/UIManager.h/cpp` with top bar, settings/context menu stubs
 - [x] Smooth scroll refinements — frame-rate-independent exponential ease (`1 - exp(-k * dt)`)
@@ -125,7 +124,6 @@
 - [x] 53/53 tests still passing
 
 ### Sprint 2: Highlight UX ✅
-
 - [x] Highlight hit-testing (`Highlighter::highlightAtWord`) — returns `const Highlight*` for context menu
 - [x] Context menu widget — side-by-side "Del" button + 5 pastel color swatches, triggered by long-press (500ms) or right-click
 - [x] Multiple highlight colors — 5 pastel types seeded in DB (Yellow, Pink, Green, Blue, Orange), `Highlighter::activeTypeId` controls new highlight color
@@ -136,7 +134,6 @@
 - [x] 62/62 tests passing (+9 new tests)
 
 ### Sprint 3: Navigation & Settings ✅
-
 - [x] Book/chapter navigation dialog — go-to dialog with text input, auto-complete (book code/full name prefix match, up to 5 suggestions), keyboard handling (Enter navigates, Tab auto-completes, Up/Down cycle, Backspace/Escape)
 - [x] Font size controls — A–/A+ buttons (12–36 range, clamped), live update via layoutEngine.setFontSize + invalidateCache + renderer.setFontSize + docManager.invalidateLayouts, persisted
 - [x] Bible version switching — settings toggle via CompositeProvider::setPrimary with USFM/Online buttons, reloads current chapter after switch, persisted
@@ -149,10 +146,9 @@
 - [x] 64/64 tests passing
 
 ### Sprint 3.5: Bug Fixes & UX Polish ✅
-
-- [x] **Bug 1** — Stale context menu when G/S opens go-to/settings: `hideContextMenu()` now called before toggling dialogs (`InputHandler.cpp:47-54`)
-- [x] **Bug 2** — Outside-click on context menu creates spurious highlight: early `return` after `handleContextMenuClick()` prevents FSM from processing same click (`InputHandler.cpp:41-45`)
-- [x] **Bug 3** — `dismissActiveDialog()` dead code: unified Escape handler in `InputHandler.cpp` now calls `dismissActiveDialog()` for all dialogs
+- [x] **Bug 1** — Stale context menu when G/S opens go-to/settings: `hideContextMenu()` now called before toggling dialogs
+- [x] **Bug 2** — Outside-click on context menu creates spurious highlight: early `return` after `handleContextMenuClick()` prevents FSM from processing same click
+- [x] **Bug 3** — `dismissActiveDialog()` dead code: unified Escape handler in `InputHandler.cpp`
 - [x] **Bug 5** — Highlight orphaning on version switch: `provider_name` column added to `highlights` DB table; `Highlighter` filters by current provider; new highlights tagged with provider name; schema migration via ALTER TABLE
 - [x] **Labels**: `"Src:"` → `"Source:"`, `"Clr:"` → `"Color:"` in settings panel
 - [x] **Close buttons**: "X" buttons added to go-to dialog and settings panel (top-right corner)
@@ -163,7 +159,6 @@
 - [x] 64/64 tests still passing
 
 ### Sprint 4: Polish ✅
-
 - [x] Heading differentiation — BookTitle: headingFont 1.6× BLACK centered, ChapterLabel: headingFont 1.6× gray(80,80,80) centered, SectionHeading: headingFont 1.3× DARKGRAY (as-is)
 - [x] Splash screen — text-only "TheWord" at 48pt + "Loading..." at 20pt drawn before font loading
 - [x] About/credits overlay — toggle with 'A', shows app name, Raylib credit, data sources, keyboard shortcuts
@@ -175,15 +170,34 @@
 - [x] Position fixes — about overlay text aligned to `SETTINGS_LABEL_X` (+15→+10); color swatches start at `COLOR_SWATCH_START` (+30→+60, clear of "Color:" label)
 - [x] 64/64 tests still passing
 
-## Phase 10 — Mobile/Android ⬜
+## Phase 10 — Mobile/Android 🔄 In Progress
 
-- [ ] WebAssembly build (Emscripten)
-- [ ] Touch gesture system (swipe, tap, pinch)
-- [ ] Android NDK build + lifecycle
+### Completed
+- [x] Android NDK build — `build-android/libtheword.so` via Ninja
+- [x] APK packaging — `scripts/build-android.sh` produces signed `theword.apk`
+- [x] AndroidManifest.xml — NativeActivity entry, INTERNET permission
+- [x] `AndroidClient.cpp` — HTTP via Android native APIs
+- [x] `AndroidAssetProvider.cpp` — font loading via AAssetManager
+- [x] Touch gesture system — added `HandleTouchScroll`, `HandleTouchPressFSM`, `HandlePinch` in InputHandler
+- [x] Android lifecycle — app state checks in main loop (`GetAndroidApp()`)
+- [x] Resolution independence — DPI scaling via `AConfiguration_getDensity`
+- [x] Render at native display resolution — `InitWindow(0, 0, ...)` on Android
+- [x] Emscripten/WASM build — `build-wasm/theword.html` works in browser
+- [x] Keyboard input patch — `patches/raylib-android-keycodes.patch` translates AKEYCODE → raylib KEY
+
+### Remaining
+- [ ] Multi-ABI build: `x86_64` + `arm64-v8a` + `armeabi-v7a` in build script
+- [ ] Java activity stub (`TheWordActivity.java`) for IME/splash
+- [ ] Soft keyboard integration for go-to dialog
+- [ ] Immersive mode (hide nav bar)
+- [ ] Lifecycle save/restore (scroll position on pause/resume)
+- [ ] WASM persistence via IDBFS
+- [ ] `scripts/build-wasm.sh` for one-step WASM build
+- [ ] libcurl as optional dependency
+- [ ] Platform abstraction module (`src/core/Platform.h`)
 
 ## Remaining Phases (summary)
 
 | Phase | Status |
 |-------|--------|
-| Phase 9: UI Layer polish | ✅ Complete |
-| Phase 10: Mobile/Android | ⬜ Planned |
+| Phase 10: Mobile/Android | 🔄 In Progress (build works, polish pending) |

@@ -1,6 +1,6 @@
 # Persistence Module
 
-> Status: Complete (Phase 8) | Last Updated: 2026-06-22
+> Status: Complete (Phase 8, extended Sprint 3.5) | Last Updated: 2026-06-26
 
 ## Overview
 
@@ -21,8 +21,13 @@ CREATE TABLE highlights (
     id INTEGER PRIMARY KEY,
     start_word INTEGER NOT NULL,
     end_word INTEGER NOT NULL,
-    type_id INTEGER REFERENCES highlight_types(id)
+    type_id INTEGER REFERENCES highlight_types(id),
+    provider_name TEXT DEFAULT ''
 );
+
+-- provider_name column added in Sprint 3.5 to prevent highlight orphaning
+-- when switching between BibleClient (online) and USFMParser (offline) providers.
+-- Highlights are filtered by current provider name at runtime.
 
 CREATE TABLE preferences (
     key TEXT PRIMARY KEY,
@@ -32,11 +37,17 @@ CREATE TABLE preferences (
 
 ## Default Data
 
-On first run, create a default highlight type (yellow):
+On first run, seed 5 pastel highlight colors:
 ```sql
 INSERT INTO highlight_types (id, name, color_r, color_g, color_b)
-VALUES (1, 'Yellow', 255, 255, 0);
+VALUES
+    (1, 'Yellow',  255, 255, 200),
+    (2, 'Pink',    255, 200, 220),
+    (3, 'Green',   200, 255, 200),
+    (4, 'Blue',    180, 210, 255),
+    (5, 'Orange',  255, 220, 180);
 ```
+<!-- Yellow was originally the only color (255, 255, 0). Sprint 2 added 4 more pastel variants. -->
 
 ## Interface
 

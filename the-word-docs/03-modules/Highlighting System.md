@@ -1,6 +1,6 @@
 # Highlighting System
 
-> Status: Planned (Phase 7) | Last Updated: 2026-06-22
+> Status: Complete (Phase 7) | Last Updated: 2026-06-26
 
 ## Overview
 
@@ -25,9 +25,10 @@ struct HighlightType {
 };
 ```
 
-### MVP: One Color
+### Colors
 
-The MVP uses a single highlight type (yellow). Multiple colors will be added later.
+5 pastel colors: Yellow, Pink, Green, Blue, Orange. Seeded in the database on first run.
+Active color is selectable via settings panel and persisted as a preference.
 
 ### Hit Detection
 

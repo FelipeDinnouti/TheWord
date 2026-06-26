@@ -99,12 +99,21 @@ The current render loop lives entirely in `main.cpp`. This is unsustainable as f
 2. `main.cpp` becomes a thin orchestrator: init subsystems, call `Renderer::UpdateAndDraw()` in the loop, cleanup.
 3. The `InputHandler` should feed events to the renderer rather than the renderer polling directly.
 
-### 3. Android requires a fundamentally different build
+### 3. Android build (working, in polish phase)
 
-The current CMakeLists.txt targets desktop Linux/Windows only. Android needs:
-- A separate CMake toolchain file targeting the Android NDK
-- Separate entry point (`android_app_init()` instead of `main()`)
-- Lifecycle management (pause/resume)
-- Touch input (swipe, tap, drag, pinch)
+Android NDK support is implemented. The build uses:
+- A CMake toolchain file (`android.toolchain.cmake`) via the NDK
+- `scripts/build-android.sh` for one-step build → APK packaging → signing
+- `AndroidManifest.xml` with `NativeActivity` entry point
+- `AndroidClient.cpp` (HTTP via native APIs) and `AndroidAssetProvider.cpp` (fonts via `AAssetManager`)
+- DPI scaling via `AConfiguration_getDensity`
+- Touch gesture system (`InputHandler` handles touch scroll, press FSM, pinch)
 
-**Recommended migration path:** Build a WebAssembly target via Emscripten first. This reuses the desktop codebase but forces touch event handling — a smaller jump than going straight to Android.
+**Current limitations (Phase 10 in progress):**
+- Only x86_64 ABI is built by the script (no arm64-v8a)
+- No Java activity stub (IME for go-to dialog, native splash)
+- Lifecycle save/restore not yet implemented
+- Keyboard input requires a patch to raylib (`patches/raylib-android-keycodes.patch`)
+- WASM persistence not yet wired (IDBFS)
+
+**See:** `04-planning/Progress Tracking.md#phase-10--mobileandroid-in-progress`

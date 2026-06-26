@@ -1,32 +1,35 @@
 # TheWord
 
-A minimalist Bible study application built with Raylib. Read and highlight Bible text with a clean, distraction-free interface.
+A minimalist Bible study application built with Raylib. Read, highlight, and navigate Bible text with a clean, distraction-free interface.
 
-> **Note:** Desktop proof-of-concept targeting a mobile-first viewport (450×800px). All documentation is in `the-word-docs/`.
+> **Note:** Desktop proof-of-concept targeting a mobile-first viewport (450×800px). Android NDK build available. All documentation is in `the-word-docs/`.
 
 ---
 
 ## Features
 
-- Clean text rendering with word wrapping
-- Live Bible text via YouVersion API (BSB translation)
-- Per-word highlighting (in development)
-- Smooth scrolling with mouse wheel or keyboard
-- Mobile-first aspect ratio
+- **Rich text rendering** — section headings, poetry indentation, paragraph spacing
+- **Dual Bible source** — YouVersion API (online) + USFM files (offline Bíblia Livre)
+- **All 66 books** with chapter navigation and go-to dialog with auto-complete
+- **Per-word highlighting** — 5 colors (Yellow, Pink, Green, Blue, Orange), drag selection
+- **Context menu** — delete or recolor highlights via long-press or right-click
+- **Font size controls** — A–/A+ buttons (12–36 range), persisted across sessions
+- **Bible version switching** — toggle between USFM offline and API online
+- **Smooth scrolling** — momentum-based with mouse wheel, keyboard, or touch
+- **Mobile-first aspect ratio** (450×800) with Android NDK support
+- **SQLite persistence** — highlights and preferences survive app restart
 
 ---
 
 ## Prerequisites
 
 ### Linux
-
 ```bash
 sudo apt install build-essential cmake git libcurl4-openssl-dev
 sudo apt install libgl1-mesa-dev libx11-dev libxcursor-dev libxi-dev pkg-config
 ```
 
 ### Windows (MSYS2)
-
 ```bash
 pacman -S mingw-w64-x86_64-gcc mingw-w64-x86_64-cmake mingw-w64-x86_64-make mingw-w64-x86_64-raylib
 ```
@@ -35,7 +38,7 @@ pacman -S mingw-w64-x86_64-gcc mingw-w64-x86_64-cmake mingw-w64-x86_64-make ming
 
 ## Quick Start
 
-### 1. Get an API Key
+### 1. Get an API Key (optional)
 
 1. Sign up at [platform.youversion.com](https://platform.youversion.com)
 2. Create an app and copy your **App Key**
@@ -43,30 +46,35 @@ pacman -S mingw-w64-x86_64-gcc mingw-w64-x86_64-cmake mingw-w64-x86_64-make ming
 ```env
 YVP_APP_KEY=your_app_key_here
 ```
-> Without an API key, the app shows John 3:16-18 fallback text.
+> Without an API key, the app uses offline USFM files (full Bible, no fallback text).
 
-### 2. Build
-
+### 2. Build & Run
 ```bash
 cmake -B build -DCMAKE_BUILD_TYPE=Release -G "Unix Makefiles"
 cmake --build build --parallel
+./build/theword
 ```
 
-### 3. Run
-
+### 3. Run Tests
 ```bash
-./build/theword
+./build/theword_test
 ```
 
 ---
 
-## Controls
+## Controls (Desktop)
 
 | Input | Action |
 |-------|--------|
 | Mouse wheel | Scroll up/down |
 | W / Arrow Up | Scroll up |
 | S / Arrow Down | Scroll down |
+| Click + drag | Select text to highlight |
+| Right-click / long-press | Context menu (delete/recolor highlight) |
+| G | Open go-to dialog |
+| S | Open settings panel |
+| A | Toggle about/credits overlay |
+| Escape | Dismiss active dialog/menu |
 
 ---
 
@@ -78,14 +86,14 @@ Start at `the-word-docs/00-INDEX.md` for a guided tour.
 
 ---
 
-## Troubleshooting
+## Build Platforms
 
-| Problem | Solution |
-|---------|----------|
-| "CMAKE_CXX_COMPILE_OBJECT not set" | Add `CXX` to `project(theword C CXX)` |
-| New .cpp files not compiled | Delete `build/` folder and reconfigure |
-| libcurl not found | Install `libcurl4-openssl-dev` |
-| API returns "Access denied" | Use Bible ID 3034 (BSB), not 111 (NIV) |
+| Platform | Build Command | Output |
+|----------|--------------|--------|
+| Linux | `cmake -B build -G "Unix Makefiles" && cmake --build build` | `build/theword` |
+| Windows (MSYS2) | `cmake -B build -G "MinGW Makefiles" && cmake --build build` | `build/theword.exe` |
+| Android | `./scripts/build-android.sh` | `theword.apk` |
+| WebAssembly | See `the-word-docs/06-ops/Build Guide.md` | `build-wasm/theword.html` |
 
 ---
 

@@ -1,8 +1,8 @@
 # UI Layer
 
-> Status: Updated for Phase 9 Sprint 3 | Last Updated: 2026-06-22
+> Status: Updated for Phase 9 Sprint 4 (complete) | Last Updated: 2026-06-26
 > Phase 9 plan: See `04-planning/Progress Tracking.md`
-> Sprint 3 (Navigation & Settings) complete — 64/64 tests passing
+> All 4 sprints complete — 64/64 tests passing
 
 ## Overview
 
@@ -72,17 +72,15 @@ The Renderer handles each `Span` differently based on its originating segment ty
 - **PoetryLine spans**: Drawn at the pre-computed indent position
 - **ParagraphBreak**: Only affects positioning (vertical gap), no draw
 
-**Current (Phase 8):** SectionHeading, ChapterLabel, and BookTitle all render identically — centered, headingFont at 1.3×, DARKGRAY.
+**Implemented (Phase 9 Sprint 4):** Each heading type has its own distinct style:
 
-**Planned for Phase 9:** Heading differentiation — each heading type gets its own distinct style:
+| Type | Font | Scale | Color | Alignment |
+|------|------|-------|-------|-----------|
+| **BookTitle** | `headingFont` | 1.6× | `BLACK` | Centered |
+| **SectionHeading** | `headingFont` | 1.3× | `DARKGRAY` | Centered |
+| **ChapterLabel** | `headingFont` | 1.6× | `(80, 80, 80)` | Centered |
 
-| Type | Font | Size | Color | Alignment |
-|------|------|------|-------|-----------|
-| **BookTitle** | `headingFont` | `fontSize × 1.6` | `BLACK` | Centered |
-| **SectionHeading** | `headingFont` | `fontSize × 1.3` | `DARKGRAY` | Centered |
-| **ChapterLabel** | `headingFont` | `fontSize × 1.6` | `(80, 80, 80)` | Centered |
-
-This requires splitting the grouped `case` in `Renderer::drawSpan()` into three separate branches. No layout engine changes needed — all three are already positioned as centered headings by the LayoutEngine.
+The `case` in `Renderer::drawSpan()` is split into three separate branches. No layout engine changes needed — all three are already positioned as centered headings by the LayoutEngine.
 
 ## InputHandler
 
@@ -125,12 +123,16 @@ Extracted in Phase 9 Sprint 1. Lives in `src/renderer/UIManager.h/cpp`.
 
 ### Responsibilities
 - Draw top bar with chapter title (`drawTopBar`)
-- `getContentTop()` returns the top bar height (60px) used by Renderer for document offset
+- `getContentTop()` returns the top bar height (60px × DPI scale) used by Renderer for document offset
 - Context menu on long-press/right-click: single-row popup with "Del" button (red) + 5 pastel color swatches (side-by-side)
 - Context menu click handling: delete highlight, recolor highlight, or dismiss on outside/Escape
-- Go-to dialog: text input field with auto-complete (matches book code or full name, case-insensitive, up to 5 suggestions), keyboard navigation (Enter loads chapter, Tab auto-completes selected, Up/Down cycle, Backspace deletes, Escape dismisses)
-- Settings panel: modal overlay with font size A–/A+ buttons (12–36 range), USFM/Online version toggle (hidden when no CompositeProvider), active color swatch selector with black border on selected
+- Context menu overflow: flips to left of cursor when it would overhang right edge
+- Go-to dialog: text input field with auto-complete (matches book code or full name, case-insensitive, up to 5 suggestions), keyboard navigation (Enter loads chapter, Tab auto-completes selected, Up/Down cycle, Backspace deletes, Escape dismisses), error feedback (red border on invalid chapter)
+- Settings panel: modal overlay with font size A–/A+ buttons (12–36 range, grayed at limits), USFM/Online version toggle (hidden when no CompositeProvider), active color swatch selector with black border on selected, close button (X)
+- About overlay: toggled with 'A', shows app name, Raylib credit, data sources, keyboard shortcuts
 - Settings apply: font size → `LayoutEngine::setFontSize` + `invalidateCache` + `Renderer::setFontSize` + `DocumentManager::invalidateLayouts` + persist; version toggle → `CompositeProvider::setPrimary` + reload current chapter + persist; color swatch → `Highlighter::setActiveTypeId` + persist
+- Splash screen: text-only "TheWord" at 48pt + "Loading..." at 20pt drawn before font loading (handled in main.cpp, before UIManager creation)
+- DPI scaling: all positions, sizes, and fonts multiplied by `scale` factor on Android
 
 ### Interface
 ```cpp
@@ -141,7 +143,7 @@ public:
               Renderer& renderer, PersistenceManager& persistence,
               ChapterProvider& onlineProv, ChapterProvider& offlineProv,
               CompositeProvider* compositeProv, float initialFontSize = 24.0f,
-              bool initialVersionOnline = false);
+              bool initialVersionOnline = false, float scale = 1.0f);
     float getContentTop() const;
     float getFontSize() const;
     void drawTopBar(const std::string& chapterTitle);
@@ -206,6 +208,7 @@ Renderer uses **two font atlases**: `bodyFont` (24px atlas, 1:1 for verse text) 
 |-----|---------|--------|
 | `G` | Any (no dialog active) | Open go-to dialog |
 | `S` | Any (no dialog active) | Open settings panel |
+| `A` | Any (no dialog active) | Toggle about/credits overlay |
 | `Escape` | Go-to dialog active | Dismiss go-to dialog |
 | `Escape` | Settings active | Dismiss settings |
 | `Escape` | Context menu active | Dismiss context menu |
