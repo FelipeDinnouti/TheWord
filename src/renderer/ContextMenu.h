@@ -9,7 +9,8 @@ namespace theword::renderer {
 
 class ContextMenu {
 public:
-    ContextMenu(const Font& headingFont, float headingSize, theword::highlight::Highlighter& highlighter);
+    ContextMenu(const Font& headingFont, float headingSize, theword::highlight::Highlighter& highlighter,
+                float scaleFactor = 1.0f);
 
     void Show(Vector2 position, int highlightId, int typeId);
     void Hide();
@@ -21,6 +22,7 @@ private:
     const Font& headingFont;
     float headingSize;
     theword::highlight::Highlighter& highlighter;
+    float scale;
 
     bool active;
     Vector2 pos;
@@ -34,7 +36,6 @@ private:
     static constexpr float MENU_PADDING = 4.0f;
     static constexpr float DELETE_WIDTH = 50.0f;
     static constexpr float LABEL_SWATCH_GAP = 8.0f;
-    static constexpr float TOP_BAR_HEIGHT = 60.0f;
 };
 
 } // namespace theword::renderer

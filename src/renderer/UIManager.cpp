@@ -24,7 +24,7 @@ UIManager::UIManager(theword::event::EventBus& eventBus,
       persistence(persistence), highlighter(highlighter),
       currentFontSize(initialFontSize), scale(scaleFactor),
       versionOnline(initialVersionOnline) {
-    contextMenu = new ContextMenu(headingFont, headingSize, highlighter);
+    contextMenu = new ContextMenu(headingFont, headingSize, highlighter, scaleFactor);
     settingsPanel = new SettingsPanel(headingFont, headingSize, highlighter, scaleFactor);
     goToDialog = new GoToDialog(headingFont, headingSize, eventBus_, scaleFactor);
     aboutOverlay = new AboutOverlay(headingFont, headingSize, scaleFactor);
@@ -81,6 +81,9 @@ void UIManager::UpdateActiveDialog() {
     }
     if (contextMenu->IsActive() && mousePressed) {
         contextMenu->HandleClick(pos);
+        eventBus_.Emit(theword::event::DialogEvent{
+            theword::event::DialogEvent::Type::ContextMenu,
+            theword::event::DialogEvent::Action::Hide});
         return;
     }
 }
@@ -103,7 +106,6 @@ void UIManager::OnDialog(const theword::event::DialogEvent& e) {
             ToggleAbout();
             break;
         case theword::event::DialogEvent::Type::ContextMenu:
-            HideContextMenu();
             break;
     }
 }
@@ -120,7 +122,8 @@ float UIManager::GetFontSize() const { return currentFontSize; }
 
 void UIManager::DrawTopBar(const std::string& chapterTitle) {
     if (!chapterTitle.empty()) {
-        DrawTextEx(headingFont, chapterTitle.c_str(), {20, 20}, headingSize, 1, theme::UI_TEXT);
+        float pad = 20.0f * scale;
+        DrawTextEx(headingFont, chapterTitle.c_str(), {pad, pad}, headingSize, 1, theme::UI_TEXT);
     }
 }
 

@@ -160,7 +160,10 @@ bool App::Init(const std::string& title) {
     auto hitTestFn = [this](float x, float y) {
         return docManager_->HitTestWord(x, y, docManager_->GetScrollY());
     };
-    inputHandler_ = std::make_unique<InputHandler>(*eventBus_, uiManager_->GetContentTop(), 1.0f, hitTestFn);
+    auto isHighlightedFn = [this](int wordId) {
+        return highlighter_->IsWordHighlighted(wordId);
+    };
+    inputHandler_ = std::make_unique<InputHandler>(*eventBus_, hitTestFn, isHighlightedFn);
 
     Logger::Info("Loading initial chapter");
     docManager_->LoadInitialChapter("GEN.1");
@@ -244,7 +247,7 @@ void App::Run() {
         std::vector<HighlightRect> hlRects;
         for (const auto& [span, docY] : docSpans) {
             if (span.startWord >= 0 && highlighter_->IsWordHighlighted(span.startWord)) {
-                float screenY = docY - scrollY + uiManager_->GetContentTop();
+                float screenY = docY - scrollY + config::TOP_BAR_HEIGHT * scale_;
                 hlRects.push_back({span.x, screenY, span.width, span.height,
                                    highlighter_->GetHighlightForWord(span.startWord)});
             }

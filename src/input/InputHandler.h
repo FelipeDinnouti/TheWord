@@ -11,20 +11,19 @@ namespace theword::input {
 class InputHandler {
 public:
     InputHandler(theword::event::EventBus& eventBus,
-                 float contentTop, float scale = 1.0f,
-                 std::function<int(float, float)> hitTestFn = nullptr);
+                 std::function<int(float, float)> hitTestFn = nullptr,
+                 std::function<bool(int)> isHighlightedFn = nullptr);
 
     void Poll(float deltaTime);
     bool IsDialogActive() const { return dialogActive_; }
 
 private:
-    enum class PressState { Idle, Pending, Dragging, LongPress };
+    enum class PressState { Idle, Pending, Dragging, LongPress, Selecting };
 
     theword::event::EventBus& eventBus_;
-    float contentTop;
-    float scale;
 
     std::function<int(float, float)> hitTestFn;
+    std::function<bool(int)> isHighlightedFn;
     bool dialogActive_ = false;
 
     float scrollVelocity;
@@ -39,6 +38,7 @@ private:
     double pressStartTime;
     Vector2 pressStartPos;
     int pressStartWord;
+    int selectStartWord;
     bool touchActive;
     float touchLastY;
     float lastTouchDelta;

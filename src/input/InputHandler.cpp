@@ -11,12 +11,14 @@ namespace theword::input {
 using namespace theword::core;
 
 InputHandler::InputHandler(theword::event::EventBus& eventBus,
-                           float contentTop, float scale,
-                           std::function<int(float, float)> hitTestFn)
-    : eventBus_(eventBus), contentTop(contentTop), scale(scale),
-      hitTestFn(std::move(hitTestFn)), scrollVelocity(0.0f),
+                           std::function<int(float, float)> hitTestFn,
+                           std::function<bool(int)> isHighlightedFn)
+    : eventBus_(eventBus),
+      hitTestFn(std::move(hitTestFn)),
+      isHighlightedFn(std::move(isHighlightedFn)),
+      scrollVelocity(0.0f),
       pressState(PressState::Idle), pressStartTime(0.0),
-      pressStartPos{0, 0}, pressStartWord(-1),
+      pressStartPos{0, 0}, pressStartWord(-1), selectStartWord(-1),
       touchActive(false), touchLastY(0.0f), lastTouchDelta(0.0f), lastPinchDist(0.0f) {
 
     eventBus_.On<theword::event::DialogEvent>([this](const theword::event::DialogEvent& e) {
@@ -146,6 +148,9 @@ void InputHandler::HandlePressFSM() {
                 pressState = PressState::Idle;
             }
             break;
+
+        default:
+            break;
     }
 }
 
@@ -159,6 +164,10 @@ void InputHandler::HandleRightClick() {
 void InputHandler::HandleTouchScroll() {
     int touchCount = GetTouchPointCount();
     if (touchCount == 1) {
+        // Suppress scroll while actively selecting text
+        if (pressState == PressState::Selecting) {
+            return;
+        }
         Vector2 pos = GetTouchPosition(0);
         if (!touchActive) {
             touchActive = true;
@@ -168,12 +177,12 @@ void InputHandler::HandleTouchScroll() {
             float deltaY = pos.y - touchLastY;
             touchLastY = pos.y;
             lastTouchDelta = deltaY;
-            eventBus_.Emit(theword::event::ScrollEvent{deltaY});
+            eventBus_.Emit(theword::event::ScrollEvent{-deltaY});
         }
     } else {
         if (touchActive) {
             touchActive = false;
-            scrollVelocity = lastTouchDelta * 10.0f;
+            scrollVelocity = -lastTouchDelta * 10.0f;
         }
     }
 
@@ -207,16 +216,21 @@ void InputHandler::HandleTouchPressFSM() {
 
         case PressState::Pending:
             if (touchCount == 0) {
-                if (pressStartWord >= 0) {
-                    eventBus_.Emit(theword::event::SelectionEvent{
-                        theword::event::SelectionEvent::Action::Start, pressStartWord, pressStartWord});
-                    eventBus_.Emit(theword::event::SelectionEvent{
-                        theword::event::SelectionEvent::Action::End, pressStartWord, pressStartWord});
+                // Tap: show context menu if word is highlighted, otherwise do nothing
+                if (pressStartWord >= 0 && isHighlightedFn && isHighlightedFn(pressStartWord)) {
+                    eventBus_.Emit(theword::event::RightClickEvent{pressStartPos.x, pressStartPos.y});
                 }
                 pressState = PressState::Idle;
             } else if (GetTime() - pressStartTime > LONG_PRESS_TIME) {
-                pressState = PressState::LongPress;
-                eventBus_.Emit(theword::event::RightClickEvent{pressStartPos.x, pressStartPos.y});
+                // Longpress: start highlighting selection
+                if (pressStartWord >= 0) {
+                    selectStartWord = pressStartWord;
+                    eventBus_.Emit(theword::event::SelectionEvent{
+                        theword::event::SelectionEvent::Action::Start, pressStartWord, pressStartWord});
+                    pressState = PressState::Selecting;
+                } else {
+                    pressState = PressState::Idle;
+                }
             } else {
                 float dy = touchPos.y - pressStartPos.y;
                 if (std::abs(dy) > LONG_PRESS_MOVE_THRESHOLD) {
@@ -225,9 +239,22 @@ void InputHandler::HandleTouchPressFSM() {
             }
             break;
 
-        case PressState::LongPress:
+        case PressState::Selecting:
             if (touchCount == 0) {
+                // Release: end selection and save highlight
+                eventBus_.Emit(theword::event::SelectionEvent{
+                    theword::event::SelectionEvent::Action::End, selectStartWord, pressStartWord});
                 pressState = PressState::Idle;
+            } else {
+                // Drag: extend selection range
+                if (hitTestFn) {
+                    int wordId = hitTestFn(touchPos.x, touchPos.y);
+                    if (wordId >= 0 && wordId != pressStartWord) {
+                        pressStartWord = wordId;
+                        eventBus_.Emit(theword::event::SelectionEvent{
+                            theword::event::SelectionEvent::Action::Update, selectStartWord, wordId});
+                    }
+                }
             }
             break;
 
