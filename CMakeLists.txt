@@ -12,6 +12,12 @@ set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
 include(FetchContent)
 
+# ── Test Monitor tool ──────────────────────────────────────────────────────
+option(BUILD_TEST_MONITOR "Build the test monitor (separate window showing test steps)" OFF)
+if(BUILD_TEST_MONITOR)
+    add_subdirectory(tools/test_monitor)
+endif()
+
 # ── Raylib ─────────────────────────────────────────────────────────────────
 if(EMSCRIPTEN OR ANDROID)
     set(GLFW_BUILD_X11 OFF CACHE BOOL "" FORCE)
@@ -360,5 +366,17 @@ else()
     if(CURL_FOUND)
         target_link_libraries(theword PRIVATE CURL::libcurl)
         target_link_libraries(theword_test PRIVATE CURL::libcurl)
+    endif()
+endif()
+
+# ── Test Monitor platform libs ─────────────────────────────────────────────
+if(BUILD_TEST_MONITOR AND TARGET test_monitor)
+    if(WIN32)
+        target_link_libraries(test_monitor PRIVATE raylib opengl32 gdi32 winmm)
+    elseif(APPLE)
+        target_link_libraries(test_monitor PRIVATE raylib)
+    else()
+        target_link_libraries(test_monitor PRIVATE
+            raylib m pthread dl rt X11 Xcursor Xrandr Xi)
     endif()
 endif()
