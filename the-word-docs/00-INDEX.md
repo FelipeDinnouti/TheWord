@@ -12,10 +12,12 @@
 | Planning cross-module work | `02-architecture/Architecture Overview.md#cross-cutting-concerns` |
 | Fixing a bug | `02-architecture/Data Flow.md` → relevant `03-modules/` doc |
 | Setting up the build | `06-ops/Build Guide.md` → `06-ops/Environment Setup.md` |
+| Integration testing | `06-ops/Integration Testing.md` |
 | An AI agent | `07-ai-collaboration/Agent Workflow.md` → `07-ai-collaboration/Doc-First Checklist.md` |
 | Planning work | `04-planning/Development Plan.md` → `04-planning/Progress Tracking.md` |
 | Using the API | `03-modules/Bible API.md` → `05-reference/YouVersion API.md` |
 | Rich text / segments | `02-architecture/Data Structures.md#segment` → `03-modules/Text Layout Engine.md` |
+| UI design / navigation model | `02-architecture/UI Philosophy.md` → `03-modules/UI Layer.md` |
 
 ## Document Map
 
@@ -30,7 +32,8 @@ the-word-docs/
 │   ├── Data Source Architecture.md     # Dual-source design: ChapterProvider, USFM vs API
 │   ├── Data Structures.md              # Core types: Word, Span, Segment, ChapterData, Highlight
 │   ├── Coordinate Spaces.md            # Document space vs Screen space
-│   └── Data Flow.md                    # End-to-end request pipeline
+│   ├── Data Flow.md                    # End-to-end request pipeline
+│   └── UI Philosophy.md                # Navigation model, screens, bottom bar, design principles
 ├── 03-modules/                         # Module specifications
 │   ├── Core.md                         # Config, APIClient, EnvLoader
 │   ├── Bible API.md                    # BibleClient: HTML parsing, ChapterProvider impl
@@ -51,6 +54,7 @@ the-word-docs/
 ├── 06-ops/                             # Operations
 │   ├── Build Guide.md                  # Build and run instructions
 │   ├── Environment Setup.md            # Platform-specific setup
+│   ├── Integration Testing.md          # xdotool-based GUI automation
 │   └── Troubleshooting.md              # Common issues and fixes
 └── 07-ai-collaboration/               # Agent/AI workflows
     ├── Agent Workflow.md               # How agents approach tasks
@@ -66,3 +70,4 @@ the-word-docs/
 - **Data source architecture**: See `02-architecture/Data Source Architecture.md`
 - **Phase plan**: See `04-planning/Development Plan.md`
 - **Current progress**: See `04-planning/Progress Tracking.md`
+- **UI philosophy**: See `02-architecture/UI Philosophy.md`

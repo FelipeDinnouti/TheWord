@@ -1,6 +1,6 @@
 # Progress Tracking
 
-> Status: Phase 9 Complete, Phase 10 In Progress | Last Updated: 2026-06-26
+> Status: Phase 9 Complete, Phase 10 In Progress, Phase 11 Complete | Last Updated: 2026-06-26
 
 ## Overall Progress
 
@@ -196,8 +196,48 @@
 - [ ] libcurl as optional dependency
 - [ ] Platform abstraction module (`src/core/Platform.h`)
 
+## Phase 11 — Navigation System ✅ Complete
+
+- [x] Remove top bar (chapter ref moves to bottom bar)
+- [x] Bottom bar overlay on Reader (appears on scroll-up, 30px threshold, hides on scroll-down)
+- [x] Bottom bar buttons: ◄ (prev chapter), ► (next chapter), center (book code, opens menu)
+- [x] Center menu dialog: Books, Settings, Highlights, Credits options
+- [x] BookList screen (canonical order, search bar at top, scrollable list with prefix matching)
+- [x] ChapterGrid screen (5-column grid, numbered from 1 to chapterCount)
+- [x] Settings screen (full-screen, replaces current modal panel)
+- [x] HighlightBrowser screen (placeholder — full implementation in Phase 13)
+- [x] Credits overlay (migrated from About overlay, shows version info)
+- [x] Navigation stack (push/pop with back button + Escape, overlay-aware for CenterMenu/Credits)
+- [x] Keyboard shortcuts: ←/→ for prev/next chapter, G for center menu, S for settings, A for credits
+- [x] Reusable UI component extraction (DrawHeaderBar, DrawBottomBar helpers)
+- [x] Dead code cleanup: removed GoToDialog, SettingsPanel, AboutOverlay; simplified UIManager to ContextMenu only
+
+## Phase 12 — Verse Number Identifiers 🔲 Planned
+
+- [ ] Add `SegmentType::VerseNumber` to `ChapterProvider.h`
+- [ ] `LayoutEngine::LayoutWords()` detects verseId transitions and inserts verse number spans
+- [ ] Verse number spans include space after dot, accounted for in word wrapping
+- [ ] `Renderer::DrawSpan()` handles VerseNumber with superscript font scale + Y offset
+- [ ] Theme constants: `DOC_VERSE_NUMBER` color, `FONT_VERSE_NUMBER` scale
+- [ ] Tests: verse numbers appear at verse boundaries, correct positioning, no verse number for verse 1 of first chapter (or always show)
+
+## Phase 13 — Highlight Browser 🔲 Planned
+
+- [ ] Extend `Highlight` struct with bookId, chapterNum, verseStart, verseEnd
+- [ ] Update `Highlighter::EndSelection()` to populate reference fields (from ChapterData)
+- [ ] Schema migration in PersistenceManager (ALTER TABLE highlights ADD COLUMN)
+- [ ] `Highlighter::GetHighlightsByType(int typeId)` filter method
+- [ ] HighlightBrowser screen: color swatch filter at top, scrollable match list below
+- [ ] Match list items: reference title + verse text body
+- [ ] Tap match → navigate to verse in Reader (load chapter + scroll to word position)
+- [ ] Empty state: "No highlights of this color" message
+- [ ] Tests: filter by color, reference field population, navigation from tap
+
 ## Remaining Phases (summary)
 
 | Phase | Status |
 |-------|--------|
 | Phase 10: Mobile/Android | 🔄 In Progress (build works, polish pending) |
+| Phase 11: Navigation System | ✅ Complete |
+| Phase 12: Verse Number Identifiers | 🔲 Planned |
+| Phase 13: Highlight Browser | 🔲 Planned |

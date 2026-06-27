@@ -3,6 +3,7 @@
 #include "event/Events.h"
 #include "text/LayoutEngine.h"
 #include "core/BibleBooks.h"
+#include "core/Logger.h"
 #include <algorithm>
 #include <cmath>
 
@@ -65,14 +66,21 @@ void DocumentManager::OnSourceSwitch(const theword::event::SourceSwitchEvent& /*
 }
 
 void DocumentManager::LoadInitialChapter(const std::string& chapterId) {
+    visibleChapterId_ = chapterId;
     chapters.clear();
 
     std::string book;
     int chapter;
-    if (!ParseChapterRef(chapterId, book, chapter)) return;
+    if (!ParseChapterRef(chapterId, book, chapter)) {
+        Logger::Warning("LoadInitialChapter: failed to parse ref: " + chapterId);
+        return;
+    }
 
     auto result = primaryProvider.LoadChapter(book, chapter);
-    if (!result) return;
+    if (!result) {
+        Logger::Warning("LoadInitialChapter: provider returned null for " + chapterId);
+        return;
+    }
 
     ChapterLayout layout = layoutEngine.LayoutChapter(chapterId, *result);
 
@@ -87,6 +95,8 @@ void DocumentManager::LoadInitialChapter(const std::string& chapterId) {
 
     scrollY = 0.0f;
     targetScrollY = 0.0f;
+
+    Logger::Info("Loaded chapter: " + chapterId);
 }
 
 void DocumentManager::Update(float deltaTime) {
@@ -105,6 +115,25 @@ void DocumentManager::Update(float deltaTime) {
     if (maxScroll < 0.0f) maxScroll = 0.0f;
     if (scrollY >= maxScroll - AUTO_LOAD_MARGIN) {
         TryLoadAdjacent(false);
+    }
+
+    UpdateVisibleChapter();
+}
+
+void DocumentManager::UpdateVisibleChapter() {
+    if (chapters.empty()) return;
+    for (const auto& ch : chapters) {
+        if (scrollY >= ch.startY && scrollY < ch.startY + ch.height) {
+            if (visibleChapterId_ != ch.chapterId) {
+                Logger::Info("Visible chapter: " + ch.chapterId);
+                visibleChapterId_ = ch.chapterId;
+            }
+            return;
+        }
+    }
+    if (visibleChapterId_ != chapters.back().chapterId) {
+        Logger::Info("Visible chapter: " + chapters.back().chapterId);
+        visibleChapterId_ = chapters.back().chapterId;
     }
 }
 
@@ -172,6 +201,7 @@ int DocumentManager::HitTestWord(float screenX, float screenY, float scrollY) co
 }
 
 const std::string& DocumentManager::GetCurrentChapterId() const {
+    if (!visibleChapterId_.empty()) return visibleChapterId_;
     static const std::string empty = "";
     if (chapters.empty()) return empty;
     return chapters.front().chapterId;

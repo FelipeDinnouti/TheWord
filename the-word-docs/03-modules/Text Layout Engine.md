@@ -97,6 +97,96 @@ Complete `ChapterLayout` objects are cached by chapter ID. `layoutChapter()` ret
 
 **Cache invalidation:** Call `invalidateCache()` when the window width or font size changes. This clears all cached layouts.
 
+## Verse Number Identifiers (Phase 12)
+
+### Overview
+
+Verse numbers are inserted at layout time as synthetic `Span` objects with `SegmentType::VerseNumber`. This ensures verse number widths are accounted for in word wrapping and positioning is correct at all font sizes.
+
+### Data Model
+
+```cpp
+// Added to SegmentType enum
+VerseNumber    // A verse number indicator (grey superscript)
+```
+
+The span carries:
+- `text`: `"1."`, `"2."`, etc. (verse number digit + dot)
+- `verseId`: the verse number being marked
+- `type`: `SegmentType::VerseNumber`
+
+### Layout Algorithm
+
+In `LayoutWords()`:
+
+```cpp
+int currentVerse = 0;
+for each word at index i:
+    const Word& word = data.words[i];
+    if (word.verseId != currentVerse) {
+        currentVerse = word.verseId;
+
+        // Insert verse number span before first word of new verse
+        std::string vnText = std::to_string(word.verseId) + ".";
+        float vnSize = fontSize * VERSE_NUMBER_SCALE;
+        float vnWidth = MeasureTextEx(font, vnText.c_str(), vnSize, 1).x;
+
+        Span vnSpan;
+        vnSpan.text = vnText;
+        vnSpan.x = x;
+        vnSpan.y = y;
+        vnSpan.width = vnWidth;
+        vnSpan.height = vnSize;
+        vnSpan.verseId = word.verseId;
+        vnSpan.startWord = -1;     // no word association
+        vnSpan.endWord = -1;
+        vnSpan.type = SegmentType::VerseNumber;
+
+        currentLine.spans.push_back(vnSpan);
+        x += vnWidth + spaceWidth;  // space after verse number + dot
+    }
+    // ... lay out the word normally
+```
+
+### Edge Cases
+
+- **Verse 1 of each chapter**: Always numbered (no "start of chapter means no verse number" rule)
+- **Verse spanning multiple layout lines**: The number appears once at the start of the verse on the first line
+- **No verse number before headings**: VerseText segments only — SectionHeading, BookTitle, ChapterLabel are not verse-numbered
+- **Consecutive same-verse words after a line break**: No repeated verse number (the if-block only triggers on verseId change)
+
+### Rendering
+
+In `Renderer::DrawSpan()`:
+
+```cpp
+case SegmentType::VerseNumber:
+    float vnSize = fontSize * theme::FONT_VERSE_NUMBER;  // 0.65
+    float vnOffsetY = -4.0f * scale;  // superscript Y offset
+    DrawTextEx(bodyFont, span.text.c_str(),
+               {span.x, screenY + vnOffsetY},
+               vnSize, 1, theme::DOC_VERSE_NUMBER);
+    break;
+```
+
+- Font: `bodyFont` (same as verse text)
+- Scale: `theme::FONT_VERSE_NUMBER` = 0.65
+- Color: `theme::DOC_VERSE_NUMBER` (grey, e.g. `{160, 160, 160, 255}`)
+- Y offset: -4px (scaled) for superscript positioning
+
+### Theme Constants
+
+```cpp
+constexpr Color DOC_VERSE_NUMBER = {160, 160, 160, 255};
+constexpr float FONT_VERSE_NUMBER = 0.65f;
+```
+
+### Future Options
+
+- Allow toggling verse numbers on/off in settings
+- Bold verse number for verse 1 of each chapter
+- Clickable verse numbers (select all words in verse)
+
 ## Key Details
 
 - Line height = `fontSize * lineSpacing`
@@ -106,4 +196,5 @@ Complete `ChapterLayout` objects are cached by chapter ID. `layoutChapter()` ret
 - Paragraph gap: 8px
 - Heading top gap: 12px, bottom gap: 6px
 - Each word is rendered as its own span (for now)
-- Tokenization now happens in the providers (USFMParser/BibleClient), not in LayoutEngine
+- Verse numbers are inserted as synthetic spans at verse transitions
+- Tokenization happens in the providers (USFMParser/BibleClient), not in LayoutEngine

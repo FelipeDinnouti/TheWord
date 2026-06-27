@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.16)
-project(theword VERSION 1.1.1 LANGUAGES C CXX)
+project(theword VERSION 1.2.1 LANGUAGES C CXX)
 
 # Auto-generate Version.h from template (substitutes @PROJECT_VERSION@ etc.)
 configure_file(
@@ -162,12 +162,26 @@ set(RENDERER_SOURCES
     src/renderer/UIManager.h
     src/renderer/ContextMenu.cpp
     src/renderer/ContextMenu.h
-    src/renderer/SettingsPanel.cpp
-    src/renderer/SettingsPanel.h
-    src/renderer/GoToDialog.cpp
-    src/renderer/GoToDialog.h
-    src/renderer/AboutOverlay.cpp
-    src/renderer/AboutOverlay.h
+)
+
+set(UI_SOURCES
+    src/ui/Screen.h
+    src/ui/NavigationStack.h
+    src/ui/NavigationStack.cpp
+    src/ui/ReaderScreen.h
+    src/ui/ReaderScreen.cpp
+    src/ui/CenterMenu.h
+    src/ui/CenterMenu.cpp
+    src/ui/BookListScreen.h
+    src/ui/BookListScreen.cpp
+    src/ui/ChapterGridScreen.h
+    src/ui/ChapterGridScreen.cpp
+    src/ui/components.h
+    src/ui/components.cpp
+    src/ui/SettingsScreen.h
+    src/ui/SettingsScreen.cpp
+    src/ui/CreditsOverlay.h
+    src/ui/CreditsOverlay.cpp
 )
 
 set(APP_SOURCES
@@ -192,6 +206,7 @@ add_library(theword_objects OBJECT
     ${INPUT_SOURCES}
     ${PERSISTENCE_SOURCES}
     ${RENDERER_SOURCES}
+    ${UI_SOURCES}
 )
 
 target_compile_features(theword_objects PUBLIC cxx_std_17)

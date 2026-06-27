@@ -56,6 +56,7 @@ private:
 
     std::vector<LoadedChapter> chapters;
 
+    std::string visibleChapterId_;
     float scrollY;
     float targetScrollY;
     float viewportHeight;
@@ -71,6 +72,7 @@ private:
 
     void RecalculateChapterPositions();
     bool TryLoadAdjacent(bool prepend);
+    void UpdateVisibleChapter();
     void PrependChapter(const std::string& chapterId, theword::data::ChapterData&& data);
     void AppendChapter(const std::string& chapterId, theword::data::ChapterData&& data);
 };

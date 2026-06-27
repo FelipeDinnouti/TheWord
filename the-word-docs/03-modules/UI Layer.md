@@ -1,62 +1,288 @@
 # UI Layer
 
-> Status: Updated for Phase 9 Sprint 4 (complete) | Last Updated: 2026-06-26
-> Phase 9 plan: See `04-planning/Progress Tracking.md`
-> All 4 sprints complete — 64/64 tests passing
+> Status: Updated for Phase 11 (planned) | Last Updated: 2026-06-26
+> Phase 11 architectual redesign: navigation stack replaces single-screen overlays
 
 ## Overview
 
-The UI layer brings together all lower layers with a clean user interface and input handling.
+The UI layer is organized as a **navigation stack** with a **bottom bar** on the root Reader screen. All screens are full-window with a header bar and back navigation. The design philosophy is documented in `02-architecture/UI Philosophy.md`.
 
-## Components
+## Navigation Model
 
-### Renderer
+```
+Reader (root screen)
+  ├── tap book code → Center Menu (centered dialog)
+  │     ├── Books → BookList → ChapterGrid → Reader (at new chapter)
+  │     ├── Settings → Settings → Reader
+  │     ├── Highlights → HighlightBrowser → Reader
+  │     └── Credits → Credits overlay → Reader
+  └── ◄/► or ←/→ keys → Reader (at prev/next chapter)
+```
 
-The top-level render coordinator. Responsibilities:
-- Query the document manager for visible spans
-- Query the highlighter for highlights in visible range
-- Draw text with segment-aware formatting (headings centered, poetry indented, etc.)
-- Draw highlight rectangles behind text
-- Draw UI elements (title bar, scrollbar, controls)
+Back navigation from any pushed screen: ← Back button (top-left), swipe-right gesture, or Escape key.
 
-### InputHandler
-
-Translates Raylib input events into document actions:
-- Mouse wheel / keyboard → scroll
-- Mouse click → hit detection (word lookup via LayoutEngine)
-- Mouse drag → selection range
-- Touch gestures → scroll and select
-
-### UIManager
-
-Manages UI state and rendering:
-- Chapter title display (top bar)
-- Font size controls
-- Navigation controls (go to book/chapter)
-- Debug overlay (FPS, scroll position, word count)
-
-## Layout
+## Screen Layout
 
 ```
 ┌──────────────────────┐
-│  Gênesis 1            │  <- 40px top bar (chapter title)
+│  ← Back     Title     │  <- Header bar (pushed screens only)
 ├──────────────────────┤
-│   A Criação           │  <- Section heading (centered, bold)
 │                       │
-│ No princípio criou    │  <- Verse text (left-aligned)
-│ Deus os céus e a      │
-│ terra.                │
-│                       │
-│   Então Deus disse:   │
-│     — Façamos o ser   │  <- Poetry (indented)
-│       humano          │
+│   (screen content)    │
 │                       │
 │                       │
 ├──────────────────────┤
-│  [Controls]  [Font]   │  <- Optional bottom bar
+│  ◄   GEN 1   ►        │  <- Bottom bar (Reader only, shows on scroll-up)
 └──────────────────────┘
 ```
 
+The Reader screen has no header bar. The bottom bar replaces the old top bar for showing the current chapter reference.
+
+## Components
+
+### Navigation Stack
+
+Manages screen lifecycle: push, pop, current screen tracking, drawing order.
+
+```cpp
+class NavigationStack {
+public:
+    void Push(std::unique_ptr<Screen> screen);   // Push a new screen (becomes active)
+    void Pop();                                   // Pop active screen, return to previous
+    void PopAll();                                // Pop to root (Reader)
+    Screen* GetActive();                          // Currently visible screen
+    void DrawActive();                            // Draw current screen
+    bool HandleInput();                           // Route input to active screen
+    bool IsOnRoot() const;                        // Is Reader the active screen?
+};
+```
+
+### Screens
+
+Every screen implements a common interface:
+
+```cpp
+class Screen {
+public:
+    virtual ~Screen() = default;
+    virtual void Draw() = 0;                        // Render the screen
+    virtual bool HandleInput(float deltaTime) = 0;  // Return true if input was consumed
+    virtual const char* GetTitle() const = 0;       // For header bar display
+};
+```
+
+Concrete screens:
+
+| Screen | File | Role |
+|--------|------|------|
+| `ReaderScreen` | `src/ui/ReaderScreen.h/cpp` | Reading view with bottom bar |
+| `BookListScreen` | `src/ui/BookListScreen.h/cpp` | Book selection with search |
+| `ChapterGridScreen` | `src/ui/ChapterGridScreen.h/cpp` | Chapter grid for selected book |
+| `SettingsScreen` | `src/ui/SettingsScreen.h/cpp` | Full-screen settings |
+| `HighlightBrowserScreen` | `src/ui/HighlightBrowserScreen.h/cpp` | Browse highlights by color |
+| `CenterMenu` | `src/ui/CenterMenu.h/cpp` | Centered dialog menu |
+| `CreditsOverlay` | `src/ui/CreditsOverlay.h/cpp` | Credits overlay |
+
+### ReaderScreen
+
+The root screen. Contains the document rendering (infinite scroll text), highlight rendering, scrollbar, and bottom bar.
+
+**Responsibilities:**
+- Draw Bible text (via Renderer)
+- Draw highlight rectangles (via Highlighter query)
+- Draw scrollbar
+- Draw and manage bottom bar (show/hide on scroll direction)
+- Handle text input: scroll, highlight selection, context menu, keyboard shortcuts
+- Open center menu on book code tap
+
+**Bottom Bar:**
+
+```
+[◄]  GEN 1  [►]
+```
+
+- `◄` (40px wide): emits NavigateEvent with previous chapter ref
+- `GEN 1` (flex): current chapter reference, tappable → opens CenterMenu
+- `►` (40px wide): emits NavigateEvent with next chapter ref
+- Background: `theme::WINDOW_BG`, 50px height
+- Shows on scroll-up (accumulated ≥ 30px), hides on scroll-down (accumulated ≥ 30px)
+- Slides up/down with smooth animation (0.2s ease)
+
+**Keyboard shortcuts:**
+- `←` / `→`: prev/next chapter (same as bottom bar buttons)
+- `G`: open CenterMenu (alternative to tapping book code)
+- `S`: push SettingsScreen directly (bypass menu)
+- `A`: show CreditsOverlay directly (bypass menu)
+- `Escape`: dismiss overlay/menu if active, otherwise no-op (already on root)
+
+### CenterMenu
+
+A centered dialog with backdrop. Shows four options:
+
+| Option | Action |
+|--------|--------|
+| Books | Push BookListScreen |
+| Settings | Push SettingsScreen |
+| Highlights | Push HighlightBrowserScreen |
+| Credits | Show CreditsOverlay |
+
+Dismissed by: tapping outside, tapping X, pressing Escape.
+
+### BookListScreen
+
+Full-screen scrollable list of 66 books in canonical order.
+
+```
+┌──────────────────────────────┐
+│  ← Back         Books        │
+├──────────────────────────────┤
+│  [🔍 Search books...      ]  │
+├──────────────────────────────┤
+│  Genesis                     │
+│  Exodus                      │
+│  Leviticus                   │
+│  ...                         │
+│  Revelation                  │
+└──────────────────────────────┘
+```
+
+- Search bar filters by prefix match on book code or full name (case-insensitive, max 5 suggestions)
+- Reuses auto-complete logic from existing GoToDialog
+- Tapping a book pushes ChapterGridScreen for that book
+
+### ChapterGridScreen
+
+Full-screen grid of chapter numbers.
+
+```
+┌──────────────────────────────┐
+│  ← Back     Genesis          │
+├──────────────────────────────┤
+│                              │
+│  1   2   3   4   5           │
+│  6   7   8   9  10           │
+│ 11  12  13  14  15           │
+│  ...                         │
+│ 46  47  48  49  50           │
+│                              │
+└──────────────────────────────┘
+```
+
+- 5-column grid, cells ~60×40px (scaled)
+- Tapping a chapter → pops back to Reader, loads chapter via NavigateEvent
+
+### SettingsScreen
+
+Full-screen settings (replaces current modal SettingsPanel).
+
+```
+┌──────────────────────────────┐
+│  ← Back      Settings        │
+├──────────────────────────────┤
+│                              │
+│  Font:   [−]  24  [+]        │
+│  Source: [USFM] [API]        │
+│  Color:  ■ ■ ■ ■ ■           │
+│                              │
+└──────────────────────────────┘
+```
+
+Same controls as the current SettingsPanel but full-screen. Source row hidden when no API key. Changes apply immediately.
+
+### HighlightBrowserScreen
+
+Full-screen highlight browser (detailed spec in `03-modules/Highlighting System.md`).
+
+```
+┌──────────────────────────────┐
+│  ← Back    Highlights        │
+├──────────────────────────────┤
+│  Color:  ■ ■ ■ ■ ■           │
+├──────────────────────────────┤
+│  Gen 1:3                     │
+│  No princípio criou...       │
+│                              │
+│  Gen 1:5                     │
+│  ...                         │
+└──────────────────────────────┘
+```
+
+- Color swatch filter at top
+- Scrollable list of matching highlights
+- Tap item → navigate to verse in Reader
+
+### CreditsOverlay
+
+Same as current About overlay. Centered panel with:
+- App name + version
+- "Built with Raylib & C++17"
+- "Data: USFM (offline) + YouVersion API (online)"
+- X close button or tap-outside to dismiss
+
+## InputHandler Updates
+
+The InputHandler must be aware of the navigation stack. When a non-Reader screen is active:
+- All keyboard input is routed to the active screen first
+- Arrow keys navigate the active screen (e.g., scrolling BookList) rather than scrolling text
+- Escape pops the screen (or dismisses overlay/menu)
+- Click/touch events are routed to the active screen's HandleInput()
+
+```cpp
+class InputHandler {
+public:
+    InputHandler(EventBus& eventBus, NavigationStack& navStack, ...);
+
+    void Poll(float deltaTime);
+
+private:
+    bool HandleShortcuts();      // G, S, A, Escape at root level
+    void HandleScroll();         // Mouse wheel, Up/Down (only on root)
+    void HandlePressFSM();       // Highlight selection (only on root)
+    void HandleWindowResize();   // Always active
+    // ...
+};
+```
+
+## Bottom Bar Show/Hide Logic
+
+```
+On scroll velocity change:
+  if velocity < 0 and |accumulated| > threshold → show bar (slide up)
+  if velocity > 0 and accumulated > threshold → hide bar (slide down)
+
+accumulated is a running sum of scroll deltas since last show/hide toggle
+threshold = 30px (configurable)
+```
+
+The bar slide animation uses the same `1 - exp(-k * dt)` ease as the smooth scroll, with a fixed speed constant.
+
+## Reusable UI Components
+
+All screens use shared component functions for consistent layout. Each is a free function accepting position, font, style parameters:
+
+| Component | Location | Signature |
+|-----------|----------|-----------|
+| `DrawHeaderBar` | `src/ui/components.h` | `void DrawHeaderBar(const Font&, float headingSize, const char* title, bool hasBack)` |
+| `DrawBottomBar` | `src/ui/components.h` | `void DrawBottomBar(const Font&, float headingSize, const char* ref)` |
+| `DrawMenuItem` | `src/ui/components.h` | `bool DrawMenuItem(const Font&, Rectangle rect, const char* label, Vector2 mouse)` |
+| `DrawColorSwatches` | `src/ui/components.h` | `int DrawColorSwatches(const Font&, Rectangle rect, const HighlightType* types, int count, int activeId, Vector2 mouse)` |
+| `DrawGridCell` | `src/ui/components.h` | `bool DrawGridCell(const Font&, Rectangle cell, const char* label, bool highlighted, Vector2 mouse)` |
+| `DrawListItem` | `src/ui/components.h` | `bool DrawListItem(const Font&, Rectangle rect, const char* title, const char* subtitle, Vector2 mouse)` |
+
+## Files (Phase 11 structure)
+
+- `src/ui/NavigationStack.h/cpp` — Screen management
+- `src/ui/Screen.h` — Screen interface
+- `src/ui/ReaderScreen.h/cpp` — Main reading screen (extracted from current main.cpp/App)
+- `src/ui/BookListScreen.h/cpp` — Book selection
+- `src/ui/ChapterGridScreen.h/cpp` — Chapter selection
+- `src/ui/SettingsScreen.h/cpp` — Full-screen settings
+- `src/ui/HighlightBrowserScreen.h/cpp` — Highlight browsing (Phase 13)
+- `src/ui/CenterMenu.h/cpp` — Center dialog menu
+- `src/ui/CreditsOverlay.h/cpp` — Credits overlay
+- `src/ui/components.h/cpp` — Reusable UI component functions
+- `src/renderer/Renderer.h/cpp` — Unchanged (still draws text + highlights)
+- `src/input/InputHandler.h/cpp` — Updated to route through NavigationStack
 ## Window Resize Handling
 
 When the window width changes:

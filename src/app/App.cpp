@@ -17,9 +17,14 @@
 #include "document/DocumentManager.h"
 #include "renderer/Renderer.h"
 #include "renderer/UIManager.h"
+#include "renderer/ContextMenu.h"
 #include "input/InputHandler.h"
 #include "highlight/Highlighter.h"
 #include "persistence/PersistenceManager.h"
+#include "ui/NavigationStack.h"
+#include "ui/ReaderScreen.h"
+#include "ui/SettingsScreen.h"
+#include "ui/CreditsOverlay.h"
 
 #include <cstdlib>
 #include <algorithm>
@@ -90,8 +95,8 @@ bool App::Init(const std::string& title) {
     SetTextureFilter(headingFont_.texture, TEXTURE_FILTER_POINT);
     Logger::Info("Fonts loaded");
 
-    float headingSize = config::FONT_HEADING_SIZE * scale_;
-    float contentTop = config::TOP_BAR_HEIGHT * scale_;
+    headingSize_ = config::FONT_HEADING_SIZE * scale_;
+    float contentTop = 0.0f;
     float contentWidth = renderW - config::CONTENT_PADDING * scale_;
 
     std::string apiKey = EnvLoader::get(config::YVP_APP_KEY);
@@ -100,13 +105,12 @@ bool App::Init(const std::string& title) {
     usfmParser_ = std::make_unique<USFMParser>(config::USFM_DIR, plat.assets.get());
     offlineProv_ = usfmParser_.get();
 
-    std::unique_ptr<IHttpClient> apiClient;
     if (!apiKey.empty()) {
         Logger::Info("API key found, creating online client");
-        apiClient = platform::CreateHttpClient();
-        if (apiClient) {
-            apiClient->SetAppKey(apiKey);
-            bibleClient_ = std::make_unique<BibleClient>(*apiClient, 3034);
+        apiClient_ = platform::CreateHttpClient();
+        if (apiClient_) {
+            apiClient_->SetAppKey(apiKey);
+            bibleClient_ = std::make_unique<BibleClient>(*apiClient_, 3034);
             compositeProv_ = std::make_unique<CompositeProvider>(*bibleClient_, *usfmParser_);
             onlineProv_ = bibleClient_.get();
             activeProv_ = compositeProv_.get();
@@ -148,9 +152,7 @@ bool App::Init(const std::string& title) {
 
     highlighter_->SetProvider(versionOnline_ ? "BibleClient" : "USFMParser");
 
-    uiManager_ = std::make_unique<UIManager>(*eventBus_, headingFont_, headingSize, *highlighter_,
-                                             *persistence_,
-                                             currentFontSize_, versionOnline_, scale_);
+    uiManager_ = std::make_unique<UIManager>(*eventBus_, headingFont_, headingSize_, *highlighter_, scale_);
 
     std::string savedColor = persistence_->GetPreference("active_color", "");
     if (!savedColor.empty()) {
@@ -165,6 +167,13 @@ bool App::Init(const std::string& title) {
     };
     inputHandler_ = std::make_unique<InputHandler>(*eventBus_, hitTestFn, isHighlightedFn);
 
+    navStack_ = std::make_unique<theword::ui::NavigationStack>();
+    navStack_->Push(std::make_unique<theword::ui::ReaderScreen>(
+        *eventBus_, *docManager_, *renderer_, *highlighter_, *persistence_,
+        headingFont_, headingSize_, contentTop,
+        *navStack_, scale_, currentFontSize_, versionOnline_
+    ));
+
     Logger::Info("Loading initial chapter");
     docManager_->LoadInitialChapter("GEN.1");
 
@@ -177,16 +186,16 @@ bool App::Init(const std::string& title) {
 void App::WireEvents() {
     eventBus_->On<theword::event::FontSizeEvent>([this](const auto& e) {
         if (e.delta != 0.0f && e.newSize == 0.0f) {
-            float cur = uiManager_->GetFontSize();
             float newSz = std::max(config::FONT_SIZE_MIN,
-                          std::min(config::FONT_SIZE_MAX, cur + e.delta));
-            uiManager_->OnFontSizeApplied(newSz);
+                          std::min(config::FONT_SIZE_MAX, currentFontSize_ + e.delta));
+            currentFontSize_ = newSz;
             float scaled = newSz * scale_;
             layoutEngine_->SetFontSize(scaled);
             layoutEngine_->InvalidateCache();
             docManager_->InvalidateLayouts();
             renderer_->SetFontSize(scaled);
         } else if (e.newSize != 0.0f) {
+            currentFontSize_ = e.newSize / scale_;
             layoutEngine_->SetFontSize(e.newSize);
             layoutEngine_->InvalidateCache();
             docManager_->InvalidateLayouts();
@@ -228,36 +237,31 @@ void App::Run() {
         float deltaTime = (float)(currentTime - lastTime);
         lastTime = currentTime;
 
-        inputHandler_->Poll(deltaTime);
-        uiManager_->UpdateActiveDialog();
+        inputHandler_->Poll(deltaTime, navStack_.get());
         docManager_->Update(deltaTime);
+
+        // Keyboard shortcuts that push screens (only when on root Reader)
+        if (navStack_->IsOnRoot()) {
+            if (IsKeyPressed(key::S)) {
+                navStack_->Push(std::make_unique<theword::ui::SettingsScreen>(
+                    headingFont_, headingSize_, *navStack_, *eventBus_,
+                    *highlighter_, *persistence_,
+                    scale_, currentFontSize_, versionOnline_
+                ));
+            }
+            if (IsKeyPressed(key::A)) {
+                navStack_->Push(std::make_unique<theword::ui::CreditsOverlay>(
+                    headingFont_, headingSize_, *navStack_
+                ));
+            }
+        }
 
         BeginDrawing();
         ClearBackground(theme::WINDOW_BG);
 
-        float scrollY = docManager_->GetScrollY();
-        float totalHeight = docManager_->GetTotalHeight();
-        float viewHeight = docManager_->GetViewportHeight();
+        navStack_->DrawActive();
 
-        uiManager_->DrawTopBar(docManager_->GetChapterTitle());
-
-        std::vector<std::pair<Span, float>> docSpans;
-        docManager_->GetVisibleSpans(docSpans);
-
-        std::vector<HighlightRect> hlRects;
-        for (const auto& [span, docY] : docSpans) {
-            if (span.startWord >= 0 && highlighter_->IsWordHighlighted(span.startWord)) {
-                float screenY = docY - scrollY + config::TOP_BAR_HEIGHT * scale_;
-                hlRects.push_back({span.x, screenY, span.width, span.height,
-                                   highlighter_->GetHighlightForWord(span.startWord)});
-            }
-        }
-
-        renderer_->DrawFrame(scrollY, totalHeight, viewHeight, docSpans, hlRects);
         uiManager_->DrawContextMenu();
-        uiManager_->DrawGoToDialog();
-        uiManager_->DrawSettingsPanel();
-        uiManager_->DrawAbout();
 #ifndef NDEBUG
         renderer_->DrawFpsCounter(10, GetScreenHeight() - 30);
 #endif

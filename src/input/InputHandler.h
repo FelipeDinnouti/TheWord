@@ -5,6 +5,7 @@
 #include <functional>
 
 namespace theword::event { class EventBus; }
+namespace theword::ui { class NavigationStack; }
 
 namespace theword::input {
 
@@ -14,7 +15,7 @@ public:
                  std::function<int(float, float)> hitTestFn = nullptr,
                  std::function<bool(int)> isHighlightedFn = nullptr);
 
-    void Poll(float deltaTime);
+    void Poll(float deltaTime, theword::ui::NavigationStack* navStack = nullptr);
     bool IsDialogActive() const { return dialogActive_; }
 
 private:

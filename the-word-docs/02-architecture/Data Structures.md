@@ -125,7 +125,7 @@ public:
 };
 ```
 
-## Highlight (Planned — Phase 7)
+## Highlight
 
 A selected region of text. Defined as a range of word IDs to be resolution-independent.
 
@@ -134,12 +134,18 @@ struct Highlight {
     int id;
     int startWord;
     int endWord;
-    int typeId;      // References HighlightType (color)
+    int typeId;                  // References HighlightType (color)
+    std::string providerName;    // Source: "USFMParser" or "BibleClient"
+    std::string bookId;          // e.g. "GEN" (Phase 13)
+    int chapterNum;              // e.g. 1 (Phase 13)
+    int verseStart;              // First verse in range (Phase 13)
+    int verseEnd;                // Last verse in range (Phase 13)
 };
 
 struct HighlightType {
     int id;
     std::string name;
-    Color color;
+    SimpleColor color;
 };
+```
 ```

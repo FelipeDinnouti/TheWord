@@ -13,12 +13,12 @@
             "state": {
               "type": "markdown",
               "state": {
-                "file": "xx-user-notes/Android-and-Build-System.md",
+                "file": "02-architecture/UI Philosophy.md",
                 "mode": "source",
                 "source": false
               },
               "icon": "lucide-file",
-              "title": "Android-and-Build-System"
+              "title": "UI Philosophy"
             }
           },
           {
@@ -211,8 +211,11 @@
       "bases:Create new base": false
     }
   },
-  "active": "a3646689721b4ca0",
+  "active": "7932b51f09b11a9d",
   "lastOpenFiles": [
+    "02-architecture/Data Structures.md",
+    "02-architecture/UI Philosophy.md",
+    "xx-user-notes/Android-and-Build-System.md",
     "Development Plan.md",
     "Reference/TextRenderer.md",
     "Reference/Document.md",

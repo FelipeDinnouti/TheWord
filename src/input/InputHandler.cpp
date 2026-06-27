@@ -3,6 +3,7 @@
 #include "event/Events.h"
 #include "core/Config.h"
 #include "core/Platform.h"
+#include "ui/NavigationStack.h"
 #include <raylib.h>
 #include <cmath>
 
@@ -26,7 +27,10 @@ InputHandler::InputHandler(theword::event::EventBus& eventBus,
     });
 }
 
-void InputHandler::Poll(float /*deltaTime*/) {
+void InputHandler::Poll(float deltaTime, theword::ui::NavigationStack* navStack) {
+    // Let the active screen process input first — if it consumes it, skip normal handling
+    if (navStack && navStack->HandleInput(deltaTime)) return;
+
     if (IsKeyPressed(key::ESCAPE)) {
         eventBus_.Emit(theword::event::KeyEvent{key::ESCAPE});
         return;
@@ -38,10 +42,6 @@ void InputHandler::Poll(float /*deltaTime*/) {
         if (IsKeyPressed(key::A)) { eventBus_.Emit(theword::event::DialogEvent{theword::event::DialogEvent::Type::About, theword::event::DialogEvent::Action::Toggle}); return; }
         return;
     }
-
-    if (IsKeyPressed(key::G)) { eventBus_.Emit(theword::event::DialogEvent{theword::event::DialogEvent::Type::GoTo, theword::event::DialogEvent::Action::Toggle}); return; }
-    if (IsKeyPressed(key::S)) { eventBus_.Emit(theword::event::DialogEvent{theword::event::DialogEvent::Type::Settings, theword::event::DialogEvent::Action::Toggle}); return; }
-    if (IsKeyPressed(key::A)) { eventBus_.Emit(theword::event::DialogEvent{theword::event::DialogEvent::Type::About, theword::event::DialogEvent::Action::Toggle}); return; }
 
     if (platform::HasTouchInput()) {
         HandlePinch();

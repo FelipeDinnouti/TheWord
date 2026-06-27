@@ -148,6 +148,7 @@ void WriteLog(LogLevel level, const char* message) {
         out = stderr;
     }
     fprintf(out, "%s\n", message);
+    fflush(out);
 #endif
 }
 

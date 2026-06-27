@@ -11,8 +11,10 @@ namespace theword::document { class DocumentManager; }
 namespace theword::renderer { class Renderer; class UIManager; }
 namespace theword::input { class InputHandler; }
 namespace theword::highlight { class Highlighter; }
+namespace theword::core { class IHttpClient; }
 namespace theword::data { class USFMParser; class BibleClient; class CompositeProvider; class ChapterProvider; }
 namespace theword::persistence { class PersistenceManager; }
+namespace theword::ui { class NavigationStack; }
 
 namespace theword::app {
 
@@ -30,8 +32,10 @@ private:
 
     Font bodyFont_{};
     Font headingFont_{};
+    float headingSize_ = 0.0f;
 
     std::unique_ptr<theword::event::EventBus> eventBus_;
+    std::unique_ptr<theword::core::IHttpClient> apiClient_;
     std::unique_ptr<theword::data::USFMParser> usfmParser_;
     std::unique_ptr<theword::data::BibleClient> bibleClient_;
     std::unique_ptr<theword::data::CompositeProvider> compositeProv_;
@@ -42,6 +46,7 @@ private:
     std::unique_ptr<theword::document::DocumentManager> docManager_;
     std::unique_ptr<theword::renderer::UIManager> uiManager_;
     std::unique_ptr<theword::input::InputHandler> inputHandler_;
+    std::unique_ptr<theword::ui::NavigationStack> navStack_;
 
     theword::data::ChapterProvider* activeProv_ = nullptr;
     theword::data::ChapterProvider* onlineProv_ = nullptr;
