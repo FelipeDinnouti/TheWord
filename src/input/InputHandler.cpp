@@ -27,7 +27,19 @@ InputHandler::InputHandler(theword::event::EventBus& eventBus,
     });
 }
 
-void InputHandler::Poll(float deltaTime, theword::ui::NavigationStack* navStack) {
+void InputHandler::Poll(float deltaTime, theword::ui::NavigationStack* navStack,
+                        ContextMenuHandler contextMenuHandler,
+                        ContextDismissHandler contextDismissHandler) {
+    // Context menu gets first chance to consume clicks and escape
+    if (IsKeyPressed(key::ESCAPE) && contextDismissHandler && contextDismissHandler()) {
+        return;
+    }
+    if (contextMenuHandler && IsMouseButtonPressed(MOUSE_LEFT_BUTTON)) {
+        if (contextMenuHandler(GetMousePosition())) {
+            return;
+        }
+    }
+
     // Let the active screen process input first — if it consumes it, skip normal handling
     if (navStack && navStack->HandleInput(deltaTime)) return;
 

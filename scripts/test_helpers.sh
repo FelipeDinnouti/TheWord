@@ -120,16 +120,23 @@ app_press() {
     xdotool keyup --window "$TEST_APP_WIN" "$key" 2>/dev/null || return 1
 }
 
-# app_click <x> <y> - mouse click at window-relative coordinates
+# app_click <x> <y> [hold_ms] [button] - mouse down/wait/up at window-relative
+# coordinates. Default hold 150ms, default button 1 (left).
+# Button 3 = right.
 app_click() {
     local x="$1" y="$2"
+    local hold="${3:-150}"
+    local btn="${4:-1}"
     if [ -z "$TEST_APP_WIN" ]; then
         echo "FAIL: app_click no app window"
         return 1
     fi
     xdotool mousemove --window "$TEST_APP_WIN" "$x" "$y" 2>/dev/null || return 1
     sleep 0.05
-    xdotool click --window "$TEST_APP_WIN" 1 2>/dev/null || return 1
+    xdotool windowfocus "$TEST_APP_WIN" 2>/dev/null || true
+    xdotool mousedown --window "$TEST_APP_WIN" "$btn" 2>/dev/null || return 1
+    sleep "$(echo "scale=3; $hold / 1000" | bc -l 2>/dev/null || echo "0.15")"
+    xdotool mouseup --window "$TEST_APP_WIN" "$btn" 2>/dev/null || return 1
 }
 
 # ── Assertions / waits ──────────────────────────────────────────────────────

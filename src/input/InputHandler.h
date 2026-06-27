@@ -15,7 +15,11 @@ public:
                  std::function<int(float, float)> hitTestFn = nullptr,
                  std::function<bool(int)> isHighlightedFn = nullptr);
 
-    void Poll(float deltaTime, theword::ui::NavigationStack* navStack = nullptr);
+    using ContextMenuHandler = std::function<bool(Vector2)>;
+    using ContextDismissHandler = std::function<bool()>;
+    void Poll(float deltaTime, theword::ui::NavigationStack* navStack = nullptr,
+              ContextMenuHandler contextMenuHandler = nullptr,
+              ContextDismissHandler contextDismissHandler = nullptr);
     bool IsDialogActive() const { return dialogActive_; }
 
 private:

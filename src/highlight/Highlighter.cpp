@@ -1,6 +1,7 @@
 #include "Highlighter.h"
 #include "event/EventBus.h"
 #include "event/Events.h"
+#include "core/Logger.h"
 #include <algorithm>
 
 namespace theword::highlight {
@@ -93,6 +94,7 @@ void Highlighter::EndSelection() {
 
     highlights.push_back(h);
     persistence.SaveHighlight(h);
+    theword::core::Logger::Debug("Highlight saved: words " + std::to_string(start) + "-" + std::to_string(end));
 }
 
 bool Highlighter::IsWordHighlighted(int wordId) const {
@@ -124,6 +126,7 @@ const Highlight* Highlighter::HighlightAtWord(int wordId) const {
 }
 
 void Highlighter::RemoveHighlight(int id) {
+    theword::core::Logger::Debug("Highlight deleted: id " + std::to_string(id));
     highlights.erase(
         std::remove_if(highlights.begin(), highlights.end(),
             [id](const Highlight& h) { return h.id == id; }),

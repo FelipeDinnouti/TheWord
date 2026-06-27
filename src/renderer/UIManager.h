@@ -24,6 +24,7 @@ public:
     void HideContextMenu();
     bool IsContextMenuActive() const;
     void DrawContextMenu();
+    bool HandleContextMenuClick(Vector2 pos);
 
 private:
     ContextMenu* contextMenu;

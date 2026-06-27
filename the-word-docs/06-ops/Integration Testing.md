@@ -58,6 +58,10 @@ milliseconds — both are processed in the same `glfwPollEvents()`, making the
 press invisible to `IsKeyPressed()`. `app_press` splits into `keydown`/`keyup`
 with a configurable delay (default 150ms ≥ 1 frame at 60fps).
 
+**Mouse timing detail:** Same issue — `xdotool click` sends ButtonPress+ButtonRelease
+within milliseconds. `app_click` splits into `mousedown`/`mouseup` with a
+configurable hold time (default 150ms).
+
 ### Assertions / Waits
 
 ```bash
@@ -117,18 +121,18 @@ test_cleanup
 | `gdb` (optional) | Backtrace when ASan isn't enough |
 | `test_monitor` (`BUILD_TEST_MONITOR`) | Live status window for test steps |
 
-## Cinnamon WM Conflicts
+## Safe Keys
 
-Cinnamon intercepts **Left/Right arrow keys** for workspace switching, even with
-`--window`. These keys cannot be used for automated testing. Use the center menu
-navigation instead (G → Enter → select → Enter).
+The following keys work reliably with `app_press` (using keydown/keyup split):
+- `g` (center menu), `s` (settings), `a` (about)
+- `Return`, `Escape`, `Down`, `Up`, `Left`/`Right`
+- `1`-`9` (chapter shortcuts)
+- Mouse clicks via `app_click` (mousedown/mouseup split)
 
-Safe keys that are not WM-intercepted:
-- `g` (center menu)
-- `s` (settings)
-- `a` (about)
-- `Return`, `Escape`, `Down`, `Up`
-- Mouse clicks (with correct coordinates)
+Left/Right arrows were previously flagged as intercepted by Cinnamon, but the
+workspace-switching issue was caused by key events going to the wrong X window.
+PID-based window targeting (`--window` flag) resolves this. If you still observe
+workspace switching, verify that `TEST_APP_WIN` points to the correct window.
 
 ## Virtual Framebuffer (CI / Headless)
 
@@ -149,7 +153,7 @@ kill $XVFB_PID 2>/dev/null
 | Keys go to terminal window | `app_start` uses PID-based search (not name-based) |
 | `xdotool key G` not detected | Use `app_press` (keydown/keyup split) |
 | Workspace switches | `app_start` moves window to current desktop |
-| LEFT/RIGHT intercepted by Cinnamon | Use center menu navigation, not arrow keys |
+| Workspace switches on arrow keys | Verify `TEST_APP_WIN` is the correct PID-owned window |
 | Coordinates miss buttons | Compute from window geometry |
 | Timing flakiness | Increase sleeps between actions |
 | ASan not catching bug | Also try `-fsanitize=undefined` for UB detection |

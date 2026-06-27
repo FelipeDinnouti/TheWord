@@ -33,4 +33,8 @@ void UIManager::DrawContextMenu() {
     contextMenu->Draw();
 }
 
+bool UIManager::HandleContextMenuClick(Vector2 pos) {
+    return contextMenu->HandleClick(pos);
+}
+
 } // namespace theword::renderer

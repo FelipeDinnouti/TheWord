@@ -237,7 +237,17 @@ void App::Run() {
         float deltaTime = (float)(currentTime - lastTime);
         lastTime = currentTime;
 
-        inputHandler_->Poll(deltaTime, navStack_.get());
+        auto ctxHandler = [this](Vector2 pos) {
+            return uiManager_->HandleContextMenuClick(pos);
+        };
+        auto ctxDismiss = [this]() {
+            if (uiManager_->IsContextMenuActive()) {
+                uiManager_->HideContextMenu();
+                return true;
+            }
+            return false;
+        };
+        inputHandler_->Poll(deltaTime, navStack_.get(), ctxHandler, ctxDismiss);
         docManager_->Update(deltaTime);
 
         // Keyboard shortcuts that push screens (only when on root Reader)

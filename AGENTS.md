@@ -117,7 +117,7 @@ test_cleanup
 | `app_start <binary>` | Launch app, find window by PID, focus |
 | `app_stop` | Kill app |
 | `app_press <key> [delay_ms]` | KeyDown + wait + KeyUp (handles raylib timing) |
-| `app_click <x> <y>` | Mouse click at window-relative coords |
+| `app_click <x> <y> [hold_ms] [button]` | Mouse click at window-relative coords (split mousedown/mouseup, default button 1, 3=right) |
 | `app_wait_for_chapter <id>` | Poll log until "Loaded chapter: <id>" appears |
 | `app_assert_no_crash` | Check app alive + no ASan errors |
 | `app_screenshot <file>` | Capture window to PNG (requires ImageMagick) |
