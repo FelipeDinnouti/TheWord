@@ -84,9 +84,63 @@ rm -rf build && cmake -B build -DCMAKE_BUILD_TYPE=Release -G "Unix Makefiles"
 - Generated `Version.h` is updated automatically on reconfigure (`cmake -B build ...`)
 - Version is displayed in the About overlay and accessible at runtime via `theword::core::APP_VERSION`
 
+## Integration Testing (AI Verification)
+
+AI agents cannot see the screen. Use `scripts/test_helpers.sh` — a bash action
+library for GUI integration testing. Every function returns a parseable exit
+code and prints PASS/FAIL:
+
+```bash
+source scripts/test_helpers.sh
+
+test_init
+app_start build_asan/theword
+sleep 3                                    # wait for chapter to load
+app_wait_for_chapter "GEN.1" && PASS=$((PASS+1))
+
+app_press g ; sleep 1.5                    # open center menu
+app_press Return ; sleep 1.5               # select Books
+app_press Down ; sleep 0.5                 # select Exodus
+app_press Return ; sleep 2                 # open chapter grid
+app_press Return ; sleep 2                 # select EXO.1
+
+app_wait_for_chapter "EXO.1" && PASS=$((PASS+1))
+app_assert_no_crash && PASS=$((PASS+1))
+
+test_report
+test_cleanup
+```
+
+| Function | Purpose |
+|----------|---------|
+| `test_init` / `test_cleanup` | Lifecycle (temp files, traps) |
+| `app_start <binary>` | Launch app, find window by PID, focus |
+| `app_stop` | Kill app |
+| `app_press <key> [delay_ms]` | KeyDown + wait + KeyUp (handles raylib timing) |
+| `app_click <x> <y>` | Mouse click at window-relative coords |
+| `app_wait_for_chapter <id>` | Poll log until "Loaded chapter: <id>" appears |
+| `app_assert_no_crash` | Check app alive + no ASan errors |
+| `app_screenshot <file>` | Capture window to PNG (requires ImageMagick) |
+| `monitor_start` | Launch live test monitor (requires `BUILD_TEST_MONITOR`) |
+| `monitor_announce <status> <text>` | Write to monitor status file |
+
+For a full example see `scripts/test_integration.sh`.
+
+```bash
+# Run the example test (without monitor):
+./scripts/test_integration.sh
+
+# Run with monitor:
+TEST_MONITOR_BINARY=build_monitor/tools/test_monitor/test_monitor \
+    ./scripts/test_integration.sh
+```
+
 ## See Also
 
 - `the-word-docs/06-ops/Build Guide.md` — Full build instructions
 - `the-word-docs/02-architecture/Data Source Architecture.md` — Dual-source design
 - `the-word-docs/05-reference/YouVersion API.md` — API details
 - `the-word-docs/07-ai-collaboration/Convention Reference.md` — Full convention spec
+- `the-word-docs/06-ops/Integration Testing.md` — Full integration testing reference
+- `scripts/test_helpers.sh` — Action library for AI agents
+- `scripts/test_integration.sh` — Example test runner
