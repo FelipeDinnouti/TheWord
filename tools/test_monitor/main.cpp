@@ -3,7 +3,6 @@
 #include <string>
 #include <deque>
 #include <cstring>
-
 static constexpr const char* STATUS_FILE = "/tmp/theword_test_status.txt";
 static constexpr int MAX_HISTORY = 10;
 
@@ -32,6 +31,10 @@ int main() {
     SetTraceLogLevel(LOG_WARNING);
     InitWindow(480, 120, "TheWord Test Monitor");
     SetTargetFPS(8);
+
+    // Position at top-center of the screen
+    int monitorW = GetMonitorWidth(GetCurrentMonitor());
+    SetWindowPosition(monitorW / 2 - 240, 0);
 
     std::deque<Entry> history;
     std::string curText, curStatus, prevText;
