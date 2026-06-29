@@ -34,14 +34,27 @@ void DocumentManager::OnScroll(const theword::event::ScrollEvent& e) {
     float maxScroll = GetTotalHeight() - viewportHeight;
     if (maxScroll < 0.0f) maxScroll = 0.0f;
 
-    float newTarget = targetScrollY + e.delta;
-    if (newTarget < 0.0f) newTarget = 0.0f;
-    if (newTarget > maxScroll) newTarget = maxScroll;
-
-    targetScrollY = newTarget;
+    if (e.direct) {
+        scrollY += e.delta;
+        if (scrollY < 0.0f) scrollY = 0.0f;
+        if (scrollY > maxScroll) scrollY = maxScroll;
+        targetScrollY = scrollY;
+    } else {
+        float newTarget = targetScrollY + e.delta;
+        if (newTarget < 0.0f) newTarget = 0.0f;
+        if (newTarget > maxScroll) newTarget = maxScroll;
+        targetScrollY = newTarget;
+    }
 
     float absDelta = std::abs(e.delta);
     avgScrollSpeed_ = avgScrollSpeed_ * 0.9f + absDelta * 0.1f;
+}
+
+bool DocumentManager::HasPendingLoads() const {
+    for (const auto& p : pendingLoads_) {
+        if (!p.inserted) return true;
+    }
+    return false;
 }
 
 void DocumentManager::UpdateLoadTime(float ms) {

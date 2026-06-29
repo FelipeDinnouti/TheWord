@@ -19,6 +19,10 @@ InputHandler::InputHandler(theword::event::EventBus& eventBus,
       hitTestFn(std::move(hitTestFn)),
       isHighlightedFn(std::move(isHighlightedFn)),
       scrollVelocity(0.0f),
+      touchVelocity(0.0f),
+      deltaHistory{},
+      deltaHistoryIdx(0),
+      slopAccumulator(0.0f),
       pressState(PressState::Idle), pressStartTime(0.0),
       pressStartPos{0, 0}, pressStartWord(-1), selectStartWord(-1),
       touchActive(false), touchLastY(0.0f), lastTouchDelta(0.0f), lastPinchDist(0.0f) {
@@ -76,22 +80,21 @@ void InputHandler::Poll(float deltaTime, theword::ui::NavigationStack* navStack,
 void InputHandler::HandleScroll() {
     float wheel = GetMouseWheelMove();
     if (wheel != 0) {
-        scrollVelocity -= wheel * SCROLL_SENSITIVITY;
+        scrollVelocity = 0.0f;
+        eventBus_.Emit(theword::event::ScrollEvent{-wheel * SCROLL_SENSITIVITY});
+        return;
     }
 
     if (IsKeyDown(key::DOWN)) {
-        scrollVelocity += SCROLL_SENSITIVITY * KEYBOARD_SCROLL_FACTOR;
+        scrollVelocity = 0.0f;
+        eventBus_.Emit(theword::event::ScrollEvent{SCROLL_SENSITIVITY * KEYBOARD_SCROLL_FACTOR});
+        return;
     }
     if (IsKeyDown(key::UP)) {
-        scrollVelocity -= SCROLL_SENSITIVITY * KEYBOARD_SCROLL_FACTOR;
-    }
-
-    scrollVelocity *= FRICTION;
-    if (std::abs(scrollVelocity) < MIN_VELOCITY) {
         scrollVelocity = 0.0f;
+        eventBus_.Emit(theword::event::ScrollEvent{-SCROLL_SENSITIVITY * KEYBOARD_SCROLL_FACTOR});
+        return;
     }
-
-    eventBus_.Emit(theword::event::ScrollEvent{scrollVelocity});
 }
 
 void InputHandler::HandlePressFSM() {
@@ -181,33 +184,65 @@ void InputHandler::HandleRightClick() {
 void InputHandler::HandleTouchScroll() {
     int touchCount = GetTouchPointCount();
     if (touchCount == 1) {
-        // Suppress scroll while actively selecting text
-        if (pressState == PressState::Selecting) {
-            return;
-        }
+        if (pressState == PressState::Selecting) return;
+
         Vector2 pos = GetTouchPosition(0);
         if (!touchActive) {
             touchActive = true;
             touchLastY = pos.y;
             lastTouchDelta = 0.0f;
-        } else {
-            float deltaY = pos.y - touchLastY;
-            touchLastY = pos.y;
-            lastTouchDelta = deltaY;
-            eventBus_.Emit(theword::event::ScrollEvent{-deltaY});
+            touchVelocity = 0.0f;
+            deltaHistoryIdx = 0;
+            slopAccumulator = 0.0f;
+            return;
         }
+
+        float deltaY = pos.y - touchLastY;
+        touchLastY = pos.y;
+        lastTouchDelta = deltaY;
+
+        slopAccumulator += deltaY;
+        if (std::abs(slopAccumulator) < TOUCH_SLOP) return;
+
+        float effectiveDelta = slopAccumulator;
+        slopAccumulator = 0.0f;
+
+        deltaHistory[deltaHistoryIdx % DELTA_HISTORY_SIZE] = effectiveDelta;
+        deltaHistoryIdx++;
+        int count = std::min(deltaHistoryIdx, DELTA_HISTORY_SIZE);
+        float sumDelta = 0.0f;
+        for (int i = 0; i < count; i++) sumDelta += deltaHistory[i];
+
+        float dt = GetFrameTime();
+        if (dt > 0.0f && dt < 0.1f) {
+            float smoothVel = sumDelta / (count * dt);
+            touchVelocity = smoothVel * VELOCITY_ALPHA + touchVelocity * (1.0f - VELOCITY_ALPHA);
+        }
+
+        eventBus_.Emit(theword::event::ScrollEvent{effectiveDelta, true});
     } else {
         if (touchActive) {
             touchActive = false;
-            scrollVelocity = -lastTouchDelta * 10.0f;
+            scrollVelocity = -touchVelocity;
+            if (scrollVelocity > MAX_MOMENTUM_VELOCITY)
+                scrollVelocity = MAX_MOMENTUM_VELOCITY;
+            if (scrollVelocity < -MAX_MOMENTUM_VELOCITY)
+                scrollVelocity = -MAX_MOMENTUM_VELOCITY;
+            eventBus_.Emit(theword::event::ScrollEvent{scrollVelocity * GetFrameTime()});
+            return;
+        }
+
+        if (scrollVelocity != 0.0f) {
+            float dt = GetFrameTime();
+            scrollVelocity *= std::exp(-dt / MOMENTUM_TIME_CONSTANT);
+
+            if (std::abs(scrollVelocity) < MIN_VELOCITY) {
+                scrollVelocity = 0.0f;
+            } else {
+                eventBus_.Emit(theword::event::ScrollEvent{scrollVelocity * dt});
+            }
         }
     }
-
-    scrollVelocity *= FRICTION;
-    if (std::abs(scrollVelocity) < MIN_VELOCITY) {
-        scrollVelocity = 0.0f;
-    }
-    eventBus_.Emit(theword::event::ScrollEvent{scrollVelocity});
 }
 
 void InputHandler::HandleTouchPressFSM() {

@@ -6,6 +6,7 @@
 #include <mutex>
 #include <future>
 #include <optional>
+#include <cmath>
 #include "data/ChapterProvider.h"
 
 namespace theword::text { class LayoutEngine; }
@@ -52,6 +53,8 @@ public:
 
     void SetViewportHeight(float height);
     void InvalidateLayouts();
+    bool HasMomentum() const { return std::abs(targetScrollY - scrollY) > 0.5f; }
+    bool HasPendingLoads() const;
 
     void GetVisibleSpans(std::vector<std::pair<theword::data::Span, float>>& docSpans) const;
 
@@ -73,7 +76,7 @@ private:
     float viewportHeight;
     float contentTop;
 
-    static constexpr float SMOOTH_SPEED = 8.0f;
+    static constexpr float SMOOTH_SPEED = 20.0f;
     static constexpr float MIN_LOAD_MARGIN = 30.0f;
     static constexpr float MAX_LOAD_MARGIN = 300.0f;
 

@@ -5,7 +5,7 @@
 
 namespace theword::event {
 
-struct ScrollEvent       { float delta; };
+struct ScrollEvent       { float delta; bool direct = false; };
 
 struct SelectionEvent {
     enum class Action { Start, Update, End, Cancel } action;

@@ -298,6 +298,7 @@ void App::WireEvents() {
 
 void App::Run() {
     double lastTime = GetTime();
+    int drawCountdown = config::IDLE_DRAIN_FRAMES;
 
     while (!WindowShouldClose()) {
         if (platform::ShouldQuit()) break;
@@ -341,17 +342,33 @@ void App::Run() {
             }
         }
 
-        BeginDrawing();
-        ClearBackground(theme::WINDOW_BG);
+        // Skip GPU draws when the view is fully static
+        bool isAnimating = inputHandler_->HasMomentum()
+                        || docManager_->HasMomentum()
+                        || docManager_->HasPendingLoads();
+        bool hasUiOverlay = inputHandler_->IsDialogActive()
+                         || uiManager_->IsContextMenuActive()
+                         || !navStack_->IsOnRoot();
 
-        navStack_->DrawActive();
+        if (isAnimating || hasUiOverlay) {
+            drawCountdown = config::IDLE_DRAIN_FRAMES;
+        } else if (drawCountdown > 0) {
+            drawCountdown--;
+        }
 
-        uiManager_->DrawContextMenu();
+        if (drawCountdown > 0) {
+            BeginDrawing();
+            ClearBackground(theme::WINDOW_BG);
+
+            navStack_->DrawActive();
+
+            uiManager_->DrawContextMenu();
 #ifndef NDEBUG
-        renderer_->DrawFpsCounter(10, GetScreenHeight() - 30);
+            renderer_->DrawFpsCounter(10, GetScreenHeight() - 30);
 #endif
 
-        EndDrawing();
+            EndDrawing();
+        }
     }
 }
 
