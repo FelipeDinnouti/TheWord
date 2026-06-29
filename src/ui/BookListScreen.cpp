@@ -14,9 +14,10 @@ using namespace theword::core;
 
 BookListScreen::BookListScreen(const Font& font, float fontSize,
                                NavigationStack& navStack,
-                               theword::event::EventBus& eventBus)
+                               theword::event::EventBus& eventBus,
+                               const theword::core::UIScale& uiScale)
     : font_(font), fontSize_(fontSize),
-      navStack_(navStack), eventBus_(eventBus) {}
+      navStack_(navStack), eventBus_(eventBus), uiScale_(uiScale) {}
 
 std::vector<int> BookListScreen::GetFilteredIndices() const {
     if (search_.empty()) {
@@ -35,29 +36,34 @@ std::vector<int> BookListScreen::GetFilteredIndices() const {
 }
 
 int BookListScreen::GetVisibleCount(float listHeight) const {
-    return static_cast<int>(listHeight / ITEM_HEIGHT);
+    float itemH = std::max(uiScale_.dp(44), fontSize_ * 0.65f + uiScale_.dp(10));
+    return static_cast<int>(listHeight / itemH);
 }
 
 void BookListScreen::Draw() {
     float screenW = static_cast<float>(GetScreenWidth());
     float screenH = static_cast<float>(GetScreenHeight());
 
-    DrawHeaderBar(font_, fontSize_, "Books", true, static_cast<int>(screenW));
+    float headerH = uiScale_.dp(48);
+    float searchH = uiScale_.dp(44);
+    float itemH = std::max(uiScale_.dp(44), fontSize_ * 0.65f + uiScale_.dp(10));
+
+    DrawHeaderBar(font_, fontSize_, "Books", true, static_cast<int>(screenW), uiScale_);
 
     // Search bar
-    float searchY = HEADER_HEIGHT + 4.0f;
-    Rectangle searchBox = {12.0f, searchY, screenW - 24.0f, SEARCH_HEIGHT - 8.0f};
+    float searchY = headerH + uiScale_.dp(4);
+    Rectangle searchBox = {uiScale_.dp(12), searchY, screenW - uiScale_.dp(24), searchH - uiScale_.dp(8)};
     DrawRectangleRec(searchBox, theme::INPUT_BG);
     DrawRectangleLinesEx(searchBox, 1, theme::INPUT_BORDER);
 
     std::string display = search_;
     display += "|";
     float labelSize = fontSize_ * 0.65f;
-    DrawTextEx(font_, display.c_str(), {searchBox.x + 6.0f, searchBox.y + 4.0f},
+    DrawTextEx(font_, display.c_str(), {searchBox.x + uiScale_.dp(6), searchBox.y + uiScale_.dp(4)},
                labelSize, 1, theme::UI_INPUT_TEXT);
 
     // Book list
-    float listY = HEADER_HEIGHT + SEARCH_HEIGHT + 4.0f;
+    float listY = headerH + searchH + uiScale_.dp(4);
     float listH = screenH - listY;
 
     auto indices = GetFilteredIndices();
@@ -67,8 +73,8 @@ void BookListScreen::Draw() {
 
     for (int i = scrollOffset_; i < static_cast<int>(indices.size()); ++i) {
         int itemIdx = i - scrollOffset_;
-        float itemY = listY + itemIdx * ITEM_HEIGHT;
-        if (itemY + ITEM_HEIGHT > screenH) break;
+        float itemY = listY + itemIdx * itemH;
+        if (itemY + itemH > screenH) break;
 
         int bookIdx = indices[i];
         std::string label = std::string(BOOKS[bookIdx].code) + "  " + BOOKS[bookIdx].fullName;
@@ -76,10 +82,10 @@ void BookListScreen::Draw() {
         bool selected = (bookIdx == selection_);
         if (selected) {
             DrawRectangle(0, static_cast<int>(itemY), static_cast<int>(screenW),
-                          static_cast<int>(ITEM_HEIGHT), theme::SELECTED_BG);
+                          static_cast<int>(itemH), theme::SELECTED_BG);
         }
 
-        DrawTextEx(font_, label.c_str(), {20.0f, itemY + 8.0f},
+        DrawTextEx(font_, label.c_str(), {uiScale_.dp(16), itemY + uiScale_.dp(8)},
                    labelSize, 1, selected ? theme::UI_TITLE : theme::UI_TEXT);
     }
 }
@@ -111,14 +117,18 @@ bool BookListScreen::HandleInput(float /*deltaTime*/) {
         return true;
     }
 
+    float headerH = uiScale_.dp(48);
+    float searchH = uiScale_.dp(44);
+    float itemH = std::max(uiScale_.dp(44), fontSize_ * 0.65f + uiScale_.dp(10));
+
     // Scroll wheel
     float wheel = GetMouseWheelMove();
     if (wheel != 0.0f) {
         auto indices = GetFilteredIndices();
-        float listY = HEADER_HEIGHT + SEARCH_HEIGHT + 4.0f;
+        float listY = headerH + searchH + uiScale_.dp(4);
         float screenH = static_cast<float>(GetScreenHeight());
         float listH = screenH - listY;
-        int visibleCount = static_cast<int>(listH / ITEM_HEIGHT);
+        int visibleCount = static_cast<int>(listH / itemH);
         int maxScroll = std::max(0, static_cast<int>(indices.size()) - visibleCount);
         scrollOffset_ = std::clamp(scrollOffset_ - static_cast<int>(wheel), 0, maxScroll);
         return true;
@@ -137,11 +147,10 @@ bool BookListScreen::HandleInput(float /*deltaTime*/) {
         int newIdx = std::clamp(curIdx + step, 0, static_cast<int>(indices.size()) - 1);
         selection_ = indices[newIdx];
 
-        // Auto-scroll to keep selection visible
-        float listY = HEADER_HEIGHT + SEARCH_HEIGHT + 4.0f;
+        float listY = headerH + searchH + uiScale_.dp(4);
         float screenH = static_cast<float>(GetScreenHeight());
         float listH = screenH - listY;
-        int visibleCount = static_cast<int>(listH / ITEM_HEIGHT);
+        int visibleCount = static_cast<int>(listH / itemH);
         if (newIdx < scrollOffset_) scrollOffset_ = newIdx;
         if (newIdx >= scrollOffset_ + visibleCount) scrollOffset_ = newIdx - visibleCount + 1;
         return true;
@@ -154,7 +163,7 @@ bool BookListScreen::HandleInput(float /*deltaTime*/) {
                 const auto& book = BOOKS[selection_];
                 navStack_.Push(std::make_unique<ChapterGridScreen>(
                     font_, fontSize_, navStack_, eventBus_,
-                    book.code, book.fullName, book.chapterCount
+                    book.code, book.fullName, book.chapterCount, uiScale_
                 ));
                 return true;
             }
@@ -163,17 +172,18 @@ bool BookListScreen::HandleInput(float /*deltaTime*/) {
 
     if (IsMouseButtonPressed(MOUSE_LEFT_BUTTON)) {
         Vector2 mousePos = GetMousePosition();
+        float backW = uiScale_.dp(56);
+
         // Back button area
-        if (mousePos.y < HEADER_HEIGHT && mousePos.x < BACK_AREA_WIDTH) {
+        if (mousePos.y < headerH && mousePos.x < backW) {
             navStack_.Pop();
             return true;
         }
 
-        // Search bar click — focus (already focused for keyboard input)
         // Book list click
-        float listY = HEADER_HEIGHT + SEARCH_HEIGHT + 4.0f;
+        float listY = headerH + searchH + uiScale_.dp(4);
         if (mousePos.y >= listY) {
-            int itemIdx = static_cast<int>((mousePos.y - listY) / ITEM_HEIGHT);
+            int itemIdx = static_cast<int>((mousePos.y - listY) / itemH);
             auto indices = GetFilteredIndices();
             int bookIdx = scrollOffset_ + itemIdx;
             if (bookIdx >= 0 && bookIdx < static_cast<int>(indices.size())) {
@@ -181,7 +191,7 @@ bool BookListScreen::HandleInput(float /*deltaTime*/) {
                 const auto& book = BOOKS[selection_];
                 navStack_.Push(std::make_unique<ChapterGridScreen>(
                     font_, fontSize_, navStack_, eventBus_,
-                    book.code, book.fullName, book.chapterCount
+                    book.code, book.fullName, book.chapterCount, uiScale_
                 ));
                 return true;
             }

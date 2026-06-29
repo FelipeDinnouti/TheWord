@@ -2,6 +2,7 @@
 #define CHAPTER_GRID_SCREEN_H
 
 #include "Screen.h"
+#include "core/UIScale.h"
 #include <string>
 #include <raylib.h>
 
@@ -17,7 +18,8 @@ public:
                       theword::event::EventBus& eventBus,
                       const std::string& bookCode,
                       const std::string& bookName,
-                      int chapterCount);
+                      int chapterCount,
+                      const theword::core::UIScale& uiScale);
     void Draw() override;
     bool HandleInput(float deltaTime) override;
     const char* GetTitle() const override { return bookName_.c_str(); }
@@ -30,14 +32,7 @@ private:
     std::string bookCode_;
     std::string bookName_;
     int chapterCount_;
-
-    static constexpr float HEADER_HEIGHT = 60.0f;
-    static constexpr float GRID_PADDING = 16.0f;
-    static constexpr float CELL_WIDTH = 60.0f;
-    static constexpr float CELL_HEIGHT = 44.0f;
-    static constexpr float CELL_GAP = 8.0f;
-    static constexpr int GRID_COLUMNS = 5;
-    static constexpr float BACK_AREA_WIDTH = 80.0f;
+    const theword::core::UIScale& uiScale_;
 
     int selectedChapter_ = 1;
 };

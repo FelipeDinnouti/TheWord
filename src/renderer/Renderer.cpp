@@ -10,30 +10,27 @@ using namespace theword::data;
 
 Renderer::Renderer(theword::event::EventBus& eventBus,
                    const Font& bodyFont, const Font& headingFont,
-                   float contentTop, float fontSize)
+                   const Font& largeFont, const Font& smallFont,
+                   float contentTop,
+                   float bodySize, float headingSize,
+                   float largeSize, float smallSize,
+                   float dpiScale)
     : eventBus_(eventBus), bodyFont(bodyFont), headingFont(headingFont),
-      contentTop(contentTop), fontSize(fontSize),
-      headingSize(fontSize * theme::FONT_HEADING) {
+      largeFont(largeFont), smallFont(smallFont),
+      contentTop(contentTop),
+      bodySize_(bodySize), headingSize_(headingSize),
+      largeSize_(largeSize), smallSize_(smallSize),
+      dpiScale_(dpiScale) {}
 
-    eventBus_.On<theword::event::FontSizeEvent>([this](const auto& e) { OnFontSize(e); });
-}
-
-void Renderer::OnFontSize(const theword::event::FontSizeEvent& e) {
-    if (e.newSize > 0.0f) {
-        fontSize = e.newSize;
-    } else if (e.delta != 0.0f) {
-        fontSize += e.delta;
-    }
-    headingSize = fontSize * theme::FONT_HEADING;
-}
-
-void Renderer::SetFontSize(float size) {
-    fontSize = size;
-    headingSize = size * theme::FONT_HEADING;
+void Renderer::SetFontSizes(float body, float heading, float large, float small) {
+    bodySize_ = body;
+    headingSize_ = heading;
+    largeSize_ = large;
+    smallSize_ = small;
 }
 
 float Renderer::GetFontSize() const {
-    return fontSize;
+    return bodySize_;
 }
 
 float Renderer::GetContentTop() const {
@@ -60,42 +57,58 @@ void Renderer::DrawFrame(float scrollY, float totalHeight, float viewportHeight,
 
 void Renderer::DrawSpan(const Span& span, float screenY) {
     Color color = theme::DOC_BODY;
-    float drawSize = fontSize;
+    float drawSize = bodySize_;
     Font useFont = bodyFont;
 
     switch (span.type) {
         case SegmentType::BookTitle:
             color = theme::DOC_BOOK_TITLE;
-            drawSize = fontSize * theme::FONT_LARGE_HEADING;
-            useFont = headingFont;
+            drawSize = largeSize_;
+            useFont = largeFont;
             break;
         case SegmentType::ChapterLabel:
             color = theme::DOC_CHAPTER_LABEL;
-            drawSize = fontSize * theme::FONT_LARGE_HEADING;
-            useFont = headingFont;
+            drawSize = largeSize_;
+            useFont = largeFont;
             break;
         case SegmentType::SectionHeading:
             color = theme::DOC_HEADING;
-            drawSize = headingSize;
+            drawSize = headingSize_;
             useFont = headingFont;
             break;
         case SegmentType::PoetryLine:
             color = theme::DOC_POETRY;
-            drawSize = fontSize;
+            drawSize = bodySize_;
+            break;
+        case SegmentType::VerseNumber:
+            color = theme::DOC_VERSE_NUMBER;
+            drawSize = smallSize_;
+            useFont = smallFont;
             break;
         default:
             break;
     }
 
-    DrawTextEx(useFont, span.text.c_str(), {span.x, screenY}, drawSize, 1, color);
+    Vector2 pos = {span.x, screenY};
+    if (span.type == SegmentType::VerseNumber) {
+        pos.y = screenY - drawSize * 0.25f;
+    }
+    DrawTextEx(useFont, span.text.c_str(), pos, drawSize, 1, color);
 }
 
 void Renderer::DrawScrollbar(float scrollY, float totalHeight, float viewportHeight) {
     float scrollBarHeight = viewportHeight * (viewportHeight / totalHeight);
-    if (scrollBarHeight < MIN_SCROLLBAR_HEIGHT) scrollBarHeight = MIN_SCROLLBAR_HEIGHT;
+    float minH = MIN_SCROLLBAR_HEIGHT * dpiScale_;
+    if (scrollBarHeight < minH) scrollBarHeight = minH;
 
     float scrollBarY = contentTop + (scrollY / totalHeight) * (viewportHeight - scrollBarHeight);
-    DrawRectangle(GetScreenWidth() - 8, (int)scrollBarY, 6, (int)scrollBarHeight, theme::SCROLLBAR_THUMB);
+    float barWidth = 6.0f * dpiScale_;
+    float rightGap = 8.0f * dpiScale_;
+    DrawRectangle(GetScreenWidth() - static_cast<int>(rightGap),
+                  static_cast<int>(scrollBarY),
+                  static_cast<int>(barWidth),
+                  static_cast<int>(scrollBarHeight),
+                  theme::SCROLLBAR_THUMB);
 }
 
 void Renderer::DrawFpsCounter(int x, int y) {

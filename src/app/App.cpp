@@ -25,6 +25,7 @@
 #include "ui/ReaderScreen.h"
 #include "ui/SettingsScreen.h"
 #include "ui/CreditsOverlay.h"
+#include "ui/FontDiagnostic.h"
 
 #include <cstdlib>
 #include <algorithm>
@@ -44,6 +45,8 @@ App::App() = default;
 App::~App() {
     UnloadFont(bodyFont_);
     UnloadFont(headingFont_);
+    UnloadFont(largeFont_);
+    UnloadFont(smallFont_);
     CloseWindow();
 }
 
@@ -60,6 +63,7 @@ bool App::Init(const std::string& title) {
 
     int renderW = GetScreenWidth();
     int renderH = GetScreenHeight();
+    uiScale_ = {scale_, (float)renderW, (float)renderH, (float)plat.bottomInset};
 
     {
         const char* splashTitle = "TheWord";
@@ -81,23 +85,43 @@ bool App::Init(const std::string& title) {
         EndDrawing();
     }
 
-    std::vector<int> codepoints = LoadFontCodepoints(*plat.assets, config::FONT_REGULAR);
+    fontCodepoints_ = LoadFontCodepoints(*plat.assets, config::FONT_REGULAR);
+
+    Logger::Info("Opening database: " + plat.dbPath);
+    persistence_ = std::make_unique<PersistenceManager>(plat.dbPath);
+    highlighter_ = std::make_unique<Highlighter>(*eventBus_, *persistence_);
+
+    Logger::Info("Database initialized");
+    currentFontSize_ = config::FONT_SIZE;
+    std::string savedFontSize = persistence_->GetPreference("font_size", "");
+    if (!savedFontSize.empty()) {
+        try { currentFontSize_ = std::max(config::FONT_SIZE_MIN, std::min(config::FONT_SIZE_MAX, (float)std::stoi(savedFontSize))); } catch (...) {}
+    }
 
     Logger::Info("Loading fonts");
-    int scaledFontSize = (int)(config::FONT_SIZE * scale_);
-    int scaledHeadingSize = (int)(config::FONT_HEADING_SIZE * scale_);
-    bodyFont_ = LoadFontEx(config::FONT_REGULAR, scaledFontSize,
-                           codepoints.data(), (int)codepoints.size());
-    SetTextureFilter(bodyFont_.texture, TEXTURE_FILTER_POINT);
-
-    headingFont_ = LoadFontEx(config::FONT_REGULAR, scaledHeadingSize,
-                              codepoints.data(), (int)codepoints.size());
-    SetTextureFilter(headingFont_.texture, TEXTURE_FILTER_POINT);
+    ReloadFonts(currentFontSize_, fontCodepoints_);
     Logger::Info("Fonts loaded");
 
-    headingSize_ = config::FONT_HEADING_SIZE * scale_;
+    headingSize_ = currentFontSize_ * theme::FONT_HEADING * scale_;
     float contentTop = 0.0f;
     float contentWidth = renderW - config::CONTENT_PADDING * scale_;
+
+    int initBody = (int)(currentFontSize_ * scale_);
+    float initBodyF = (float)std::max(1, initBody);
+    float initHeadingF = (float)std::max(1, (int)(currentFontSize_ * theme::FONT_HEADING * scale_));
+    float initLargeF = (float)std::max(1, (int)(currentFontSize_ * theme::FONT_LARGE_HEADING * scale_));
+    float initSmallF = (float)std::max(1, (int)(currentFontSize_ * theme::FONT_VERSE_NUMBER * scale_));
+
+    layoutEngine_ = std::make_unique<LayoutEngine>(*eventBus_, contentWidth,
+                                                   bodyFont_, initBodyF,
+                                                   headingFont_, initHeadingF,
+                                                   largeFont_, initLargeF,
+                                                   smallFont_, initSmallF,
+                                                   config::LINE_SPACING, scale_);
+    renderer_ = std::make_unique<Renderer>(*eventBus_, bodyFont_, headingFont_, largeFont_, smallFont_,
+                                            contentTop, initBodyF, initHeadingF, initLargeF, initSmallF, scale_);
+
+    float viewportHeight = renderH - contentTop;
 
     std::string apiKey = EnvLoader::get(config::YVP_APP_KEY);
 
@@ -121,22 +145,6 @@ bool App::Init(const std::string& title) {
         activeProv_ = offlineProv_;
     }
 
-    Logger::Info("Opening database: " + plat.dbPath);
-    persistence_ = std::make_unique<PersistenceManager>(plat.dbPath);
-    highlighter_ = std::make_unique<Highlighter>(*eventBus_, *persistence_);
-
-    Logger::Info("Database initialized");
-    currentFontSize_ = config::FONT_SIZE;
-    std::string savedFontSize = persistence_->GetPreference("font_size", "");
-    if (!savedFontSize.empty()) {
-        try { currentFontSize_ = std::max(config::FONT_SIZE_MIN, std::min(config::FONT_SIZE_MAX, (float)std::stoi(savedFontSize))); } catch (...) {}
-    }
-    float renderedFontSize = currentFontSize_ * scale_;
-
-    layoutEngine_ = std::make_unique<LayoutEngine>(*eventBus_, contentWidth, bodyFont_, renderedFontSize, config::LINE_SPACING, scale_);
-    renderer_ = std::make_unique<Renderer>(*eventBus_, bodyFont_, headingFont_, contentTop, renderedFontSize);
-
-    float viewportHeight = renderH - contentTop;
     docManager_ = std::make_unique<DocumentManager>(*eventBus_, *layoutEngine_, viewportHeight, *activeProv_, contentTop);
 
     if (compositeProv_) {
@@ -171,7 +179,7 @@ bool App::Init(const std::string& title) {
     navStack_->Push(std::make_unique<theword::ui::ReaderScreen>(
         *eventBus_, *docManager_, *renderer_, *highlighter_, *persistence_,
         headingFont_, headingSize_, contentTop,
-        *navStack_, scale_, currentFontSize_, versionOnline_
+        *navStack_, uiScale_, currentFontSize_, versionOnline_
     ));
 
     Logger::Info("Loading initial chapter");
@@ -183,24 +191,81 @@ bool App::Init(const std::string& title) {
     return true;
 }
 
+void App::ReloadFonts(float newFontSize, std::vector<int>& codepoints) {
+    int scaledFontSize = (int)(newFontSize * scale_);
+    scaledFontSize = std::max(1, scaledFontSize);
+    int scaledHeadingSize = (int)(newFontSize * theme::FONT_HEADING * scale_);
+    scaledHeadingSize = std::max(1, scaledHeadingSize);
+    int scaledLargeSize = (int)(newFontSize * theme::FONT_LARGE_HEADING * scale_);
+    scaledLargeSize = std::max(1, scaledLargeSize);
+    int scaledSmallSize = (int)(newFontSize * theme::FONT_VERSE_NUMBER * scale_);
+    scaledSmallSize = std::max(1, scaledSmallSize);
+
+    Font newBody = LoadFontEx(config::FONT_REGULAR, scaledFontSize,
+                              codepoints.data(), (int)codepoints.size());
+    SetTextureFilter(newBody.texture, TEXTURE_FILTER_POINT);
+
+    Font newHeading = LoadFontEx(config::FONT_REGULAR, scaledHeadingSize,
+                                 codepoints.data(), (int)codepoints.size());
+    SetTextureFilter(newHeading.texture, TEXTURE_FILTER_BILINEAR);
+
+    Font newLarge = LoadFontEx(config::FONT_REGULAR, scaledLargeSize,
+                               codepoints.data(), (int)codepoints.size());
+    SetTextureFilter(newLarge.texture, TEXTURE_FILTER_POINT);
+
+    Font newSmall = LoadFontEx(config::FONT_REGULAR, scaledSmallSize,
+                               codepoints.data(), (int)codepoints.size());
+    SetTextureFilter(newSmall.texture, TEXTURE_FILTER_POINT);
+
+    Font newBold = LoadFontEx(config::FONT_BOLD, scaledFontSize,
+                              codepoints.data(), (int)codepoints.size());
+    SetTextureFilter(newBold.texture, TEXTURE_FILTER_POINT);
+
+    headingSize_ = config::FONT_HEADING_SIZE / config::FONT_SIZE * newFontSize * scale_;
+
+    Font oldBody = bodyFont_;
+    Font oldHeading = headingFont_;
+    Font oldLarge = largeFont_;
+    Font oldSmall = smallFont_;
+    Font oldBold = boldFont_;
+    bodyFont_ = newBody;
+    headingFont_ = newHeading;
+    largeFont_ = newLarge;
+    smallFont_ = newSmall;
+    boldFont_ = newBold;
+
+    UnloadFont(oldBody);
+    UnloadFont(oldHeading);
+    UnloadFont(oldLarge);
+    UnloadFont(oldSmall);
+    UnloadFont(oldBold);
+}
+
 void App::WireEvents() {
     eventBus_->On<theword::event::FontSizeEvent>([this](const auto& e) {
+        float newSize;
         if (e.delta != 0.0f && e.newSize == 0.0f) {
-            float newSz = std::max(config::FONT_SIZE_MIN,
-                          std::min(config::FONT_SIZE_MAX, currentFontSize_ + e.delta));
-            currentFontSize_ = newSz;
-            float scaled = newSz * scale_;
-            layoutEngine_->SetFontSize(scaled);
-            layoutEngine_->InvalidateCache();
-            docManager_->InvalidateLayouts();
-            renderer_->SetFontSize(scaled);
+            newSize = std::max(config::FONT_SIZE_MIN,
+                      std::min(config::FONT_SIZE_MAX, currentFontSize_ + e.delta));
         } else if (e.newSize != 0.0f) {
-            currentFontSize_ = e.newSize / scale_;
-            layoutEngine_->SetFontSize(e.newSize);
-            layoutEngine_->InvalidateCache();
-            docManager_->InvalidateLayouts();
-            renderer_->SetFontSize(e.newSize);
+            newSize = e.newSize / scale_;
+        } else {
+            return;
         }
+
+        if (newSize == currentFontSize_) return;
+        currentFontSize_ = newSize;
+
+        ReloadFonts(newSize, fontCodepoints_);
+
+        float bodyF = (float)std::max(1, (int)(newSize * scale_));
+        float headingF = (float)std::max(1, (int)(newSize * theme::FONT_HEADING * scale_));
+        float largeF = (float)std::max(1, (int)(newSize * theme::FONT_LARGE_HEADING * scale_));
+        float smallF = (float)std::max(1, (int)(newSize * theme::FONT_VERSE_NUMBER * scale_));
+        layoutEngine_->SetFontSizes(bodyF, headingF, largeF, smallF);
+        layoutEngine_->InvalidateCache();
+        docManager_->InvalidateLayouts();
+        renderer_->SetFontSizes(bodyF, headingF, largeF, smallF);
     });
 
     eventBus_->On<theword::event::SourceSwitchEvent>([this](const auto& e) {
@@ -224,6 +289,10 @@ void App::WireEvents() {
 
     eventBus_->On<theword::event::NavigateEvent>([this](const auto& e) {
         docManager_->LoadInitialChapter(e.chapterRef);
+    });
+
+    eventBus_->On<theword::event::ResizeEvent>([this](const auto& e) {
+        uiScale_.OnResize((float)e.width, (float)e.height);
     });
 }
 
@@ -256,12 +325,18 @@ void App::Run() {
                 navStack_->Push(std::make_unique<theword::ui::SettingsScreen>(
                     headingFont_, headingSize_, *navStack_, *eventBus_,
                     *highlighter_, *persistence_,
-                    scale_, currentFontSize_, versionOnline_
+                    uiScale_, currentFontSize_, versionOnline_
                 ));
             }
             if (IsKeyPressed(key::A)) {
                 navStack_->Push(std::make_unique<theword::ui::CreditsOverlay>(
-                    headingFont_, headingSize_, *navStack_
+                    headingFont_, headingSize_, *navStack_, uiScale_
+                ));
+            }
+            if (IsKeyPressed(KEY_D)) {
+                navStack_->Push(std::make_unique<theword::ui::FontDiagnostic>(
+                    bodyFont_, headingFont_, largeFont_, smallFont_, boldFont_,
+                    scale_, *navStack_
                 ));
             }
         }

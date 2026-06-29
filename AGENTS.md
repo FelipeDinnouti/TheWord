@@ -20,6 +20,7 @@ cmake --build build --parallel
 | Module details | `the-word-docs/03-modules/<Module>.md` |
 | Current status | `the-word-docs/04-planning/Progress Tracking.md` |
 | Agent workflow | `the-word-docs/07-ai-collaboration/Agent Workflow.md` |
+| Font rendering | `the-word-docs/05-reference/Raylib Notes.md#crisp-font-rendering--directives` |
 
 ## Agent Workflow
 
@@ -75,9 +76,12 @@ rm -rf build && cmake -B build -DCMAKE_BUILD_TYPE=Release -G "Unix Makefiles"
 ## Versioning
 
 - **Source of truth**: `project(theword VERSION X.Y.Z)` in `CMakeLists.txt`
-- **SemVer**: bump MAJOR on breaking API changes, MINOR on new features, PATCH on bug fixes and refactors
-- **Default bump**: PATCH for any `feat:`, `fix:`, or `refactor:` commit; no bump for `docs:`, `test:`, `chore:`
-- **Tagging**: After bumping, create an annotated tag:
+- **Scheme**: `hero.major.minor` where:
+  - `hero` — big milestone releases (rarely bumped, e.g. 1→2)
+  - `major` — new feature or system implementations
+  - `minor` — bug fixes, refactors, and polish
+- **Default bump**: `minor` for any `feat:`, `fix:`, or `refactor:` commit; no bump for `docs:`, `test:`, `chore:`
+- **Tagging**: Only tag when explicitly requested by the user:
   ```bash
   git tag -a "v$(grep -oP 'VERSION \K[0-9.]+' CMakeLists.txt | head -1)" -m "$(git log -1 --pretty=%s)"
   ```

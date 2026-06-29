@@ -17,6 +17,7 @@
 | Planning work | `04-planning/Development Plan.md` → `04-planning/Progress Tracking.md` |
 | Using the API | `03-modules/Bible API.md` → `05-reference/YouVersion API.md` |
 | Rich text / segments | `02-architecture/Data Structures.md#segment` → `03-modules/Text Layout Engine.md` |
+| Font rendering / crispness | `05-reference/Raylib Notes.md#crisp-font-rendering--directives` |
 | UI design / navigation model | `02-architecture/UI Philosophy.md` → `03-modules/UI Layer.md` |
 
 ## Document Map

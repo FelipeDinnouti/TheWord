@@ -3,6 +3,9 @@
 
 #include <string>
 #include <vector>
+#include <mutex>
+#include <future>
+#include <optional>
 #include "data/ChapterProvider.h"
 
 namespace theword::text { class LayoutEngine; }
@@ -10,6 +13,7 @@ namespace theword::text { class LayoutEngine; }
 namespace theword::event {
     class EventBus;
     struct ScrollEvent;
+    struct ScrollStopEvent;
     struct ResizeEvent;
     struct FontSizeEvent;
     struct SourceSwitchEvent;
@@ -23,6 +27,13 @@ struct LoadedChapter {
     theword::data::ChapterLayout layout;
     float startY;
     float height;
+};
+
+struct PendingLoad {
+    std::string chapterId;
+    std::future<std::optional<LoadedChapter>> future;
+    bool inserted = false;
+    bool prepend;
 };
 
 class DocumentManager {
@@ -63,7 +74,16 @@ private:
     float contentTop;
 
     static constexpr float SMOOTH_SPEED = 8.0f;
-    static constexpr float AUTO_LOAD_MARGIN = 50.0f;
+    static constexpr float MIN_LOAD_MARGIN = 30.0f;
+    static constexpr float MAX_LOAD_MARGIN = 300.0f;
+
+    float autoLoadMargin_ = 50.0f;
+    float avgScrollSpeed_ = 100.0f;
+    float recentLoadTimes_[5] = {};
+    int loadTimeIndex_ = 0;
+
+    std::vector<PendingLoad> pendingLoads_;
+    std::mutex providerMutex_;
 
     void OnScroll(const theword::event::ScrollEvent& e);
     void OnResize(const theword::event::ResizeEvent& e);
@@ -73,8 +93,7 @@ private:
     void RecalculateChapterPositions();
     bool TryLoadAdjacent(bool prepend);
     void UpdateVisibleChapter();
-    void PrependChapter(const std::string& chapterId, theword::data::ChapterData&& data);
-    void AppendChapter(const std::string& chapterId, theword::data::ChapterData&& data);
+    void UpdateLoadTime(float ms);
 };
 
 } // namespace theword::document

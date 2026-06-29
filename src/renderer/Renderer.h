@@ -9,7 +9,6 @@
 
 namespace theword::event {
     class EventBus;
-    struct FontSizeEvent;
 }
 
 namespace theword::renderer {
@@ -26,13 +25,17 @@ class Renderer {
 public:
     Renderer(theword::event::EventBus& eventBus,
              const Font& bodyFont, const Font& headingFont,
-             float contentTop, float fontSize);
+             const Font& largeFont, const Font& smallFont,
+             float contentTop,
+             float bodySize, float headingSize,
+             float largeSize, float smallSize,
+             float dpiScale);
 
     void DrawFrame(float scrollY, float totalHeight, float viewportHeight,
                    const std::vector<std::pair<theword::data::Span, float>>& docSpans,
                    const std::vector<HighlightRect>& highlightRects = {});
     void DrawScrollbar(float scrollY, float totalHeight, float viewportHeight);
-    void SetFontSize(float size);
+    void SetFontSizes(float body, float heading, float large, float small);
     float GetFontSize() const;
 
     void DrawFpsCounter(int x, int y);
@@ -46,11 +49,15 @@ private:
 
     const Font& bodyFont;
     const Font& headingFont;
+    const Font& largeFont;
+    const Font& smallFont;
     float contentTop;
-    float fontSize;
-    float headingSize;
+    float bodySize_;
+    float headingSize_;
+    float largeSize_;
+    float smallSize_;
+    float dpiScale_;
 
-    void OnFontSize(const theword::event::FontSizeEvent& e);
     void DrawSpan(const theword::data::Span& span, float screenY);
 };
 

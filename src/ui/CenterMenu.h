@@ -2,6 +2,7 @@
 #define CENTER_MENU_H
 
 #include "Screen.h"
+#include "core/UIScale.h"
 #include <memory>
 #include <raylib.h>
 
@@ -19,7 +20,8 @@ public:
                theword::event::EventBus& eventBus,
                theword::highlight::Highlighter& highlighter,
                theword::persistence::PersistenceManager& persistence,
-               float scale, float& currentFontSize, bool& versionOnline);
+               const theword::core::UIScale& uiScale,
+               float& currentFontSize, bool& versionOnline);
     void Draw() override;
     bool HandleInput(float deltaTime) override;
     const char* GetTitle() const override { return "Menu"; }
@@ -32,13 +34,9 @@ private:
     theword::event::EventBus& eventBus_;
     theword::highlight::Highlighter& highlighter_;
     theword::persistence::PersistenceManager& persistence_;
-    float scale_;
+    const theword::core::UIScale& uiScale_;
     float& currentFontSize_;
     bool& versionOnline_;
-
-    static constexpr float MENU_WIDTH = 280.0f;
-    static constexpr float MENU_ITEM_HEIGHT = 44.0f;
-    static constexpr float MENU_PADDING = 12.0f;
 
     void HandleAction(int action);
     static const char* ItemLabel(int idx);

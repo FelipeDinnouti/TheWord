@@ -28,7 +28,8 @@ ReaderScreen::ReaderScreen(theword::event::EventBus& eventBus,
                            const Font& uiFont, float uiFontSize,
                            float contentTop,
                            NavigationStack& navStack,
-                           float scale, float& currentFontSize, bool& versionOnline)
+                           const theword::core::UIScale& uiScale,
+                           float& currentFontSize, bool& versionOnline)
     : eventBus_(eventBus)
     , docManager_(docManager)
     , renderer_(renderer)
@@ -38,11 +39,13 @@ ReaderScreen::ReaderScreen(theword::event::EventBus& eventBus,
     , uiFontSize_(uiFontSize)
     , contentTop_(contentTop)
     , navStack_(navStack)
-    , scale_(scale)
+    , uiScale_(uiScale)
     , currentFontSize_(currentFontSize)
-    , versionOnline_(versionOnline) {
+    , versionOnline_(versionOnline)
+    , bottomBarHeight_(std::max(uiScale_.dp(48), uiFontSize * 0.7f + uiScale_.dp(16)))
+    , bottomMargin_(uiScale_.bottomInset) {
 
-    barAnimation_ = BOTTOM_BAR_HEIGHT;
+    barAnimation_ = bottomBarHeight_;
 
     eventBus_.On<ScrollEvent>([this](const ScrollEvent& e) { OnScroll(e); });
 }
@@ -65,7 +68,7 @@ void ReaderScreen::OnScroll(const ScrollEvent& e) {
 }
 
 void ReaderScreen::UpdateBottomBar(float deltaTime) {
-    float target = showBottomBar_ ? BOTTOM_BAR_HEIGHT : 0.0f;
+    float target = showBottomBar_ ? bottomBarHeight_ : 0.0f;
     float diff = target - barAnimation_;
     if (std::abs(diff) > 0.5f) {
         barAnimation_ += diff * (1.0f - std::exp(-ANIMATION_SPEED * deltaTime));
@@ -136,11 +139,12 @@ bool ReaderScreen::HandleBottomBarClick() {
 
     Vector2 mousePos = GetMousePosition();
     float screenH = static_cast<float>(GetScreenHeight());
-    float barY = screenH - barAnimation_;
+    float barY = screenH - barAnimation_ - bottomMargin_;
 
     if (mousePos.y < barY) return false;
 
-    if (mousePos.x < 50.0f) {
+    float hitArea = uiScale_.dp(56);
+    if (mousePos.x < hitArea) {
         std::string ref = docManager_.GetCurrentChapterId();
         std::string prev = GetPreviousChapter(ref);
         if (!prev.empty()) {
@@ -149,7 +153,7 @@ bool ReaderScreen::HandleBottomBarClick() {
         return true;
     }
 
-    if (mousePos.x >= static_cast<float>(GetScreenWidth()) - 50.0f) {
+    if (mousePos.x >= static_cast<float>(GetScreenWidth()) - hitArea) {
         std::string ref = docManager_.GetCurrentChapterId();
         std::string next = GetNextChapter(ref);
         if (!next.empty()) {
@@ -166,22 +170,22 @@ void ReaderScreen::OpenCenterMenu() {
     navStack_.Push(std::make_unique<CenterMenu>(
         uiFont_, uiFontSize_, navStack_, eventBus_,
         highlighter_, persistence_,
-        scale_, currentFontSize_, versionOnline_
+        uiScale_, currentFontSize_, versionOnline_
     ));
 }
 
 void ReaderScreen::DrawBottomBarContent() {
-    if (barAnimation_ < 1.0f) return;
-
     float screenW = static_cast<float>(GetScreenWidth());
     float screenH = static_cast<float>(GetScreenHeight());
-    float barY = screenH - barAnimation_;
-    float barH = barAnimation_;
 
-    DrawRectangle(0, static_cast<int>(barY), static_cast<int>(screenW),
-                  static_cast<int>(barH), theme::WINDOW_BG);
+    float bottomHeight = barAnimation_ + bottomMargin_;
+    float bottomTop = screenH - bottomHeight;
+    DrawRectangle(0, static_cast<int>(bottomTop), static_cast<int>(screenW),
+                  static_cast<int>(bottomHeight), theme::WINDOW_BG);
 
-    DrawRectangle(0, static_cast<int>(barY), static_cast<int>(screenW), 1, LIGHTGRAY);
+    if (barAnimation_ < 1.0f) return;
+
+    DrawRectangle(0, static_cast<int>(bottomTop), static_cast<int>(screenW), 1, LIGHTGRAY);
 
     std::string ref = docManager_.GetCurrentChapterId();
     std::string book;
@@ -192,11 +196,15 @@ void ReaderScreen::DrawBottomBarContent() {
     float fontSize = uiFontSize_ * 0.7f;
     Vector2 textSize = MeasureTextEx(uiFont_, chapterRef.c_str(), fontSize, 1);
     float centerX = (screenW - textSize.x) / 2.0f;
-    float centerY = barY + (barH - textSize.y) / 2.0f;
-    DrawTextEx(uiFont_, chapterRef.c_str(), {centerX, centerY}, fontSize, 1, theme::UI_TEXT);
+    float centerY = bottomTop + (barAnimation_ - textSize.y) / 2.0f;
 
-    DrawTextEx(uiFont_, "<", {15.0f, centerY + 1.0f}, fontSize, 1, theme::UI_TEXT);
-    DrawTextEx(uiFont_, ">", {screenW - 25.0f, centerY + 1.0f}, fontSize, 1, theme::UI_TEXT);
+    float fadeRatio = barAnimation_ / bottomBarHeight_;
+    float alpha = std::clamp((fadeRatio - 0.4f) / 0.6f, 0.0f, 1.0f);
+    Color textColor = Fade(theme::UI_TEXT, alpha);
+
+    DrawTextEx(uiFont_, chapterRef.c_str(), {centerX, centerY}, fontSize, 1, textColor);
+    DrawTextEx(uiFont_, "<", {uiScale_.dp(12), centerY + 1.0f}, fontSize, 1, textColor);
+    DrawTextEx(uiFont_, ">", {screenW - uiScale_.dp(12), centerY + 1.0f}, fontSize, 1, textColor);
 }
 
 } // namespace theword::ui

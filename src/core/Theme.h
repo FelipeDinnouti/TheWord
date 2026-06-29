@@ -10,6 +10,7 @@ constexpr Color DOC_HEADING = DARKGRAY;
 constexpr Color DOC_BOOK_TITLE = BLACK;
 constexpr Color DOC_CHAPTER_LABEL = {80, 80, 80, 255};
 constexpr Color DOC_POETRY = DARKGRAY;
+constexpr Color DOC_VERSE_NUMBER = {160, 160, 160, 255};
 
 constexpr Color UI_TEXT = DARKGRAY;
 constexpr Color UI_TITLE = BLACK;
@@ -44,6 +45,7 @@ constexpr float FONT_LARGE_HEADING = 1.6f;
 
 constexpr float FONT_LABEL = 0.8f;
 constexpr float FONT_DETAIL = 0.7f;
+constexpr float FONT_VERSE_NUMBER = 0.65f;
 
 } } // namespace theword::core::theme
 

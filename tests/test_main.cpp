@@ -174,6 +174,16 @@ TEST_CASE("Span carries SegmentType") {
     CHECK(span.text == "test");
 }
 
+TEST_CASE("SegmentType includes VerseNumber") {
+    Span span;
+    span.text = "1";
+    span.type = SegmentType::VerseNumber;
+    CHECK(span.type == SegmentType::VerseNumber);
+    CHECK(span.text == "1");
+    CHECK(span.startWord == 0);
+    CHECK(span.endWord == 0);
+}
+
 TEST_CASE("Line groups spans") {
     Line line;
     line.y = 0.0f;

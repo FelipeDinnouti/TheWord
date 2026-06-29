@@ -33,9 +33,42 @@ Info Init(const char* title) {
     if (info.dpiScale < 1.0f) info.dpiScale = 1.0f;
     if (info.dpiScale > 4.0f) info.dpiScale = 4.0f;
     InitWindow(0, 0, title);
+
+    {
+        JNIEnv* env = nullptr;
+        app->activity->vm->AttachCurrentThread(&env, nullptr);
+
+        jclass resClass = env->FindClass("android/content/res/Resources");
+        jmethodID getSystem = env->GetStaticMethodID(
+            resClass, "getSystem", "()Landroid/content/res/Resources;");
+        jobject res = env->CallStaticObjectMethod(resClass, getSystem);
+
+        jmethodID getIdentifier = env->GetMethodID(
+            resClass, "getIdentifier",
+            "(Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;)I");
+        jstring navName = env->NewStringUTF("navigation_bar_height");
+        jstring defType = env->NewStringUTF("dimen");
+        jstring defPkg = env->NewStringUTF("android");
+        jint navId = env->CallIntMethod(res, getIdentifier, navName, defType, defPkg);
+
+        jmethodID getDimPixelSize = env->GetMethodID(
+            resClass, "getDimensionPixelSize", "(I)I");
+        info.bottomInset = navId > 0
+            ? env->CallIntMethod(res, getDimPixelSize, navId)
+            : 0;
+
+        env->DeleteLocalRef(navName);
+        env->DeleteLocalRef(defType);
+        env->DeleteLocalRef(defPkg);
+        env->DeleteLocalRef(res);
+        app->activity->vm->DetachCurrentThread();
+    }
 #else
-    info.dpiScale = 1.0f;
+    SetConfigFlags(FLAG_WINDOW_HIGHDPI);
     InitWindow(config::WINDOW_WIDTH, config::WINDOW_HEIGHT, title);
+    Vector2 dpi = GetWindowScaleDPI();
+    info.dpiScale = std::max(dpi.x, dpi.y);
+    if (info.dpiScale < 1.0f) info.dpiScale = 1.0f;
 #endif
 
 #if defined(__ANDROID__)

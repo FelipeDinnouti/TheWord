@@ -19,7 +19,8 @@ enum class SegmentType {
     ParagraphBreak,
     PoetryLine,
     ChapterLabel,
-    BookTitle
+    BookTitle,
+    VerseNumber
 };
 
 struct Segment {

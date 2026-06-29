@@ -31,6 +31,7 @@ struct KeyEvent          { int key; };
 struct NavigateEvent     { std::string chapterRef; };
 
 struct RightClickEvent   { float x; float y; };
+struct ScrollStopEvent   {};
 
 } // namespace theword::event
 #endif

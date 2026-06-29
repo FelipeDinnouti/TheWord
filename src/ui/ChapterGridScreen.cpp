@@ -16,44 +16,50 @@ ChapterGridScreen::ChapterGridScreen(const Font& font, float fontSize,
                                      theword::event::EventBus& eventBus,
                                      const std::string& bookCode,
                                      const std::string& bookName,
-                                     int chapterCount)
+                                     int chapterCount,
+                                     const theword::core::UIScale& uiScale)
     : font_(font), fontSize_(fontSize),
       navStack_(navStack), eventBus_(eventBus),
       bookCode_(bookCode), bookName_(bookName),
-      chapterCount_(chapterCount) {}
+      chapterCount_(chapterCount), uiScale_(uiScale) {}
 
 void ChapterGridScreen::Draw() {
     float screenW = static_cast<float>(GetScreenWidth());
 
-    DrawHeaderBar(font_, fontSize_, bookName_.c_str(), true, static_cast<int>(screenW));
+    float headerH = uiScale_.dp(48);
+    float padding = uiScale_.dp(12);
+    float cellW = uiScale_.dp(56);
+    float cellH = uiScale_.dp(48);
+    float gap = uiScale_.dp(8);
+    int columns = 5;
 
-    float gridY = HEADER_HEIGHT + GRID_PADDING;
-    float totalRowWidth = GRID_COLUMNS * CELL_WIDTH + (GRID_COLUMNS - 1) * CELL_GAP;
+    DrawHeaderBar(font_, fontSize_, bookName_.c_str(), true, static_cast<int>(screenW), uiScale_);
+
+    float gridY = headerH + padding;
+    float totalRowWidth = columns * cellW + (columns - 1) * gap;
     float gridStartX = (screenW - totalRowWidth) / 2.0f;
 
     float labelSize = fontSize_ * 0.6f;
 
     for (int ch = 1; ch <= chapterCount_; ++ch) {
-        int col = (ch - 1) % GRID_COLUMNS;
-        int row = (ch - 1) / GRID_COLUMNS;
+        int col = (ch - 1) % columns;
+        int row = (ch - 1) / columns;
 
-        float cx = gridStartX + col * (CELL_WIDTH + CELL_GAP);
-        float cy = gridY + row * (CELL_HEIGHT + CELL_GAP);
+        float cx = gridStartX + col * (cellW + gap);
+        float cy = gridY + row * (cellH + gap);
 
-        // Cell background
         Color cellBg = (ch == selectedChapter_) ? theme::SELECTED_BG : theme::BUTTON_BG;
         DrawRectangle(static_cast<int>(cx), static_cast<int>(cy),
-                      static_cast<int>(CELL_WIDTH), static_cast<int>(CELL_HEIGHT),
+                      static_cast<int>(cellW), static_cast<int>(cellH),
                       cellBg);
         DrawRectangleLines(static_cast<int>(cx), static_cast<int>(cy),
-                           static_cast<int>(CELL_WIDTH), static_cast<int>(CELL_HEIGHT),
+                           static_cast<int>(cellW), static_cast<int>(cellH),
                            theme::BUTTON_BORDER);
 
-        // Number
         std::string num = std::to_string(ch);
         Vector2 numSize = MeasureTextEx(font_, num.c_str(), labelSize, 1);
-        float numX = cx + (CELL_WIDTH - numSize.x) / 2.0f;
-        float numY = cy + (CELL_HEIGHT - numSize.y) / 2.0f;
+        float numX = cx + (cellW - numSize.x) / 2.0f;
+        float numY = cy + (cellH - numSize.y) / 2.0f;
         DrawTextEx(font_, num.c_str(), {numX, numY}, labelSize, 1, theme::UI_TEXT);
     }
 }
@@ -64,7 +70,13 @@ bool ChapterGridScreen::HandleInput(float /*deltaTime*/) {
         return true;
     }
 
-    // Keyboard grid navigation
+    float headerH = uiScale_.dp(48);
+    float padding = uiScale_.dp(12);
+    float cellW = uiScale_.dp(56);
+    float cellH = uiScale_.dp(48);
+    float gap = uiScale_.dp(8);
+    int columns = 5;
+
     if (IsKeyPressed(key::LEFT) && selectedChapter_ > 1) {
         selectedChapter_--;
         return true;
@@ -74,14 +86,14 @@ bool ChapterGridScreen::HandleInput(float /*deltaTime*/) {
         return true;
     }
     if (IsKeyPressed(key::UP)) {
-        int target = selectedChapter_ - GRID_COLUMNS;
+        int target = selectedChapter_ - columns;
         if (target >= 1) {
             selectedChapter_ = target;
         }
         return true;
     }
     if (IsKeyPressed(key::DOWN)) {
-        int target = selectedChapter_ + GRID_COLUMNS;
+        int target = selectedChapter_ + columns;
         if (target <= chapterCount_) {
             selectedChapter_ = target;
         }
@@ -99,23 +111,24 @@ bool ChapterGridScreen::HandleInput(float /*deltaTime*/) {
     if (IsMouseButtonPressed(MOUSE_LEFT_BUTTON)) {
         Vector2 mousePos = GetMousePosition();
         float screenW = static_cast<float>(GetScreenWidth());
+        float backW = uiScale_.dp(56);
 
         // Back button
-        if (mousePos.y < HEADER_HEIGHT && mousePos.x < BACK_AREA_WIDTH) {
+        if (mousePos.y < headerH && mousePos.x < backW) {
             navStack_.Pop();
             return true;
         }
 
         // Grid click
-        float gridY = HEADER_HEIGHT + GRID_PADDING;
-        float totalRowWidth = GRID_COLUMNS * CELL_WIDTH + (GRID_COLUMNS - 1) * CELL_GAP;
+        float gridY = headerH + padding;
+        float totalRowWidth = columns * cellW + (columns - 1) * gap;
         float gridStartX = (screenW - totalRowWidth) / 2.0f;
 
         if (mousePos.y >= gridY && mousePos.x >= gridStartX &&
             mousePos.x < gridStartX + totalRowWidth) {
-            int col = static_cast<int>((mousePos.x - gridStartX) / (CELL_WIDTH + CELL_GAP));
-            int row = static_cast<int>((mousePos.y - gridY) / (CELL_HEIGHT + CELL_GAP));
-            int chapter = row * GRID_COLUMNS + col + 1;
+            int col = static_cast<int>((mousePos.x - gridStartX) / (cellW + gap));
+            int row = static_cast<int>((mousePos.y - gridY) / (cellH + gap));
+            int chapter = row * columns + col + 1;
 
             if (chapter >= 1 && chapter <= chapterCount_) {
                 std::string ref = bookCode_ + "." + std::to_string(chapter);

@@ -1,6 +1,7 @@
 #include "InputHandler.h"
 #include "event/EventBus.h"
 #include "event/Events.h"
+#include <algorithm>
 #include "core/Config.h"
 #include "core/Platform.h"
 #include "ui/NavigationStack.h"
@@ -24,6 +25,10 @@ InputHandler::InputHandler(theword::event::EventBus& eventBus,
 
     eventBus_.On<theword::event::DialogEvent>([this](const theword::event::DialogEvent& e) {
         dialogActive_ = (e.action != theword::event::DialogEvent::Action::Hide);
+    });
+
+    eventBus_.On<theword::event::ScrollStopEvent>([this](const auto&) {
+        scrollVelocity = 0.0f;
     });
 }
 

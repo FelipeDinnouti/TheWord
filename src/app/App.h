@@ -1,8 +1,10 @@
 #ifndef APP_H
 #define APP_H
 
+#include "core/UIScale.h"
 #include <memory>
 #include <string>
+#include <vector>
 #include <raylib.h>
 
 namespace theword::event { class EventBus; }
@@ -27,12 +29,18 @@ public:
 
 private:
     void WireEvents();
+    void ReloadFonts(float newFontSize, std::vector<int>& codepoints);
 
     float scale_ = 1.0f;
+    theword::core::UIScale uiScale_{1.0f, 0, 0, 0};
 
     Font bodyFont_{};
     Font headingFont_{};
+    Font largeFont_{};
+    Font smallFont_{};
+    Font boldFont_{};
     float headingSize_ = 0.0f;
+    std::vector<int> fontCodepoints_;
 
     std::unique_ptr<theword::event::EventBus> eventBus_;
     std::unique_ptr<theword::core::IHttpClient> apiClient_;

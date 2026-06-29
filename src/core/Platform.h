@@ -15,6 +15,7 @@ struct Info {
     float dpiScale;
     std::string dbPath;
     std::unique_ptr<IAssetProvider> assets;
+    int bottomInset = 0;
 };
 
 Info Init(const char* title);

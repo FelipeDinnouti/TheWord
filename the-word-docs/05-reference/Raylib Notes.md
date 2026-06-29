@@ -11,6 +11,8 @@ Raylib 5.0 (via FetchContent in CMake).
 - `InitWindow()`, `CloseWindow()`, `WindowShouldClose()` — Window management
 - `SetTargetFPS()` — Frame rate control
 - `LoadFontEx()`, `UnloadFont()` — Font management (used with explicit codepoint vectors for non-ASCII glyphs)
+- `SetConfigFlags()` — Must set `FLAG_WINDOW_HIGHDPI` before `InitWindow()` for physical-resolution framebuffer on HiDPI displays
+- `GetWindowScaleDPI()` — Query monitor content scale after `InitWindow()`; use to scale font atlas sizes
 - `SetTextureFilter()` — Texture filtering mode (`TEXTURE_FILTER_POINT` for pixel-sharp font rendering at 1:1)
 - `MeasureTextEx()` — Text measurement for word wrapping
 - `DrawTextEx()` — Text rendering (used for all Bible text with the appropriate font atlas)
@@ -64,21 +66,128 @@ target_link_libraries(theword PRIVATE
 )
 ```
 
-## Font Atlas Strategy
+## Crisp Font Rendering — Directives
 
-The app uses **two font atlases** to achieve pixel-sharp text at multiple sizes:
+> Raylib renders fonts via stb_truetype (no FreeType, no subpixel/LCD rendering).
+> Glyph coverage is stored in the alpha channel of a GRAY_ALPHA atlas and alpha-blended.
+> **There are only two filter modes**: `TEXTURE_FILTER_POINT` (crisp at 1:1, jagged otherwise)
+> and `TEXTURE_FILTER_BILINEAR` (smooth always, but blurry).
+>
+> For the **crispest possible text**, follow all six directives below.
 
-1. **bodyFont** — Generated at `config::FONT_SIZE` (24px), used for verse text and poetry lines (1:1 render)
-2. **headingFont** — Generated at `config::FONT_HEADING_SIZE` (31px), used for section headings, chapter labels, book titles, and the chapter title bar (1:1 render)
+### Directive 1 — Atlas pixel size must match rendered pixel size
 
-Both use `TEXTURE_FILTER_POINT` since there is no scaling — each atlas matches its display size exactly.
+When a font atlas is sampled at a size different from its `baseSize`, the mismatch
+forces either jagged edges (POINT filter) or blur (BILINEAR filter). The only way to
+get pixel-sharp text is to ensure `fontSize == font.baseSize` at draw time.
 
-Codepoints are loaded explicitly to cover Portuguese accents:
 ```cpp
-std::vector<int> codepoints;
-for (int i = 32; i < 127; i++) codepoints.push_back(i);   // ASCII printable
-for (int i = 160; i < 256; i++) codepoints.push_back(i);   // Latin-1 Supplement
+// GOOD — atlas at 28px, rendered at 28px → crisp
+Font f = LoadFontEx("path.ttf", 28, codepoints, count);
+DrawTextEx(f, text, pos, 28, 1, color);   // 28 / 28 = 1.0 scale → sharp
+
+// BAD — atlas at 24px, rendered at 28px → jagged with POINT, blurry with BILINEAR
+Font f = LoadFontEx("path.ttf", 24, codepoints, count);
+DrawTextEx(f, text, pos, 28, 1, color);   // 28 / 24 = 1.167 scale → mismatch
 ```
+
+### Directive 2 — Load one font atlas per distinct rendered size
+
+Every unique `fontSize` gets its own `Font` loaded at that exact pixel size.
+Do not reuse a single atlas for multiple sizes.
+
+| Use | Load at | Rendered size | Ratio |
+|-----|---------|--------------|-------|
+| Body text | `currentFontSize × dpiScale` (e.g. 24px) | Same | 1.0 |
+| Section heading | `currentFontSize × 1.3 × dpiScale` | Same | 1.0 |
+| Verse number | `currentFontSize × 0.65 × dpiScale` | Same | 1.0 |
+
+Currently the app loads **bodyFont** and **headingFont** at the correct sizes.
+If a new distinct rendering size is added (e.g. verse numbers at 65%), a
+separate `Font` must be loaded at that size.
+
+### Directive 3 — Always use `TEXTURE_FILTER_POINT`
+
+Point filtering gives zero interpolation between texels, producing the sharpest
+results when Directives 1 and 2 are followed. Bilinear filtering introduces
+blurriness (raylib's own source at `rcore.c:651` calls it "blurry").
+
+```cpp
+SetTextureFilter(font.texture, TEXTURE_FILTER_POINT);
+```
+
+### Directive 4 — Reload font atlases when the user changes font size
+
+When the user adjusts font size (12–36px slider), all font atlases must be
+unloaded and reloaded at the new pixel size. Simply changing the `fontSize`
+parameter to `DrawTextEx` without reloading the atlas violates Directive 1.
+
+Implementation in `App::ReloadFonts()`:
+1. `LoadFontEx` new fonts at the new size into temporary `Font` objects
+2. `SetTextureFilter(..., TEXTURE_FILTER_POINT)` on both
+3. `UnloadFont` the old fonts
+4. Copy-assign the temporaries into `bodyFont_` and `headingFont_`
+5. Invalidate all cached layouts (forces re-layout with new glyph metrics)
+
+Because all consumers store `const Font&` references to `App::bodyFont_`
+and `App::headingFont_`, step 4 automatically propagates the new fonts.
+
+Codepoints are extracted once and cached in `App::fontCodepoints_` to avoid
+re-parsing the TTF `cmap` table on every size change.
+
+### Directive 5 — Scale font atlas size by display DPI
+
+On a 2x Retina display, the logical 24px body font must be baked at 48px.
+Use `GetWindowScaleDPI()` (raylib, available after `InitWindow`) to query
+the monitor content scale:
+
+```cpp
+SetConfigFlags(FLAG_WINDOW_HIGHDPI);
+InitWindow(450, 800, "TheWord");
+Vector2 dpi = GetWindowScaleDPI();
+float dpiScale = std::max(dpi.x, dpi.y);
+```
+
+Then scale all font loads: `int atlasSize = (int)(logicalSize * dpiScale)`.
+On a non-Retina display `dpiScale` is 1.0; on Retina it is 2.0.
+
+### Directive 6 — Enable `FLAG_WINDOW_HIGHDPI`
+
+Without this flag, GLFW creates the framebuffer at the logical window size
+(e.g. 450×800) rather than the physical pixel size. On HiDPI displays this
+means all rendering (not just text) is at half resolution.
+
+```cpp
+SetConfigFlags(FLAG_WINDOW_HIGHDPI);   // must come before InitWindow
+InitWindow(config::WINDOW_WIDTH, config::WINDOW_HEIGHT, "TheWord");
+```
+
+This also enables raylib's internal screen-scale matrix that maps logical
+coordinates to physical framebuffer coordinates.
+
+### Why not...
+
+- **BILINEAR filter?** — Blurry on font textures. Raylib's own code calls it
+  "blurry" (`rcore.c:651`). Only acceptable if you can't reload atlases.
+- **Subpixel (LCD) rendering?** — Raylib does not support it. No FreeType
+  subpixel rendering, no ClearType. Fonts are alpha-blended grayscale.
+- **SDF fonts?** — Not used. Would require switching to raylib's SDF pipeline
+  and different shaders.
+- **Mipmaps for fonts?** — Font atlases are not mipmapped. `GenTextureMipmaps`
+  is never called for font textures. Mipmaps only help downscaling, not the
+  1:1 case targeted here.
+
+## Font Atlas Loading — Current Implementation
+
+The app loads **two font atlases** at DPI-scaled sizes and reloads them on
+font size changes:
+
+1. **bodyFont** — at `(int)(currentFontSize × dpiScale)` — verse text, poetry, verse numbers
+2. **headingFont** — at `(int)(currentFontSize × 1.3 × dpiScale)` — section headings,
+   chapter labels, book titles, UI headers
+
+Both use `TEXTURE_FILTER_POINT`. Codepoints are extracted from the TTF `cmap`
+table by `LoadFontCodepoints()` (see `src/core/FontHelper.cpp`).
 
 ## Important Note
 

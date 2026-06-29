@@ -7,15 +7,15 @@ namespace theword::ui {
 using namespace theword::core;
 
 void DrawHeaderBar(const Font& font, float fontSize, const char* title,
-                   bool hasBack, int screenWidth) {
-    float barHeight = 60.0f;
+                   bool hasBack, int screenWidth, const theword::core::UIScale& uiScale) {
+    float barHeight = uiScale.dp(48);
     float labelSize = fontSize * 0.7f;
 
     DrawRectangle(0, 0, screenWidth, static_cast<int>(barHeight), theme::WINDOW_BG);
     DrawRectangle(0, static_cast<int>(barHeight) - 1, screenWidth, 1, LIGHTGRAY);
 
     if (hasBack) {
-        DrawTextEx(font, "\xE2\x86\xA9 Back", {12.0f, (barHeight - labelSize) / 2.0f},
+        DrawTextEx(font, "\xE2\x86\xA9 Back", {uiScale.dp(8), (barHeight - labelSize) / 2.0f},
                    labelSize, 1, theme::UI_TEXT);
     }
 

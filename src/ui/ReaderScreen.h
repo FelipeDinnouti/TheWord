@@ -2,6 +2,7 @@
 #define READER_SCREEN_H
 
 #include "Screen.h"
+#include "core/UIScale.h"
 #include <vector>
 #include <string>
 #include <utility>
@@ -26,8 +27,8 @@ public:
                  theword::persistence::PersistenceManager& persistence,
                  const Font& uiFont, float uiFontSize,
                  float contentTop,
-                 NavigationStack& navStack,
-                 float scale, float& currentFontSize, bool& versionOnline);
+                  NavigationStack& navStack,
+                  const theword::core::UIScale& uiScale, float& currentFontSize, bool& versionOnline);
     ~ReaderScreen() override;
     void Draw() override;
     bool HandleInput(float deltaTime) override;
@@ -43,12 +44,13 @@ private:
     float uiFontSize_;
     float contentTop_;
     NavigationStack& navStack_;
-    float scale_;
+    const theword::core::UIScale& uiScale_;
     float& currentFontSize_;
     bool& versionOnline_;
 
     // Bottom bar
-    static constexpr float BOTTOM_BAR_HEIGHT = 50.0f;
+    float bottomBarHeight_;
+    float bottomMargin_;
     static constexpr float SHOW_HIDE_THRESHOLD = 30.0f;
     static constexpr float ANIMATION_SPEED = 10.0f;
     bool showBottomBar_ = true;
