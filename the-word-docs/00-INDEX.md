@@ -45,9 +45,10 @@ the-word-docs/
 │   ├── Persistence.md                  # SQLite persistence spec (Phase 8)
 │   └── UI Layer.md                     # Renderer + Input spec (Phase 9)
 ├── 04-planning/                        # Project management
+│   ├── Release Plan.md                 # Current release scope and backlog
 │   ├── Development Plan.md             # Full 10-phase development plan
 │   ├── Progress Tracking.md            # Current status, what's done, what's next
-│   └── Roadmap.md                      # Phase order with acceptance criteria
+│   └── Roadmap.md                      # Release milestones and timeline
 ├── 05-reference/                       # External context
 │   ├── USFM Format.md                  # USFM format reference
 │   ├── YouVersion API.md               # API endpoints, HTML format, Bible versions
@@ -57,10 +58,13 @@ the-word-docs/
 │   ├── Environment Setup.md            # Platform-specific setup
 │   ├── Integration Testing.md          # xdotool-based GUI automation
 │   └── Troubleshooting.md              # Common issues and fixes
-└── 07-ai-collaboration/               # Agent/AI workflows
-    ├── Agent Workflow.md               # How agents approach tasks
-    ├── Doc-First Checklist.md          # Mandatory steps before writing code
-    └── Convention Reference.md         # Naming, file structure, coding patterns
+├── 07-ai-collaboration/               # Agent/AI workflows
+│   ├── Agent Workflow.md               # How agents approach tasks
+│   ├── Doc-First Checklist.md          # Mandatory steps before writing code
+│   └── Convention Reference.md         # Naming, file structure, coding patterns
+└── xx-user-notes/                      # Personal notes (not part of official docs)
+    ├── Android-and-Build-System.md     # Android lifecycle & CMake deep-dive
+    └── Feedbacks.md                    # Feature ideas and brainstorming
 ```
 
 ## Quick Reference Links
@@ -69,6 +73,7 @@ the-word-docs/
 - **Coding conventions**: See `07-ai-collaboration/Convention Reference.md`
 - **Core data structures**: See `02-architecture/Data Structures.md`
 - **Data source architecture**: See `02-architecture/Data Source Architecture.md`
-- **Phase plan**: See `04-planning/Development Plan.md`
+- **Release plan**: See `04-planning/Release Plan.md`
 - **Current progress**: See `04-planning/Progress Tracking.md`
+- **Development history**: See `04-planning/Development Plan.md`
 - **UI philosophy**: See `02-architecture/UI Philosophy.md`
