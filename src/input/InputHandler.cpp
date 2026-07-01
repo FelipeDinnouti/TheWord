@@ -219,7 +219,7 @@ void InputHandler::HandleTouchScroll() {
             touchVelocity = smoothVel * VELOCITY_ALPHA + touchVelocity * (1.0f - VELOCITY_ALPHA);
         }
 
-        eventBus_.Emit(theword::event::ScrollEvent{effectiveDelta, true});
+        eventBus_.Emit(theword::event::ScrollEvent{-effectiveDelta, true});
     } else {
         if (touchActive) {
             touchActive = false;
