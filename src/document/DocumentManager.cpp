@@ -95,6 +95,11 @@ void DocumentManager::OnSourceSwitch(const theword::event::SourceSwitchEvent& /*
 void DocumentManager::LoadInitialChapter(const std::string& chapterId) {
     visibleChapterId_ = chapterId;
     chapters.clear();
+    // Move pending loads to graveyard instead of destroying futures
+    // (std::future destructor blocks until async task completes)
+    for (auto& p : pendingLoads_) {
+        pendingGraveyard_.push_back(std::move(p));
+    }
     pendingLoads_.clear();
 
     std::string book;
@@ -176,6 +181,14 @@ void DocumentManager::Update(float deltaTime) {
     pendingLoads_.erase(std::remove_if(pendingLoads_.begin(), pendingLoads_.end(),
         [](const auto& p) { return p.inserted; }), pendingLoads_.end());
 
+    // Drain graveyard non-blockingly — only destroy futures that are already ready
+    pendingGraveyard_.erase(
+        std::remove_if(pendingGraveyard_.begin(), pendingGraveyard_.end(),
+            [](const auto& p) {
+                return p.future.wait_for(std::chrono::seconds(0)) == std::future_status::ready;
+            }),
+        pendingGraveyard_.end());
+
     // Only trigger new loads if no pending just completed
     if (!loaded) {
         if (scrollY <= autoLoadMargin_) {
@@ -225,7 +238,15 @@ void DocumentManager::SetViewportHeight(float height) {
     viewportHeight = height;
 }
 
+void DocumentManager::ScrollTo(float y) {
+    float maxScroll = std::max(0.0f, GetTotalHeight() - viewportHeight);
+    targetScrollY = std::clamp(y, 0.0f, maxScroll);
+}
+
 void DocumentManager::InvalidateLayouts() {
+    for (auto& p : pendingLoads_) {
+        pendingGraveyard_.push_back(std::move(p));
+    }
     pendingLoads_.clear();
     layoutEngine.InvalidateCache();
     for (auto& chapter : chapters) {
@@ -282,6 +303,24 @@ const std::string& DocumentManager::GetCurrentChapterId() const {
 std::string DocumentManager::GetChapterTitle() const {
     if (chapters.empty()) return "";
     return ChapterIdToTitle(chapters.front().chapterId);
+}
+
+const theword::data::ChapterLayout* DocumentManager::GetCurrentLayout() const {
+    for (const auto& ch : chapters) {
+        if (ch.chapterId == visibleChapterId_) {
+            return &ch.layout;
+        }
+    }
+    return nullptr;
+}
+
+const theword::data::ChapterData* DocumentManager::GetCurrentChapterData() const {
+    for (const auto& ch : chapters) {
+        if (ch.chapterId == visibleChapterId_) {
+            return &ch.data;
+        }
+    }
+    return nullptr;
 }
 
 void DocumentManager::RecalculateChapterPositions() {

@@ -16,6 +16,11 @@ struct Highlight {
     int endWord;
     int typeId;
     std::string providerName;
+    std::string bookId;
+    int chapterNum = 0;
+    int verseStart = 0;
+    int verseEnd = 0;
+    std::string verseText;
 };
 
 struct HighlightType {

@@ -9,7 +9,7 @@
 #include <raylib.h>
 
 namespace theword::data { struct Span; }
-namespace theword::event { class EventBus; struct ScrollEvent; }
+namespace theword::event { class EventBus; struct ScrollEvent; struct NavigateToHighlightEvent; }
 namespace theword::renderer { class Renderer; struct HighlightRect; }
 namespace theword::document { class DocumentManager; }
 namespace theword::highlight { class Highlighter; }
@@ -57,7 +57,11 @@ private:
     float barAnimation_ = 0.0f;
     float scrollAccumulator_ = 0.0f;
 
+    int pendingNavigateWordId_ = -1;
+
     void OnScroll(const theword::event::ScrollEvent& e);
+    void OnNavigateToHighlight(const theword::event::NavigateToHighlightEvent& e);
+    float FindLineYForWord(int wordId) const;
     void UpdateBottomBar(float deltaTime);
     void DrawBottomBarContent();
     bool HandleBottomBarClick();

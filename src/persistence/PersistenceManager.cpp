@@ -94,13 +94,26 @@ void PersistenceManager::InitSchema() {
         nullptr, nullptr, &err) != SQLITE_OK) {
         sqlite3_free(err);
     }
+
+    auto migrateCol = [&](const char* sql) {
+        char* e = nullptr;
+        sqlite3_exec(db, sql, nullptr, nullptr, &e);
+        if (e) sqlite3_free(e);
+    };
+    migrateCol("ALTER TABLE highlights ADD COLUMN book_id TEXT");
+    migrateCol("ALTER TABLE highlights ADD COLUMN chapter_num INTEGER");
+    migrateCol("ALTER TABLE highlights ADD COLUMN verse_start INTEGER");
+    migrateCol("ALTER TABLE highlights ADD COLUMN verse_end INTEGER");
+    migrateCol("ALTER TABLE highlights ADD COLUMN verse_text TEXT");
 }
 
 std::vector<Highlight> PersistenceManager::LoadHighlights() {
     std::vector<Highlight> results;
     sqlite3_stmt* stmt = nullptr;
     if (sqlite3_prepare_v2(db,
-        "SELECT id, start_word, end_word, type_id, provider_name FROM highlights",
+        "SELECT id, start_word, end_word, type_id, provider_name,"
+        "       book_id, chapter_num, verse_start, verse_end, verse_text"
+        " FROM highlights",
         -1, &stmt, nullptr) != SQLITE_OK) {
         Logger::Error("PersistenceManager: LoadHighlights prepare failed: "
                       + std::string(sqlite3_errmsg(db)));
@@ -112,8 +125,21 @@ std::vector<Highlight> PersistenceManager::LoadHighlights() {
         h.startWord = sqlite3_column_int(stmt, 1);
         h.endWord = sqlite3_column_int(stmt, 2);
         h.typeId = sqlite3_column_int(stmt, 3);
-        const char* prov = (const char*)sqlite3_column_text(stmt, 4);
-        if (prov) h.providerName = prov;
+        {
+            const char* prov = (const char*)sqlite3_column_text(stmt, 4);
+            if (prov) h.providerName = prov;
+        }
+        {
+            const char* bk = (const char*)sqlite3_column_text(stmt, 5);
+            if (bk) h.bookId = bk;
+        }
+        h.chapterNum = sqlite3_column_int(stmt, 6);
+        h.verseStart = sqlite3_column_int(stmt, 7);
+        h.verseEnd = sqlite3_column_int(stmt, 8);
+        {
+            const char* vt = (const char*)sqlite3_column_text(stmt, 9);
+            if (vt) h.verseText = vt;
+        }
         results.push_back(h);
     }
     sqlite3_finalize(stmt);
@@ -123,8 +149,10 @@ std::vector<Highlight> PersistenceManager::LoadHighlights() {
 void PersistenceManager::SaveHighlight(const Highlight& h) {
     sqlite3_stmt* stmt = nullptr;
     if (sqlite3_prepare_v2(db,
-        "INSERT OR REPLACE INTO highlights (id, start_word, end_word, type_id, provider_name) "
-        "VALUES (?, ?, ?, ?, ?)",
+        "INSERT OR REPLACE INTO highlights"
+        " (id, start_word, end_word, type_id, provider_name,"
+        "  book_id, chapter_num, verse_start, verse_end, verse_text)"
+        " VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
         -1, &stmt, nullptr) != SQLITE_OK) {
         Logger::Error("PersistenceManager: SaveHighlight prepare failed: "
                       + std::string(sqlite3_errmsg(db)));
@@ -135,6 +163,11 @@ void PersistenceManager::SaveHighlight(const Highlight& h) {
     sqlite3_bind_int(stmt, 3, h.endWord);
     sqlite3_bind_int(stmt, 4, h.typeId);
     sqlite3_bind_text(stmt, 5, h.providerName.c_str(), -1, SQLITE_TRANSIENT);
+    sqlite3_bind_text(stmt, 6, h.bookId.c_str(), -1, SQLITE_TRANSIENT);
+    sqlite3_bind_int(stmt, 7, h.chapterNum);
+    sqlite3_bind_int(stmt, 8, h.verseStart);
+    sqlite3_bind_int(stmt, 9, h.verseEnd);
+    sqlite3_bind_text(stmt, 10, h.verseText.c_str(), -1, SQLITE_TRANSIENT);
     sqlite3_step(stmt);
     sqlite3_finalize(stmt);
 }

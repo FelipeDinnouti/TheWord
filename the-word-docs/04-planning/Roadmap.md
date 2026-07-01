@@ -1,6 +1,6 @@
 # Roadmap
 
-> Status: Phase 11 planned | Last Updated: 2026-06-26
+> Status: Phase 12 Complete, Phase 13 In Progress | Last Updated: 2026-06-29
 
 The original 10-phase MVP is complete. The app now enters a new phase of UX and feature development.
 
@@ -9,9 +9,9 @@ The original 10-phase MVP is complete. The app now enters a new phase of UX and 
 | Phase | Status | Description |
 |-------|--------|-------------|
 | 1-10 | ✅ Complete | MVP: build, text engine, data sources, highlights, persistence, UI, mobile |
-| 11. Navigation System | 🔲 Planned | Bottom bar, center menu, book list, chapter grid, settings screen, navigation stack |
-| 12. Verse Number Identifiers | 🔲 Planned | Layout-time verse spans, superscript rendering |
-| 13. Highlight Browser | 🔲 Planned | Find highlights by color, browse all matches, navigate to verse |
+| 11. Navigation System | ✅ Complete | Bottom bar, center menu, book list, chapter grid, settings screen, navigation stack |
+| 12. Verse Number Identifiers | ✅ Complete | Layout-time verse spans, superscript rendering |
+| 13. Highlight Browser | 🔄 In Progress | Data model, highlighter, persistence done; UI pending |
 
 ## Phase 11 — Navigation System
 
@@ -45,9 +45,10 @@ The original 10-phase MVP is complete. The app now enters a new phase of UX and 
 **Goal:** Allow users to browse all highlights filtered by color, displayed as a scrollable list with verse references, and navigate to any highlighted passage.
 
 ### Key Deliverables
-- Highlight struct extended with bookId, chapterNum, verseStart, verseEnd
-- Schema migration for new reference fields
-- HighlightBrowser screen with color filter and scrollable match list
-- Navigation to verse from highlight item tap
+- Highlight struct extended with bookId, chapterNum, verseStart, verseEnd, verseText ✅
+- Schema migration for new reference fields ✅
+- Highlighter::GetHighlightsByType() filter method ✅
+- HighlightBrowser screen with color filter and scrollable match list 🔲
+- Navigation to verse from highlight item tap 🔲
 
 **See:** `03-modules/Highlighting System.md` for design details.

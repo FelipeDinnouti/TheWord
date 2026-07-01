@@ -102,9 +102,9 @@ bool ChapterGridScreen::HandleInput(float /*deltaTime*/) {
 
     if (IsKeyPressed(key::ENTER)) {
         std::string ref = bookCode_ + "." + std::to_string(selectedChapter_);
-        auto& bus = eventBus_;
+        auto* bus = &eventBus_;
         navStack_.PopAll();
-        bus.Emit(theword::event::NavigateEvent{ref});
+        bus->Emit(theword::event::NavigateEvent{ref});
         return true;
     }
 
@@ -132,9 +132,9 @@ bool ChapterGridScreen::HandleInput(float /*deltaTime*/) {
 
             if (chapter >= 1 && chapter <= chapterCount_) {
                 std::string ref = bookCode_ + "." + std::to_string(chapter);
-                auto& bus = eventBus_;
+                auto* bus = &eventBus_;
                 navStack_.PopAll();
-                bus.Emit(theword::event::NavigateEvent{ref});
+                bus->Emit(theword::event::NavigateEvent{ref});
                 return true;
             }
         }

@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.16)
-project(theword VERSION 1.3.2 LANGUAGES C CXX)
+project(theword VERSION 1.4.0 LANGUAGES C CXX)
 
 # Auto-generate Version.h from template (substitutes @PROJECT_VERSION@ etc.)
 configure_file(
@@ -190,6 +190,8 @@ set(UI_SOURCES
     src/ui/CreditsOverlay.cpp
     src/ui/FontDiagnostic.h
     src/ui/FontDiagnostic.cpp
+    src/ui/HighlightBrowserScreen.h
+    src/ui/HighlightBrowserScreen.cpp
 )
 
 set(APP_SOURCES

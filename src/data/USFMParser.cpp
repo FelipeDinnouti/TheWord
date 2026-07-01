@@ -181,20 +181,24 @@ void HandleChapter(const std::string& rest, const std::string& bookId,
     FlushSegment(st);
     st.inDescription = false;
 
-    if (st.chapter.chapterNum > 0) {
-        chapters.push_back(std::move(st.chapter));
-        ParseState newSt;
-        newSt.chapter.bookId = bookId;
-        newSt.chapter.chapterNum = std::stoi(rest);
-        st = std::move(newSt);
-    } else {
-        st.chapter.chapterNum = std::stoi(rest);
-    }
-
     size_t numEnd = 0;
     while (numEnd < rest.size() && std::isdigit(static_cast<unsigned char>(rest[numEnd]))) {
         numEnd++;
     }
+    if (numEnd == 0) return;
+
+    int chapterNum = std::stoi(rest.substr(0, numEnd));
+
+    if (st.chapter.chapterNum > 0) {
+        chapters.push_back(std::move(st.chapter));
+        ParseState newSt;
+        newSt.chapter.bookId = bookId;
+        newSt.chapter.chapterNum = chapterNum;
+        st = std::move(newSt);
+    } else {
+        st.chapter.chapterNum = chapterNum;
+    }
+
     std::string chapterNumStr = rest.substr(0, numEnd);
 
     Segment label;
