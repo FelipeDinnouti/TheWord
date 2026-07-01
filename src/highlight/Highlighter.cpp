@@ -91,10 +91,33 @@ void Highlighter::EndSelection() {
     h.endWord = end;
     h.typeId = activeTypeId;
     h.providerName = currentProvider;
+    h.bookId = currentBookId_;
+    h.chapterNum = currentChapterNum_;
+
+    if (!currentWords_.empty()) {
+        int vStart = 9999;
+        int vEnd = 0;
+        std::string snippet;
+        for (const auto& w : currentWords_) {
+            if (w.id >= start && w.id <= end) {
+                if (w.verseId < vStart) vStart = w.verseId;
+                if (w.verseId > vEnd) vEnd = w.verseId;
+                if (!snippet.empty()) snippet += " ";
+                snippet += w.text;
+            }
+        }
+        h.verseStart = (vStart < 9999) ? vStart : 0;
+        h.verseEnd = vEnd;
+        if (snippet.length() > 80) {
+            snippet = snippet.substr(0, 80) + "...";
+        }
+        h.verseText = snippet;
+    }
 
     highlights.push_back(h);
     persistence.SaveHighlight(h);
-    theword::core::Logger::Debug("Highlight saved: words " + std::to_string(start) + "-" + std::to_string(end));
+    theword::core::Logger::Debug("Highlight saved: " + h.bookId + "." + std::to_string(h.chapterNum)
+        + " words " + std::to_string(start) + "-" + std::to_string(end));
 }
 
 bool Highlighter::IsWordHighlighted(int wordId) const {
@@ -158,6 +181,27 @@ const std::vector<Highlight>& Highlighter::GetHighlights() const {
 
 const std::vector<HighlightType>& Highlighter::GetTypes() const {
     return types;
+}
+
+std::vector<const Highlight*> Highlighter::GetHighlightsByType(int typeId) const {
+    std::vector<const Highlight*> result;
+    for (const auto& h : highlights) {
+        if (h.typeId == typeId) {
+            result.push_back(&h);
+        }
+    }
+    return result;
+}
+
+void Highlighter::SetChapterContext(const std::string& bookId, int chapterNum,
+                                     const std::vector<theword::data::Word>* words) {
+    currentBookId_ = bookId;
+    currentChapterNum_ = chapterNum;
+    if (words) {
+        currentWords_ = *words;
+    } else {
+        currentWords_.clear();
+    }
 }
 
 } // namespace theword::highlight

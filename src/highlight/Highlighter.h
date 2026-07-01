@@ -2,6 +2,7 @@
 #define HIGHLIGHTER_H
 
 #include "PersistenceInterface.h"
+#include "data/ChapterProvider.h"
 #include <vector>
 #include <raylib.h>
 
@@ -35,6 +36,13 @@ public:
     const std::vector<Highlight>& GetHighlights() const;
     const std::vector<HighlightType>& GetTypes() const;
 
+    std::vector<const Highlight*> GetHighlightsByType(int typeId) const;
+
+    void SetChapterContext(const std::string& bookId, int chapterNum,
+                           const std::vector<theword::data::Word>* words);
+    const std::string& GetChapterBookId() const { return currentBookId_; }
+    int GetChapterNum() const { return currentChapterNum_; }
+
 private:
     theword::event::EventBus& eventBus_;
     PersistenceInterface& persistence;
@@ -47,6 +55,10 @@ private:
     int nextId;
     int activeTypeId;
     std::string currentProvider;
+
+    std::string currentBookId_;
+    int currentChapterNum_ = 0;
+    std::vector<theword::data::Word> currentWords_;
 
     void StartSelection(int wordId);
     void UpdateSelection(int wordId);

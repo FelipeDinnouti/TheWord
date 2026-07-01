@@ -1,6 +1,6 @@
 # Product Requirements
 
-> Status: Updated 2026-06-26 | MVP complete. Phase 11-13 planned.
+> Status: Updated 2026-06-29 | MVP complete. Phase 12 complete, Phase 13 in progress.
 
 ## MVP Requirements
 
@@ -39,26 +39,31 @@
 
 ## Phase 11-13 Requirements
 
-### Must Have (Phase 11 — Navigation System)
-- [ ] Bottom bar with prev/next chapter buttons + current reference (overlays content, appears on scroll-up)
-- [ ] Center menu dialog (tapping book code) with Books, Settings, Highlights, Credits options
-- [ ] BookList screen (scrollable list, canonical order, search bar, reusable list component)
-- [ ] ChapterGrid screen (5-column grid, numbered buttons for each chapter of selected book)
-- [ ] Settings screen (full-screen, replaces modal overlay)
-- [ ] Navigation stack (push/pop screens with back button, swipe gesture, Escape key)
-- [ ] Keyboard shortcuts: ←/→ for prev/next chapter
-- [ ] Top bar removed (chapter ref moved to bottom bar)
+### Must Have (Phase 11 — Navigation System) ✅
+- [x] Bottom bar with prev/next chapter buttons + current reference (overlays content, appears on scroll-up)
+- [x] Center menu dialog (tapping book code) with Books, Settings, Highlights, Credits options
+- [x] BookList screen (scrollable list, canonical order, search bar, reusable list component)
+- [x] ChapterGrid screen (5-column grid, numbered buttons for each chapter of selected book)
+- [x] Settings screen (full-screen, replaces modal overlay)
+- [x] Navigation stack (push/pop screens with back button, swipe gesture, Escape key)
+- [x] Keyboard shortcuts: ←/→ for prev/next chapter
+- [x] Top bar removed (chapter ref moved to bottom bar)
 
-### Must Have (Phase 12 — Verse Number Identifiers)
-- [ ] Verse number spans inserted at layout time when verseId changes
-- [ ] Superscript rendering (smaller font + Y offset) for verse numbers
-- [ ] Verse number color: grey
-- [ ] Verse number format: digit + dot (e.g., "¹.")
-- [ ] First verse of each chapter always numbered
+### Must Have (Phase 12 — Verse Number Identifiers) ✅
+- [x] Verse number spans inserted at layout time when verseId changes
+- [x] Superscript rendering (smaller font + Y offset) for verse numbers
+- [x] Verse number color: grey
+- [x] Verse number format: digit + dot (e.g., "¹.")
+- [x] First verse of each chapter always numbered
 
-### Must Have (Phase 13 — Highlight Browser)
-- [ ] Highlight struct extended with bookId, chapterNum, verseStart, verseEnd fields
-- [ ] Schema migration for new highlight reference fields
+### Must Have (Phase 13 — Highlight Browser) 🔄 In Progress
+
+**Data model & persistence** ✅
+- [x] Highlight struct extended with bookId, chapterNum, verseStart, verseEnd, verseText fields
+- [x] Schema migration for new highlight reference fields
+- [x] Highlighter::GetHighlightsByType() filter method
+
+**UI & navigation** 🔲
 - [ ] HighlightBrowser screen (full-screen)
 - [ ] Color filter swatches at top (select highlight color to browse)
 - [ ] Scrollable list of highlights matching selected color

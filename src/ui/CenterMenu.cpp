@@ -2,6 +2,7 @@
 #include "BookListScreen.h"
 #include "SettingsScreen.h"
 #include "CreditsOverlay.h"
+#include "HighlightBrowserScreen.h"
 #include "NavigationStack.h"
 #include "core/Theme.h"
 #include "core/Config.h"
@@ -148,8 +149,12 @@ void CenterMenu::HandleAction(int action) {
                 uiScale_, currentFontSize_, versionOnline_
             ));
             return;
-        case 2: // Highlights (Phase 13)
-            break;
+        case 2: // Highlights
+            navStack_.Push(std::make_unique<HighlightBrowserScreen>(
+                font_, fontSize_, navStack_, eventBus_,
+                highlighter_, uiScale_
+            ));
+            return;
         case 3: // Credits
             navStack_.Push(std::make_unique<CreditsOverlay>(
                 font_, fontSize_, navStack_, uiScale_

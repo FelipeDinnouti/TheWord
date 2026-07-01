@@ -48,6 +48,7 @@ ReaderScreen::ReaderScreen(theword::event::EventBus& eventBus,
     barAnimation_ = bottomBarHeight_;
 
     eventBus_.On<ScrollEvent>([this](const ScrollEvent& e) { OnScroll(e); });
+    eventBus_.On<NavigateToHighlightEvent>([this](const auto& e) { OnNavigateToHighlight(e); });
 }
 
 ReaderScreen::~ReaderScreen() = default;
@@ -97,6 +98,15 @@ void ReaderScreen::Draw() {
     }
 
     renderer_.DrawFrame(scrollY, totalHeight, viewHeight, docSpans, hlRects);
+
+    // Handle pending navigation from Highlight Browser tap
+    if (pendingNavigateWordId_ >= 0) {
+        float targetY = FindLineYForWord(pendingNavigateWordId_);
+        if (targetY >= 0.0f) {
+            docManager_.ScrollTo(targetY - contentTop_);
+            pendingNavigateWordId_ = -1;
+        }
+    }
 
     float deltaTime = GetFrameTime();
     UpdateBottomBar(deltaTime);
@@ -172,6 +182,24 @@ void ReaderScreen::OpenCenterMenu() {
         highlighter_, persistence_,
         uiScale_, currentFontSize_, versionOnline_
     ));
+}
+
+void ReaderScreen::OnNavigateToHighlight(const theword::event::NavigateToHighlightEvent& e) {
+    pendingNavigateWordId_ = e.wordId;
+    docManager_.LoadInitialChapter(e.chapterRef);
+}
+
+float ReaderScreen::FindLineYForWord(int wordId) const {
+    auto chapterLayout = docManager_.GetCurrentLayout();
+    if (!chapterLayout) return -1.0f;
+    for (const auto& line : chapterLayout->lines) {
+        for (const auto& span : line.spans) {
+            if (span.startWord >= 0 && wordId >= span.startWord && wordId <= span.endWord) {
+                return line.y;
+            }
+        }
+    }
+    return -1.0f;
 }
 
 void ReaderScreen::DrawBottomBarContent() {

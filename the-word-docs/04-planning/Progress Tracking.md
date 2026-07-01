@@ -1,6 +1,6 @@
 # Progress Tracking
 
-> Status: Phase 9 Complete, Phase 10 In Progress, Phase 11 Complete | Last Updated: 2026-06-26
+> Status: Phase 10 In Progress, Phase 11 Complete, Phase 12 Complete, Phase 13 In Progress | Last Updated: 2026-06-29
 
 ## Overall Progress
 
@@ -212,24 +212,32 @@
 - [x] Reusable UI component extraction (DrawHeaderBar, DrawBottomBar helpers)
 - [x] Dead code cleanup: removed GoToDialog, SettingsPanel, AboutOverlay; simplified UIManager to ContextMenu only
 
-## Phase 12 — Verse Number Identifiers 🔲 Planned
+## Phase 12 — Verse Number Identifiers ✅ Complete
 
-- [ ] Add `SegmentType::VerseNumber` to `ChapterProvider.h`
-- [ ] `LayoutEngine::LayoutWords()` detects verseId transitions and inserts verse number spans
-- [ ] Verse number spans include space after dot, accounted for in word wrapping
-- [ ] `Renderer::DrawSpan()` handles VerseNumber with superscript font scale + Y offset
-- [ ] Theme constants: `DOC_VERSE_NUMBER` color, `FONT_VERSE_NUMBER` scale
-- [ ] Tests: verse numbers appear at verse boundaries, correct positioning, no verse number for verse 1 of first chapter (or always show)
+- [x] Add `SegmentType::VerseNumber` to `ChapterProvider.h`
+- [x] `LayoutEngine::LayoutWords()` detects verseId transitions and inserts verse number spans
+- [x] Verse number spans include space after dot, accounted for in word wrapping
+- [x] `Renderer::DrawSpan()` handles VerseNumber with superscript font scale + Y offset
+- [x] Theme constants: `DOC_VERSE_NUMBER` color, `FONT_VERSE_NUMBER` scale
+- [x] Tests: verse numbers appear at verse boundaries, correct positioning, no verse number for verse 1 of first chapter (or always show)
 
-## Phase 13 — Highlight Browser 🔲 Planned
+## Phase 13 — Highlight Browser 🔄 In Progress
 
-- [ ] Extend `Highlight` struct with bookId, chapterNum, verseStart, verseEnd
-- [ ] Update `Highlighter::EndSelection()` to populate reference fields (from ChapterData)
-- [ ] Schema migration in PersistenceManager (ALTER TABLE highlights ADD COLUMN)
-- [ ] `Highlighter::GetHighlightsByType(int typeId)` filter method
-- [ ] HighlightBrowser screen: color swatch filter at top, scrollable match list below
+### Steps 1-3: Data Model, Highlighter, Persistence ✅
+- [x] Extend `Highlight` struct with bookId, chapterNum, verseStart, verseEnd, verseText
+- [x] Add `NavigateToHighlightEvent` to `src/event/Events.h`
+- [x] Update `Highlighter::EndSelection()` to populate reference fields from `SetChapterContext()`
+- [x] Add `Highlighter::GetHighlightsByType(int typeId)` filter method
+- [x] Schema migration in PersistenceManager (5 ALTER TABLE statements)
+- [x] Update `LoadHighlights()` / `SaveHighlight()` for new columns
+- [x] Wire `SetChapterContext()` in App.cpp on initial load and NavigateEvent
+- [x] 65/65 tests passing (no regressions)
+
+### Steps 4-7: UI & Navigation 🔲 Pending
+- [ ] HighlightBrowserScreen: color swatch filter at top, scrollable match list below
 - [ ] Match list items: reference title + verse text body
 - [ ] Tap match → navigate to verse in Reader (load chapter + scroll to word position)
+- [ ] Wire CenterMenu "Highlights" action to push HighlightBrowserScreen
 - [ ] Empty state: "No highlights of this color" message
 - [ ] Tests: filter by color, reference field population, navigation from tap
 
@@ -239,5 +247,5 @@
 |-------|--------|
 | Phase 10: Mobile/Android | 🔄 In Progress (build works, polish pending) |
 | Phase 11: Navigation System | ✅ Complete |
-| Phase 12: Verse Number Identifiers | 🔲 Planned |
-| Phase 13: Highlight Browser | 🔲 Planned |
+| Phase 12: Verse Number Identifiers | ✅ Complete |
+| Phase 13: Highlight Browser | 🔄 In Progress (UI steps pending) |

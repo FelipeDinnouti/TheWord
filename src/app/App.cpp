@@ -184,6 +184,11 @@ bool App::Init(const std::string& title) {
 
     Logger::Info("Loading initial chapter");
     docManager_->LoadInitialChapter("GEN.1");
+    {
+        auto* chapterData = docManager_->GetCurrentChapterData();
+        highlighter_->SetChapterContext("GEN", 1,
+            chapterData ? &chapterData->words : nullptr);
+    }
 
     WireEvents();
 
@@ -289,6 +294,13 @@ void App::WireEvents() {
 
     eventBus_->On<theword::event::NavigateEvent>([this](const auto& e) {
         docManager_->LoadInitialChapter(e.chapterRef);
+        std::string book;
+        int chapter;
+        if (ParseChapterRef(e.chapterRef, book, chapter)) {
+            auto* chapterData = docManager_->GetCurrentChapterData();
+            highlighter_->SetChapterContext(book, chapter,
+                chapterData ? &chapterData->words : nullptr);
+        }
     });
 
     eventBus_->On<theword::event::ResizeEvent>([this](const auto& e) {
@@ -362,7 +374,6 @@ void App::Run() {
         if (drawCountdown > 0) {
             doDraw = true;
         } else {
-            // Low-fps idle: draw at ~5fps (every IDLE_DRAIN_INTERVAL frames)
             if (++idleFrameCount >= config::IDLE_DRAIN_INTERVAL) {
                 idleFrameCount = 0;
                 doDraw = true;

@@ -1,5 +1,6 @@
 #define DOCTEST_CONFIG_IMPLEMENT_WITH_MAIN
 #include "doctest/doctest.h"
+#include <sqlite3.h>
 #include <raylib.h>
 
 #include "core/Config.h"
@@ -793,4 +794,179 @@ TEST_CASE("PersistenceManager preferences") {
     CHECK(pm.GetPreference("theme", "") == "dark");
     CHECK(pm.GetPreference("font_size", "") == "18");
     CHECK(pm.GetPreference("nonexistent", "default") == "default");
+}
+
+// ── Phase 13: Highlight Browser Tests ──────────────────────────────────
+
+TEST_CASE("Highlighter stores reference fields via SetChapterContext") {
+    InMemoryStorage store;
+    theword::event::EventBus eb;
+    Highlighter h(eb, store);
+
+    std::vector<theword::data::Word> words;
+    words.push_back({0, 1, "In"});
+    words.push_back({1, 1, "the"});
+    words.push_back({2, 2, "beginning"});
+
+    h.SetChapterContext("GEN", 1, &words);
+    h.OnSelection(theword::event::SelectionEvent{
+        theword::event::SelectionEvent::Action::Start, 0, 0});
+    h.OnSelection(theword::event::SelectionEvent{
+        theword::event::SelectionEvent::Action::Update, 0, 2});
+    h.OnSelection(theword::event::SelectionEvent{
+        theword::event::SelectionEvent::Action::End, 0, 2});
+
+    auto& highlights = h.GetHighlights();
+    REQUIRE(highlights.size() == 1);
+    CHECK(highlights[0].bookId == "GEN");
+    CHECK(highlights[0].chapterNum == 1);
+    CHECK(highlights[0].verseStart == 1);
+    CHECK(highlights[0].verseEnd == 2);
+}
+
+TEST_CASE("Highlighter verseText populated from word data") {
+    InMemoryStorage store;
+    theword::event::EventBus eb;
+    Highlighter h(eb, store);
+
+    std::vector<theword::data::Word> words;
+    words.push_back({0, 1, "In"});
+    words.push_back({1, 1, "the"});
+    words.push_back({2, 1, "beginning"});
+
+    h.SetChapterContext("GEN", 1, &words);
+    h.OnSelection(theword::event::SelectionEvent{
+        theword::event::SelectionEvent::Action::Start, 0, 0});
+    h.OnSelection(theword::event::SelectionEvent{
+        theword::event::SelectionEvent::Action::Update, 0, 2});
+    h.OnSelection(theword::event::SelectionEvent{
+        theword::event::SelectionEvent::Action::End, 0, 2});
+
+    auto& highlights = h.GetHighlights();
+    REQUIRE(highlights.size() == 1);
+    CHECK(highlights[0].verseText == "In the beginning");
+}
+
+TEST_CASE("Highlighter verseText truncated at 80 characters") {
+    InMemoryStorage store;
+    theword::event::EventBus eb;
+    Highlighter h(eb, store);
+
+    std::vector<theword::data::Word> words;
+    words.push_back({0, 1, std::string(50, 'A')});
+    words.push_back({1, 1, std::string(40, 'B')});
+
+    h.SetChapterContext("GEN", 1, &words);
+    h.OnSelection(theword::event::SelectionEvent{
+        theword::event::SelectionEvent::Action::Start, 0, 0});
+    h.OnSelection(theword::event::SelectionEvent{
+        theword::event::SelectionEvent::Action::Update, 0, 1});
+    h.OnSelection(theword::event::SelectionEvent{
+        theword::event::SelectionEvent::Action::End, 0, 1});
+
+    auto& highlights = h.GetHighlights();
+    REQUIRE(highlights.size() == 1);
+    CHECK(highlights[0].verseText.length() == 83);
+    CHECK(highlights[0].verseText.substr(80) == "...");
+}
+
+TEST_CASE("GetHighlightsByType filters correctly") {
+    InMemoryStorage store;
+    theword::event::EventBus eb;
+    Highlighter h(eb, store);
+
+    h.SetChapterContext("GEN", 1, nullptr);
+    h.SetActiveTypeId(1);
+    h.OnSelection(theword::event::SelectionEvent{
+        theword::event::SelectionEvent::Action::Start, 0, 0});
+    h.OnSelection(theword::event::SelectionEvent{
+        theword::event::SelectionEvent::Action::End, 0, 0});
+
+    h.SetActiveTypeId(2);
+    h.OnSelection(theword::event::SelectionEvent{
+        theword::event::SelectionEvent::Action::Start, 10, 10});
+    h.OnSelection(theword::event::SelectionEvent{
+        theword::event::SelectionEvent::Action::End, 10, 10});
+
+    REQUIRE(h.GetHighlights().size() == 2);
+
+    auto type1 = h.GetHighlightsByType(1);
+    CHECK(type1.size() == 1);
+    CHECK(type1[0]->typeId == 1);
+
+    auto type2 = h.GetHighlightsByType(2);
+    CHECK(type2.size() == 1);
+    CHECK(type2[0]->typeId == 2);
+
+    auto none = h.GetHighlightsByType(99);
+    CHECK(none.empty());
+}
+
+TEST_CASE("PersistenceManager saves/loads ref fields round-trip") {
+    PersistenceManager pm(":memory:");
+    Highlight h;
+    h.id = 1;
+    h.startWord = 5;
+    h.endWord = 10;
+    h.typeId = 1;
+    h.bookId = "GEN";
+    h.chapterNum = 1;
+    h.verseStart = 1;
+    h.verseEnd = 3;
+    h.verseText = "In the beginning";
+    pm.SaveHighlight(h);
+
+    auto loaded = pm.LoadHighlights();
+    REQUIRE(loaded.size() == 1);
+    CHECK(loaded[0].bookId == "GEN");
+    CHECK(loaded[0].chapterNum == 1);
+    CHECK(loaded[0].verseStart == 1);
+    CHECK(loaded[0].verseEnd == 3);
+    CHECK(loaded[0].verseText == "In the beginning");
+}
+
+TEST_CASE("PersistenceManager schema migration adds ref columns") {
+    const char* testPath = "/tmp/theword_test_migration.db";
+    remove(testPath);
+
+    sqlite3* rawDb = nullptr;
+    int rc = sqlite3_open(testPath, &rawDb);
+    REQUIRE(rc == SQLITE_OK);
+
+    char* err = nullptr;
+    sqlite3_exec(rawDb,
+        "CREATE TABLE highlights ("
+        "  id INTEGER PRIMARY KEY,"
+        "  start_word INTEGER NOT NULL,"
+        "  end_word INTEGER NOT NULL,"
+        "  type_id INTEGER"
+        ");",
+        nullptr, nullptr, &err);
+    if (err) sqlite3_free(err);
+
+    sqlite3_exec(rawDb,
+        "INSERT INTO highlights (id, start_word, end_word, type_id)"
+        " VALUES (1, 5, 10, 1)",
+        nullptr, nullptr, nullptr);
+    sqlite3_close(rawDb);
+
+    {
+        PersistenceManager pm(testPath);
+        auto loaded = pm.LoadHighlights();
+        REQUIRE(loaded.size() == 1);
+        CHECK(loaded[0].id == 1);
+        CHECK(loaded[0].bookId.empty());
+        CHECK(loaded[0].chapterNum == 0);
+        CHECK(loaded[0].verseStart == 0);
+        CHECK(loaded[0].verseEnd == 0);
+        CHECK(loaded[0].verseText.empty());
+    }
+
+    remove(testPath);
+}
+
+TEST_CASE("NavigateToHighlightEvent struct carries correct data") {
+    theword::event::NavigateToHighlightEvent e{"GEN.3", 42};
+    CHECK(e.chapterRef == "GEN.3");
+    CHECK(e.wordId == 42);
 }

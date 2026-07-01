@@ -116,9 +116,9 @@ void InputHandler::HandlePressFSM() {
             if (!IsMouseButtonDown(MOUSE_LEFT_BUTTON)) {
                 if (pressStartWord >= 0) {
                     eventBus_.Emit(theword::event::SelectionEvent{
-                        theword::event::SelectionEvent::Action::Start, pressStartWord, pressStartWord});
+                        theword::event::SelectionEvent::Action::Start, pressStartWord, pressStartWord, {}, 0});
                     eventBus_.Emit(theword::event::SelectionEvent{
-                        theword::event::SelectionEvent::Action::End, pressStartWord, pressStartWord});
+                        theword::event::SelectionEvent::Action::End, pressStartWord, pressStartWord, {}, 0});
                 }
                 pressState = PressState::Idle;
             } else if (GetTime() - pressStartTime > LONG_PRESS_TIME) {
@@ -132,13 +132,13 @@ void InputHandler::HandlePressFSM() {
                     pressState = PressState::Dragging;
                     if (pressStartWord >= 0) {
                         eventBus_.Emit(theword::event::SelectionEvent{
-                            theword::event::SelectionEvent::Action::Start, pressStartWord, pressStartWord});
+                            theword::event::SelectionEvent::Action::Start, pressStartWord, pressStartWord, {}, 0});
                     }
                     if (hitTestFn) {
                         int wordId = hitTestFn(m.x, m.y);
                         if (wordId >= 0) {
                             eventBus_.Emit(theword::event::SelectionEvent{
-                                theword::event::SelectionEvent::Action::Update, pressStartWord, wordId});
+                                theword::event::SelectionEvent::Action::Update, pressStartWord, wordId, {}, 0});
                         }
                     }
                 }
@@ -152,13 +152,13 @@ void InputHandler::HandlePressFSM() {
                     int wordId = hitTestFn(m.x, m.y);
                     if (wordId >= 0) {
                         eventBus_.Emit(theword::event::SelectionEvent{
-                            theword::event::SelectionEvent::Action::Update, pressStartWord, wordId});
+                            theword::event::SelectionEvent::Action::Update, pressStartWord, wordId, {}, 0});
                     }
                 }
             }
             if (IsMouseButtonReleased(MOUSE_LEFT_BUTTON)) {
                 eventBus_.Emit(theword::event::SelectionEvent{
-                    theword::event::SelectionEvent::Action::End, pressStartWord, pressStartWord});
+                    theword::event::SelectionEvent::Action::End, pressStartWord, pressStartWord, {}, 0});
                 pressState = PressState::Idle;
             }
             break;
@@ -278,7 +278,7 @@ void InputHandler::HandleTouchPressFSM() {
                 if (pressStartWord >= 0) {
                     selectStartWord = pressStartWord;
                     eventBus_.Emit(theword::event::SelectionEvent{
-                        theword::event::SelectionEvent::Action::Start, pressStartWord, pressStartWord});
+                        theword::event::SelectionEvent::Action::Start, pressStartWord, pressStartWord, {}, 0});
                     pressState = PressState::Selecting;
                 } else {
                     pressState = PressState::Idle;
@@ -295,7 +295,7 @@ void InputHandler::HandleTouchPressFSM() {
             if (touchCount == 0) {
                 // Release: end selection and save highlight
                 eventBus_.Emit(theword::event::SelectionEvent{
-                    theword::event::SelectionEvent::Action::End, selectStartWord, pressStartWord});
+                    theword::event::SelectionEvent::Action::End, selectStartWord, pressStartWord, {}, 0});
                 pressState = PressState::Idle;
             } else {
                 // Drag: extend selection range
@@ -304,7 +304,7 @@ void InputHandler::HandleTouchPressFSM() {
                     if (wordId >= 0 && wordId != pressStartWord) {
                         pressStartWord = wordId;
                         eventBus_.Emit(theword::event::SelectionEvent{
-                            theword::event::SelectionEvent::Action::Update, selectStartWord, wordId});
+                            theword::event::SelectionEvent::Action::Update, selectStartWord, wordId, {}, 0});
                     }
                 }
             }

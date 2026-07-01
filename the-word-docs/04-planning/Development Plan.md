@@ -1,6 +1,6 @@
 # Development Plan
 
-> Status: All 10 phases complete. Development entering a new phase.
+> Status: Phase 12 complete, Phase 13 in progress.
 
 ## Phase Overview
 
@@ -16,7 +16,10 @@
 | 8. SQLite Persistence | ✅ Complete | Save/load highlights and preferences |
 | 9. UI Layer | ✅ Complete | Navigation, font controls, smooth scroll, heading differentiation, theme consolidation |
 | 10. Mobile Preparation | ✅ Complete | Android NDK multi-ABI, WASM, touch gestures, life cycle |
+| 11. Navigation System | ✅ Complete | Bottom bar, center menu, book list, chapter grid, settings screen, navigation stack |
+| 12. Verse Number Identifiers | ✅ Complete | Layout-time verse spans, superscript rendering |
+| 13. Highlight Browser | 🔄 In Progress | Data model/highlighter/persistence done; UI pending |
 
 ## What's Next
 
-The mobile platform is now functional (APK builds for arm64-v8a and x86_64, WASM builds for web). Remaining work is tracked in `Progress Tracking.md`.
+Phase 13 Highlight Browser is the current focus. Steps 1-3 (data model, highlighter, persistence) are complete. Remaining work is tracked in `Progress Tracking.md`.

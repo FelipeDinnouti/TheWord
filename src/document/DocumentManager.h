@@ -52,6 +52,7 @@ public:
     float GetViewportHeight() const;
 
     void SetViewportHeight(float height);
+    void ScrollTo(float y);
     void InvalidateLayouts();
     bool HasMomentum() const { return std::abs(targetScrollY - scrollY) > 0.5f; }
     bool HasPendingLoads() const;
@@ -62,6 +63,8 @@ public:
 
     const std::string& GetCurrentChapterId() const;
     std::string GetChapterTitle() const;
+    const theword::data::ChapterLayout* GetCurrentLayout() const;
+    const theword::data::ChapterData* GetCurrentChapterData() const;
 
 private:
     theword::event::EventBus& eventBus_;
@@ -86,6 +89,7 @@ private:
     int loadTimeIndex_ = 0;
 
     std::vector<PendingLoad> pendingLoads_;
+    std::vector<PendingLoad> pendingGraveyard_;
     std::mutex providerMutex_;
 
     void OnScroll(const theword::event::ScrollEvent& e);

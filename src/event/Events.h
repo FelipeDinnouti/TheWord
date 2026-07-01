@@ -11,6 +11,8 @@ struct SelectionEvent {
     enum class Action { Start, Update, End, Cancel } action;
     int startWordId;
     int endWordId;
+    std::string bookId;
+    int chapterNum = 0;
 };
 
 struct ResizeEvent {
@@ -32,6 +34,11 @@ struct NavigateEvent     { std::string chapterRef; };
 
 struct RightClickEvent   { float x; float y; };
 struct ScrollStopEvent   {};
+
+struct NavigateToHighlightEvent {
+    std::string chapterRef;
+    int wordId;
+};
 
 } // namespace theword::event
 #endif

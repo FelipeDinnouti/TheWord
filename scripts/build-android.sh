@@ -129,6 +129,8 @@ cp -rL shaders "$APK_DIR/" 2>/dev/null || true
 # without copying. Required by Google Play and Android 11+.
 $BUILD_TOOLS/zipalign -f -v 4 /tmp/theword-unsigned-$$.apk /tmp/theword-aligned-$$.apk
 
+mkdir -p dist
+
 # ── Step 7: sign ─────────────────────────────────────────────────────────────
 # Every APK must be signed. Debug keystore is self-signed (created automatically
 # if missing). For Play Store distribution, replace with a release keystore.
@@ -144,8 +146,8 @@ fi
 $BUILD_TOOLS/apksigner sign --ks "$KEYSTORE" \
     --ks-pass pass:android --key-pass pass:android \
     --min-sdk-version 24 \
-    --out "theword-${ABI}-v${VERSION}.apk" /tmp/theword-aligned-$$.apk
+    --out "dist/theword-${ABI}-v${VERSION}.apk" /tmp/theword-aligned-$$.apk
 
 rm -rf "$APK_DIR" /tmp/theword-*-$$.apk
 
-echo "=== APK ready: theword-${ABI}-v${VERSION}.apk ($(stat -c%s "theword-${ABI}-v${VERSION}.apk") bytes) ==="
+echo "=== APK ready: dist/theword-${ABI}-v${VERSION}.apk ($(stat -c%s "dist/theword-${ABI}-v${VERSION}.apk") bytes) ==="
