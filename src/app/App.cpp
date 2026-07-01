@@ -362,13 +362,25 @@ void App::Run() {
                          || uiManager_->IsContextMenuActive()
                          || !navStack_->IsOnRoot();
 
+        static int idleFrameCount = 0;
         if (isAnimating || hasUiOverlay) {
             drawCountdown = config::IDLE_DRAIN_FRAMES;
+            idleFrameCount = 0;
         } else if (drawCountdown > 0) {
             drawCountdown--;
         }
 
+        bool doDraw = false;
         if (drawCountdown > 0) {
+            doDraw = true;
+        } else {
+            if (++idleFrameCount >= config::IDLE_DRAIN_INTERVAL) {
+                idleFrameCount = 0;
+                doDraw = true;
+            }
+        }
+
+        if (doDraw) {
             BeginDrawing();
             ClearBackground(theme::WINDOW_BG);
 

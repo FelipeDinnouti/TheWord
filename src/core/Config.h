@@ -7,6 +7,7 @@ constexpr int WINDOW_WIDTH = 450;
 constexpr int WINDOW_HEIGHT = 800;
 constexpr int TARGET_FPS = 60;
 constexpr int IDLE_DRAIN_FRAMES = 30;
+constexpr int IDLE_DRAIN_INTERVAL = 12;
 constexpr float CONTENT_PADDING = 40.0f;
 constexpr float TOP_BAR_HEIGHT = 60.0f;
 
