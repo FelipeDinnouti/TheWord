@@ -18,6 +18,7 @@ cmake --build build --parallel
 | Architecture questions | `the-word-docs/02-architecture/` |
 | Data source design | `the-word-docs/02-architecture/Data Source Architecture.md` |
 | Module details | `the-word-docs/03-modules/<Module>.md` |
+| Current release | `the-word-docs/04-planning/Release Plan.md` |
 | Current status | `the-word-docs/04-planning/Progress Tracking.md` |
 | Agent workflow | `the-word-docs/07-ai-collaboration/Agent Workflow.md` |
 | Font rendering | `the-word-docs/05-reference/Raylib Notes.md#crisp-font-rendering--directives` |
@@ -25,7 +26,7 @@ cmake --build build --parallel
 ## Agent Workflow
 
 1. **Read** — Find and read the relevant doc before writing code
-2. **Plan** — Read Doc-First Checklist (`the-word-docs/07-ai-collaboration/Doc-First Checklist.md`)
+2. **Plan** — Check `the-word-docs/04-planning/Release Plan.md` for current release scope; read Doc-First Checklist (`the-word-docs/07-ai-collaboration/Doc-First Checklist.md`)
 3. **Implement** — Follow conventions below, write tests (doctest)
 4. **Verify** — Build and run
 5. **Document** — Update `the-word-docs/` with anything new
@@ -76,15 +77,19 @@ rm -rf build && cmake -B build -DCMAKE_BUILD_TYPE=Release -G "Unix Makefiles"
 ## Versioning
 
 - **Source of truth**: `project(theword VERSION X.Y.Z)` in `CMakeLists.txt`
-- **Scheme**: `hero.major.minor` where:
-  - `hero` — big milestone releases (rarely bumped, e.g. 1→2)
-  - `major` — new feature or system implementations
-  - `minor` — bug fixes, refactors, and polish
-- **Default bump**: `minor` for any `feat:`, `fix:`, or `refactor:` commit; no bump for `docs:`, `test:`, `chore:`
-- **Tagging**: Only tag when explicitly requested by the user:
+- **Scheme**: Standard SemVer `MAJOR.MINOR.PATCH` where:
+  - `MAJOR` — big milestone releases (rarely bumped, e.g. 1→2)
+  - `MINOR` — new features or system implementations (`feat:` commits)
+  - `PATCH` — bug fixes, refactors, polish (`fix:`, `refactor:` commits)
+- **When to bump**: Only at release time, not per-commit.
+  Bump → reconfigure → build → test → tag → distribute.
+- **Tagging**: Annotated tag after bumping and building:
   ```bash
-  git tag -a "v$(grep -oP 'VERSION \K[0-9.]+' CMakeLists.txt | head -1)" -m "$(git log -1 --pretty=%s)"
+  cmake -B build -DCMAKE_BUILD_TYPE=Release && cmake --build build --parallel
+  git tag -am "$(grep -oP 'VERSION \K[0-9.]+' CMakeLists.txt)" "v$(grep -oP 'VERSION \K[0-9.]+' CMakeLists.txt)"
   ```
+- **Pre-release versions**: Use SemVer suffixes (e.g. `1.5.0-beta.1`)
+  for test releases — set them in CMakeLists.txt and tag as-is.
 - Generated `Version.h` is updated automatically on reconfigure (`cmake -B build ...`)
 - Version is displayed in the About overlay and accessible at runtime via `theword::core::APP_VERSION`
 
@@ -141,6 +146,7 @@ TEST_MONITOR_BINARY=build_monitor/tools/test_monitor/test_monitor \
 
 ## See Also
 
+- `the-word-docs/04-planning/Release Plan.md` — Current release scope and backlog
 - `the-word-docs/06-ops/Build Guide.md` — Full build instructions
 - `the-word-docs/02-architecture/Data Source Architecture.md` — Dual-source design
 - `the-word-docs/05-reference/YouVersion API.md` — API details

@@ -1,6 +1,6 @@
 # Progress Tracking
 
-> Status: Phase 10 In Progress, Phase 11 Complete, Phase 12 Complete, Phase 13 In Progress | Last Updated: 2026-06-29
+> Status: MVP Complete | Release-based planning active | Last Updated: 2026-07-01
 
 ## Overall Progress
 
@@ -185,16 +185,9 @@
 - [x] Emscripten/WASM build — `build-wasm/theword.html` works in browser
 - [x] Keyboard input patch — `patches/raylib-android-keycodes.patch` translates AKEYCODE → raylib KEY
 
-### Remaining
+### Remaining (moved to Release Plan backlog)
 - [x] Multi-ABI build: `x86_64` + `arm64-v8a` in build script (armeabi-v7a dropped — raylib NEON half-float intrinsics require ARMv8+)
-- [ ] Java activity stub (`TheWordActivity.java`) for IME/splash
-- [ ] Soft keyboard integration for go-to dialog
-- [ ] Immersive mode (hide nav bar)
-- [ ] Lifecycle save/restore (scroll position on pause/resume)
-- [ ] WASM persistence via IDBFS
-- [ ] `scripts/build-wasm.sh` for one-step WASM build
-- [ ] libcurl as optional dependency
-- [ ] Platform abstraction module (`src/core/Platform.h`)
+- [~] Remaining items tracked in `Release Plan.md` backlog
 
 ## Phase 11 — Navigation System ✅ Complete
 
@@ -233,19 +226,25 @@
 - [x] Wire `SetChapterContext()` in App.cpp on initial load and NavigateEvent
 - [x] 65/65 tests passing (no regressions)
 
-### Steps 4-7: UI & Navigation 🔲 Pending
-- [ ] HighlightBrowserScreen: color swatch filter at top, scrollable match list below
-- [ ] Match list items: reference title + verse text body
-- [ ] Tap match → navigate to verse in Reader (load chapter + scroll to word position)
-- [ ] Wire CenterMenu "Highlights" action to push HighlightBrowserScreen
-- [ ] Empty state: "No highlights of this color" message
-- [ ] Tests: filter by color, reference field population, navigation from tap
+### Steps 4-7: UI & Navigation ✅ Complete
+- [x] HighlightBrowserScreen: color swatch filter at top, scrollable match list below
+- [x] Match list items: reference title + verse text body
+- [x] Tap match → navigate to verse in Reader (load chapter + scroll to word position)
+- [x] Wire CenterMenu "Highlights" action to push HighlightBrowserScreen
+- [x] Empty state: "No highlights of this color" message
+- [x] Tests: filter by color, reference field population, navigation from tap
 
-## Remaining Phases (summary)
+## Post-MVP: Release-Based Planning
+
+All future work is now organized by release (SemVer) rather than phases.
+See `Release Plan.md` for current and upcoming releases.
+
+**Remaining MVP-phase items** (Phase 10 Mobile/Android polish) are tracked
+in the release plan and will be picked up as capacity allows.
 
 | Phase | Status |
 |-------|--------|
-| Phase 10: Mobile/Android | 🔄 In Progress (build works, polish pending) |
+| Phase 10: Mobile/Android | 📋 Backlog — see Release Plan.md |
 | Phase 11: Navigation System | ✅ Complete |
 | Phase 12: Verse Number Identifiers | ✅ Complete |
-| Phase 13: Highlight Browser | 🔄 In Progress (UI steps pending) |
+| Phase 13: Highlight Browser | ✅ Complete |

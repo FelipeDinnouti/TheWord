@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.16)
-project(theword VERSION 1.4.1 LANGUAGES C CXX)
+project(theword VERSION 1.4.2 LANGUAGES C CXX)
 
 # Auto-generate Version.h from template (substitutes @PROJECT_VERSION@ etc.)
 configure_file(

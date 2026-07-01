@@ -11,6 +11,7 @@
 - [ ] Read `02-architecture/Data Structures.md` (if touching core types)
 - [ ] Read `02-architecture/Coordinate Spaces.md` (if rendering/scrolling)
 - [ ] Read `02-architecture/Data Flow.md` (if modifying the pipeline)
+- [ ] Check `04-planning/Release Plan.md` for current release scope
 - [ ] Check `04-planning/Progress Tracking.md` for current status
 - [ ] Check `07-ai-collaboration/Convention Reference.md` for naming/style
 

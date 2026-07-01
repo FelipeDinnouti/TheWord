@@ -1,54 +1,29 @@
 # Roadmap
 
-> Status: Phase 12 Complete, Phase 13 In Progress | Last Updated: 2026-06-29
+> Status: MVP Complete — Release-Based Planning Active | Last Updated: 2026-07-01
 
-The original 10-phase MVP is complete. The app now enters a new phase of UX and feature development.
+The original 13-phase MVP is complete. All future work is organized by **release** (SemVer) rather than phases.
 
-## Phase Overview
+## Current Release: v1.4.2
+
+**Theme:** Stabilization & Phase 13 Completion
+
+Tracked in `Release Plan.md`.
+
+## Upcoming Releases
+
+| Version | Theme | Target |
+|---------|-------|--------|
+| v1.5.0-beta.1 | First public beta | After v1.4.2 |
+| v1.5.0 | First stable release | After beta feedback |
+
+## MVP Complete (Phases 1-13, Historical)
 
 | Phase | Status | Description |
 |-------|--------|-------------|
 | 1-10 | ✅ Complete | MVP: build, text engine, data sources, highlights, persistence, UI, mobile |
 | 11. Navigation System | ✅ Complete | Bottom bar, center menu, book list, chapter grid, settings screen, navigation stack |
 | 12. Verse Number Identifiers | ✅ Complete | Layout-time verse spans, superscript rendering |
-| 13. Highlight Browser | 🔄 In Progress | Data model, highlighter, persistence done; UI pending |
+| 13. Highlight Browser | ✅ Complete | Full screen with color filter, match list, navigation |
 
-## Phase 11 — Navigation System
-
-**Goal:** Replace the single-screen overlay pattern with a navigation stack driven by a bottom bar with prev/next chapter buttons and a center menu for accessing books, settings, highlights, and credits.
-
-### Key Deliverables
-- Bottom bar: overlay on scroll-up, ◄ / book-ref / ► layout
-- Center menu: Books, Settings, Highlights, Credits options
-- BookList screen: canonical-ordered scrollable list with search
-- ChapterGrid screen: 5-column chapter number grid
-- Settings screen: full-screen version of current settings panel
-- Navigation stack: push/pop with back button, swipe gesture, Escape
-- Keyboard shortcuts: ←/→ for chapter nav
-
-**See:** `02-architecture/UI Philosophy.md` for full design specification.
-
-## Phase 12 — Verse Number Identifiers
-
-**Goal:** Display grey superscript verse numbers with dots before the first word of each verse, rendered at layout time.
-
-### Key Deliverables
-- `SegmentType::VerseNumber` added to data model
-- `LayoutEngine::LayoutWords()` detects verse transitions and inserts verse number spans
-- `Renderer::DrawSpan()` handles VerseNumber spans with superscript positioning
-- Theme constants for verse number color and font scale
-
-**See:** `03-modules/Text Layout Engine.md` for design details.
-
-## Phase 13 — Highlight Browser
-
-**Goal:** Allow users to browse all highlights filtered by color, displayed as a scrollable list with verse references, and navigate to any highlighted passage.
-
-### Key Deliverables
-- Highlight struct extended with bookId, chapterNum, verseStart, verseEnd, verseText ✅
-- Schema migration for new reference fields ✅
-- Highlighter::GetHighlightsByType() filter method ✅
-- HighlightBrowser screen with color filter and scrollable match list 🔲
-- Navigation to verse from highlight item tap 🔲
-
-**See:** `03-modules/Highlighting System.md` for design details.
+Phase details are preserved in the git history and `Development Plan.md` for reference.

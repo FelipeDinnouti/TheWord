@@ -18,6 +18,7 @@
 - Read `02-architecture/Coordinate Spaces.md` if rendering or input
 
 ### 2. Plan the Change
+- Check `04-planning/Release Plan.md` for the current release's scope
 - Check `04-planning/Progress Tracking.md` for current status
 - Check `04-planning/Roadmap.md` for timeline
 - Propose approach in a comment or doc update
