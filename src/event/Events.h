@@ -40,5 +40,9 @@ struct NavigateToHighlightEvent {
     int wordId;
 };
 
+struct ChapterLoadedEvent {
+    std::string chapterRef;
+};
+
 } // namespace theword::event
 #endif

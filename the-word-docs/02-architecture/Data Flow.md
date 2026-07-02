@@ -1,6 +1,6 @@
 # Data Flow
 
-> Status: Updated 2026-06-22
+> Status: Updated 2026-07-01
 
 ## Offline Startup Flow (USFM)
 
@@ -25,6 +25,47 @@ main()
   │                 └── return ChapterLayout
   └── Enter render loop
 ```
+
+## Async Chapter Navigation Flow
+
+```
+User presses Enter / clicks chapter in ChapterGrid
+  → ChapterGridScreen::HandleInput()
+    → navStack_.PopAll()                  ← reader revealed immediately (no freeze)
+    → eventBus_.Emit(NavigateEvent)
+      → App handler calls docManager_->LoadInitialChapter(ref)
+        → visibleChapterId_ = ref
+        → chapters.clear()
+        → launches std::async (provider.LoadChapter + engine.LayoutChapter)
+        → stores future in initialLoadFuture_
+        → returns immediately
+
+Frame 1 (same frame):
+  → docManager_->Update() → future not ready → skip
+  → navStack_->DrawActive() → Reader draws blank (no chapter data)
+  → Frame completes without blocking
+
+Frame N (when future resolves):
+  → docManager_->Update()
+    → initialLoadFuture_.wait_for(0) == ready
+    → future.get() → std::optional<LoadedChapter>
+    → initialLoadFuture_.reset()
+    → if result:
+        → chapters.clear()
+        → move pending loads to graveyard
+        → result->startY = 0, chapters.push_back
+        → scrollY = targetScrollY = 0
+        → Logger::Info("Loaded chapter: " + chapterId)
+        → eventBus_.Emit(ChapterLoadedEvent{chapterId})
+          → App handler calls highlighter_->SetChapterContext(...)
+    → navStack_->DrawActive() → Reader draws the new chapter (full data)
+```
+
+Key differences from the synchronous startup flow:
+- `PopAll()` runs before the load, so the reader is visible immediately
+- The load runs in a background thread (no main thread blocking)
+- The highlighter context is set via `ChapterLoadedEvent`, not inline
+- During the load, the reader shows no text (blank) — a loading indicator can be added later
 
 ## Online Startup Flow (API)
 

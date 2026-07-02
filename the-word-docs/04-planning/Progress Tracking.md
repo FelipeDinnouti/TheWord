@@ -1,6 +1,6 @@
 # Progress Tracking
 
-> Status: MVP Complete | Release-based planning active | Last Updated: 2026-07-01
+> Status: MVP Complete | Release-based planning active | Last Updated: 2026-07-01 (async loading)
 
 ## Overall Progress
 
@@ -248,3 +248,27 @@ in the release plan and will be picked up as capacity allows.
 | Phase 11: Navigation System | ✅ Complete |
 | Phase 12: Verse Number Identifiers | ✅ Complete |
 | Phase 13: Highlight Browser | ✅ Complete |
+| v1.5.0-alpha.1 Polish | 🔄 In Progress | See below |
+
+## v1.5.0-alpha.1 Polish — Completed Work
+
+### Visual & UX Polish
+- [x] Reusable component primitives (`DrawButton`, `DrawPanel`, `DrawTextItem`, `DrawToggle`, `DrawColorSwatch`)
+- [x] Hover/press states on all interactive elements
+- [x] Cursor changes (hand cursor over clickable elements, I-beam during selection only)
+- [x] Overlay fade-in + fade-out (CenterMenu, Credits)
+- [x] Rounded corners on panels, buttons, swatches, list items
+- [x] Bottom bar arrows: no gray box background, color changes only
+- [x] Eliminated 1px gap between rounded rect fills and borders
+- [x] Current chapter highlighted in ChapterGrid (passed through navigation chain)
+
+### Performance
+- [x] **Async chapter loading** — `LoadInitialChapter` uses `std::async`; screen switches instantly, chapter loads in background
+- [x] **ChapterLoadedEvent** — decouples DocumentManager from Highlighter
+- [x] **Future graveyard** — non-blocking cancellation of in-flight loads
+
+### Bug Fixes
+- [x] **Chapter edge flickering** — `UpdateVisibleChapter` now uses a 0.5px margin on boundary checks to prevent chapter title flickering when scrollY lands exactly on a chapter boundary
+- [x] **Highlights lost on chapter reload** — word IDs changed from global to per-chapter (deterministic). `TokenizeToWords` now accepts a local `nextWordId` counter instead of calling `GetNextWordId()`. Highlights are filtered by current chapter (`bookId + chapterNum`) in `IsWordHighlighted`, `GetHighlightForWord`, and `HighlightAtWord`
+- [x] **Highlight browser navigates to wrong chapter** — same root cause as above; per-chapter word IDs ensure `FindLineYForWord` can find the correct word in the reloaded chapter layout
+- [x] **Corrupted database** — `~/.theword/highlights.db` deleted (contained old highlights with global word IDs incompatible with new per-chapter scheme)

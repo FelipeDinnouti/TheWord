@@ -4,6 +4,7 @@
 #include "Screen.h"
 #include "core/UIScale.h"
 #include <memory>
+#include <string>
 #include <raylib.h>
 
 namespace theword::event { class EventBus; }
@@ -21,7 +22,8 @@ public:
                theword::highlight::Highlighter& highlighter,
                theword::persistence::PersistenceManager& persistence,
                const theword::core::UIScale& uiScale,
-               float& currentFontSize, bool& versionOnline);
+               float& currentFontSize, bool& versionOnline,
+               const std::string& currentChapterRef = "");
     void Draw() override;
     bool HandleInput(float deltaTime) override;
     const char* GetTitle() const override { return "Menu"; }
@@ -42,6 +44,15 @@ private:
     static const char* ItemLabel(int idx);
 
     int selectedIndex_ = 0;
+    double showTime_;
+    double fadeOutStartTime_ = 0;
+    bool fadingOut_ = false;
+    bool popPending_ = false;
+    std::string currentChapterRef_;
+    static constexpr float FADE_DURATION = 0.1f;
+
+    Vector2 pressStartPos_{};
+    bool hasPendingPress_ = false;
 };
 
 } // namespace theword::ui

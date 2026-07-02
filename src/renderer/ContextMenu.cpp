@@ -1,4 +1,5 @@
 #include "ContextMenu.h"
+#include "ui/components.h"
 #include "highlight/Highlighter.h"
 #include "core/Theme.h"
 
@@ -45,15 +46,14 @@ void ContextMenu::Draw() {
     float dw = DELETE_WIDTH * scale;
     float lg = LABEL_SWATCH_GAP * scale;
 
-    DrawRectangle(pos.x, pos.y, mw, mh, theme::PANEL_BG);
-    DrawRectangleLines(pos.x, pos.y, mw, mh, theme::PANEL_BORDER);
+    theword::ui::DrawPanel({pos.x, pos.y, mw, mh}, theme::PANEL_BG, theme::PANEL_BORDER);
 
     float x0 = pos.x + mp;
     float y0 = pos.y + mp;
     float contentH = mh - mp * 2;
 
-    DrawTextEx(headingFont, "Del", {x0, y0 + (contentH - headingSize) / 2.0f},
-               headingSize, 1, theme::UI_DELETE);
+    theword::ui::DrawButton({x0, y0, dw, contentH}, "Del", headingFont, headingSize,
+                            true, theme::UI_DELETE, theme::PANEL_BG);
 
     float swatchStartX = x0 + dw + lg;
     float swatchY = y0 + (contentH - sw) / 2.0f;
@@ -61,8 +61,7 @@ void ContextMenu::Draw() {
     for (size_t i = 0; i < types.size(); ++i) {
         float swatchX = swatchStartX + i * (sw + sg);
         Color c = {types[i].color.r, types[i].color.g, types[i].color.b, 255};
-        DrawRectangle(swatchX, swatchY, sw, sw, c);
-        DrawRectangleLines(swatchX, swatchY, sw, sw, theme::BUTTON_BORDER);
+        theword::ui::DrawColorSwatch({swatchX, swatchY, sw, sw}, c, false);
     }
 }
 

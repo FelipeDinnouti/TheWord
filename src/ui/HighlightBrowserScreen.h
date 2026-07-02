@@ -5,6 +5,7 @@
 #include "core/UIScale.h"
 #include <vector>
 #include <string>
+#include <memory>
 #include <raylib.h>
 
 namespace theword::event { class EventBus; }
@@ -20,9 +21,15 @@ public:
                            theword::event::EventBus& eventBus,
                            const theword::highlight::Highlighter& highlighter,
                            const theword::core::UIScale& uiScale);
+    ~HighlightBrowserScreen();
     void Draw() override;
     bool HandleInput(float deltaTime) override;
     const char* GetTitle() const override { return "Highlights"; }
+
+    struct ItemLayout {
+        float height;
+        std::vector<std::string> subtitleLines;
+    };
 
 private:
     const Font& font_;
@@ -33,7 +40,7 @@ private:
     const theword::core::UIScale& uiScale_;
 
     int activeColorId_ = 0;
-    float scrollOffset_ = 0.0f;
+    float scrollY_ = 0.0f;
 
     struct DisplayItem {
         const theword::highlight::Highlight* hl;
@@ -44,8 +51,15 @@ private:
     mutable std::vector<DisplayItem> cachedItems_;
     mutable int cachedFilterColorId_ = -1;
     mutable size_t cachedHighlightsCount_ = 0;
+    mutable std::vector<ItemLayout> layouts_;
+    mutable float lastTextWrapWidth_ = 0;
+    Vector2 pressStartPos_{};
+    bool hasPendingPress_ = false;
+
+    std::shared_ptr<bool> aliveGuard_ = std::make_shared<bool>(true);
 
     const std::vector<DisplayItem>& GetFilteredItems() const;
+    void RebuildLayouts(float textWrapWidth) const;
     void OnItemTapped(int index);
     void NavigateToHighlight(const theword::highlight::Highlight& h);
 };

@@ -43,18 +43,9 @@ HTTP client wrapper around libcurl. Handles GET requests with custom headers.
 - Timeout: 10 seconds
 - Follows redirects automatically
 
-## GlobalId (`GlobalId.h`)
+## GlobalId (`GlobalId.h`) — Deprecated
 
-Single shared counter for globally unique word IDs. An inline function with a function-local `static` ensures a single counter across all translation units.
-
-```cpp
-inline int GetNextWordId() {
-    static int id = 0;
-    return id++;
-}
-```
-
-Used by all `ChapterProvider` implementations (`USFMParser`, `BibleClient`, `StubChapterProvider`) to assign unique IDs to every word. This guarantees the contract in `Data Structures.md`: "Every word in the Bible has a globally unique ID" — even when `CompositeProvider` falls back between providers.
+`GetNextWordId()` was previously used to assign globally unique word IDs. As of 2026-07-01, word IDs are **per-chapter**, assigned sequentially by each provider during parsing (starting from 0 for each chapter). The `GlobalId.h` file remains only for reference and will be removed in a future cleanup.
 
 ## FontHelper (`FontHelper.h/cpp`)
 

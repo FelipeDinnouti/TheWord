@@ -35,10 +35,25 @@ constexpr Color INPUT_BG = LIGHTGRAY;
 constexpr Color INPUT_BORDER = GRAY;
 constexpr Color INPUT_BORDER_ERROR = RED;
 
+constexpr Color ACCENT_TEAL = {14, 165, 233, 255};
+
 constexpr Color SCROLLBAR_THUMB = GRAY;
 
 constexpr Color SPLASH_TITLE = DARKGRAY;
 constexpr Color SPLASH_SUBTITLE = LIGHTGRAY;
+
+constexpr float PANEL_ROUNDING = 6.0f;
+constexpr float HOVER_DARKEN = 0.85f;
+constexpr float PRESS_DARKEN = 0.70f;
+
+inline Color Darken(Color c, float factor) {
+    return Color{
+        static_cast<unsigned char>(c.r * factor),
+        static_cast<unsigned char>(c.g * factor),
+        static_cast<unsigned char>(c.b * factor),
+        c.a
+    };
+}
 
 constexpr float FONT_HEADING = 1.3f;
 constexpr float FONT_LARGE_HEADING = 1.6f;

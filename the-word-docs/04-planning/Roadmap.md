@@ -14,9 +14,9 @@ Tracked in `Release Plan.md`.
 
 | Version | Theme | Target |
 |---------|-------|--------|
-| v1.5.0-beta.1 | First public beta | After v1.4.2 |
-| v1.5.0 | First stable release | After beta feedback |
+| v1.5.0-alpha.1 | First public alpha | After v1.4.2 |
 
+| v1.5.0 | First stable release | After alpha feedback |
 ## MVP Complete (Phases 1-13, Historical)
 
 | Phase | Status | Description |

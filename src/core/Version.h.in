@@ -2,7 +2,7 @@
 #define VERSION_H
 
 namespace theword::core {
-    constexpr const char* APP_VERSION = "@PROJECT_VERSION@";
+    constexpr const char* APP_VERSION = "@APP_VERSION_FULL@";
     constexpr int APP_VERSION_MAJOR = @PROJECT_VERSION_MAJOR@;
     constexpr int APP_VERSION_MINOR = @PROJECT_VERSION_MINOR@;
     constexpr int APP_VERSION_PATCH = @PROJECT_VERSION_PATCH@;

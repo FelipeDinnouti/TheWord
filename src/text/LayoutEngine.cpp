@@ -23,7 +23,7 @@ LayoutEngine::LayoutEngine(theword::event::EventBus& eventBus,
       bodySize_(bodySize), headingSize_(headingSize),
       largeSize_(largeSize), smallSize_(smallSize),
       lineSpacing(lineSpacing),
-      leftMargin(10.0f * scaleFactor), rightMargin(10.0f * scaleFactor),
+      leftMargin(20.0f * scaleFactor), rightMargin(20.0f * scaleFactor),
       paragraphGap(8.0f * scaleFactor), headingTopGap(12.0f * scaleFactor),
       headingBottomGap(6.0f * scaleFactor), poetryIndent(20.0f * scaleFactor) {
 
@@ -31,7 +31,7 @@ LayoutEngine::LayoutEngine(theword::event::EventBus& eventBus,
 }
 
 void LayoutEngine::OnResize(const theword::event::ResizeEvent& e) {
-    maxWidth = e.width - 60.0f;
+    maxWidth = static_cast<float>(e.width);
     InvalidateCache();
 }
 
@@ -228,34 +228,85 @@ float LayoutEngine::LayoutWords(const Segment& seg, const ChapterData& data, flo
 float LayoutEngine::LayoutHeading(const Segment& seg, float startY, std::vector<Line>& lines,
                                    const Font& useFont, float renderSize) {
     float lineHeight = renderSize * lineSpacing;
-    float y = startY;
+    float y = startY + headingTopGap;
 
-    y += headingTopGap;
+    // Split text into words
+    std::string text = seg.text;
+    std::vector<std::string> words;
+    size_t pos = 0;
+    while (pos < text.size()) {
+        while (pos < text.size() && text[pos] == ' ') pos++;
+        if (pos >= text.size()) break;
+        size_t space = text.find(' ', pos);
+        if (space == std::string::npos) {
+            words.push_back(text.substr(pos));
+            break;
+        }
+        words.push_back(text.substr(pos, space - pos));
+        pos = space + 1;
+    }
 
-    float headingWidth = MeasureTextEx(useFont, seg.text.c_str(), renderSize, 1).x;
-    float x = (maxWidth - headingWidth) / 2.0f;
+    if (words.empty()) {
+        y += headingBottomGap;
+        return y - startY;
+    }
 
-    Line headingLine;
-    headingLine.y = y;
-    headingLine.height = lineHeight;
+    float spaceWidth = MeasureTextEx(useFont, " ", renderSize, 1).x;
+    float availableWidth = maxWidth - leftMargin - rightMargin;
 
-    Span span;
-    span.text = seg.text;
-    span.x = x;
-    span.y = y;
-    span.width = headingWidth;
-    span.height = renderSize;
-    span.verseId = 0;
-    span.startWord = -1;
-    span.endWord = -1;
-    span.type = seg.type;
+    // Wrap words into lines
+    struct WrappedLine {
+        std::vector<std::string> wordTexts;
+        float totalWidth = 0.0f;
+    };
+    std::vector<WrappedLine> wrappedLines;
+    WrappedLine current;
+    for (const auto& word : words) {
+        float wordWidth = MeasureTextEx(useFont, word.c_str(), renderSize, 1).x;
+        float addedGap = current.wordTexts.empty() ? 0.0f : spaceWidth;
+        if (current.totalWidth + addedGap + wordWidth > availableWidth && !current.wordTexts.empty()) {
+            wrappedLines.push_back(current);
+            current = WrappedLine();
+            current.wordTexts.push_back(word);
+            current.totalWidth = wordWidth;
+        } else {
+            current.wordTexts.push_back(word);
+            current.totalWidth += addedGap + wordWidth;
+        }
+    }
+    if (!current.wordTexts.empty()) wrappedLines.push_back(current);
 
-    headingLine.spans.push_back(span);
-    lines.push_back(headingLine);
+    // Render each wrapped line centered
+    for (const auto& wl : wrappedLines) {
+        Line headingLine;
+        headingLine.y = y;
+        headingLine.height = lineHeight;
 
-    y += lineHeight;
+        float x = (maxWidth - wl.totalWidth) / 2.0f;
+        float wordX = x;
+        for (const auto& wt : wl.wordTexts) {
+            float ww = MeasureTextEx(useFont, wt.c_str(), renderSize, 1).x;
+
+            Span span;
+            span.text = wt;
+            span.x = wordX;
+            span.y = y;
+            span.width = ww;
+            span.height = renderSize;
+            span.verseId = 0;
+            span.startWord = -1;
+            span.endWord = -1;
+            span.type = seg.type;
+
+            headingLine.spans.push_back(span);
+            wordX += ww + spaceWidth;
+        }
+
+        lines.push_back(headingLine);
+        y += lineHeight;
+    }
+
     y += headingBottomGap;
-
     return y - startY;
 }
 

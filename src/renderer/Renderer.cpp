@@ -104,11 +104,11 @@ void Renderer::DrawScrollbar(float scrollY, float totalHeight, float viewportHei
     float scrollBarY = contentTop + (scrollY / totalHeight) * (viewportHeight - scrollBarHeight);
     float barWidth = 6.0f * dpiScale_;
     float rightGap = 8.0f * dpiScale_;
-    DrawRectangle(GetScreenWidth() - static_cast<int>(rightGap),
-                  static_cast<int>(scrollBarY),
-                  static_cast<int>(barWidth),
-                  static_cast<int>(scrollBarHeight),
-                  theme::SCROLLBAR_THUMB);
+    float roundness = 2.0f / (barWidth * 0.5f);
+    if (roundness > 1.0f) roundness = 1.0f;
+    DrawRectangleRounded(
+        {GetScreenWidth() - rightGap, scrollBarY, barWidth, scrollBarHeight},
+        roundness, 8, theme::SCROLLBAR_THUMB);
 }
 
 void Renderer::DrawFpsCounter(int x, int y) {

@@ -1,16 +1,14 @@
 # Core Data Structures
 
-> Status: Updated 2026-06-22
+> Status: Updated 2026-07-01
 
 ## Word
 
-The smallest unit of text. Every word in the Bible has a globally unique ID — Genesis 1:1 words have lower IDs than Genesis 1:2 words. This flat numbering scheme makes range-based highlighting straightforward and stable across re-layouts.
-
-IDs are assigned by `GetNextWordId()` in `src/core/GlobalId.h` — a single shared counter used by all `ChapterProvider` implementations. This guarantees uniqueness even when `CompositeProvider` falls back between providers.
+The smallest unit of text. Each word has a **per-chapter** ID, starting from 0 for the first word of each chapter. This means the same chapter always produces the same word IDs regardless of how many times or in what order chapters are loaded. Highlight storage uses `(bookId, chapterNum, startWord, endWord)` — the per-chapter IDs are stable across chapter reloads.
 
 ```cpp
 struct Word {
-    int id;           // Global word index (unique across entire document)
+    int id;           // Word index within its chapter (0-based)
     int verseId;      // Parent verse reference
     std::string text; // The actual word text
 };

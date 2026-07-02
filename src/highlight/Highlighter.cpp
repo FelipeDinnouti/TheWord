@@ -122,14 +122,16 @@ void Highlighter::EndSelection() {
 
 bool Highlighter::IsWordHighlighted(int wordId) const {
     for (const auto& h : highlights) {
-        if (wordId >= h.startWord && wordId <= h.endWord) return true;
+        if (h.bookId == currentBookId_ && h.chapterNum == currentChapterNum_
+            && wordId >= h.startWord && wordId <= h.endWord) return true;
     }
     return false;
 }
 
 Color Highlighter::GetHighlightForWord(int wordId) const {
     for (const auto& h : highlights) {
-        if (wordId >= h.startWord && wordId <= h.endWord) {
+        if (h.bookId == currentBookId_ && h.chapterNum == currentChapterNum_
+            && wordId >= h.startWord && wordId <= h.endWord) {
             for (const auto& t : types) {
                 if (t.id == h.typeId) return ToColor(t.color);
             }
@@ -141,7 +143,8 @@ Color Highlighter::GetHighlightForWord(int wordId) const {
 
 const Highlight* Highlighter::HighlightAtWord(int wordId) const {
     for (const auto& h : highlights) {
-        if (wordId >= h.startWord && wordId <= h.endWord) {
+        if (h.bookId == currentBookId_ && h.chapterNum == currentChapterNum_
+            && wordId >= h.startWord && wordId <= h.endWord) {
             return &h;
         }
     }

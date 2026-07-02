@@ -1,5 +1,9 @@
 cmake_minimum_required(VERSION 3.16)
-project(theword VERSION 1.4.2 LANGUAGES C CXX)
+project(theword VERSION 1.5.0 LANGUAGES C CXX)
+
+# Pre-release suffix (empty for release builds, e.g. "-alpha.1")
+set(THEWORD_VERSION_SUFFIX "-alpha.1")
+set(APP_VERSION_FULL "${PROJECT_VERSION}${THEWORD_VERSION_SUFFIX}")
 
 # Auto-generate Version.h from template (substitutes @PROJECT_VERSION@ etc.)
 configure_file(

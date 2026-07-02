@@ -1,16 +1,15 @@
 #include "StubChapterProvider.h"
-#include "core/GlobalId.h"
 #include <sstream>
 
 namespace theword::data {
 namespace {
-std::vector<Word> TokenizeText(const std::string& text, int verseId) {
+std::vector<Word> TokenizeText(const std::string& text, int verseId, int& nextId) {
     std::vector<Word> words;
     std::istringstream stream(text);
     std::string word;
     while (stream >> word) {
         Word w;
-        w.id = theword::core::GetNextWordId();
+        w.id = nextId++;
         w.verseId = verseId;
         w.text = word;
         words.push_back(w);
@@ -41,9 +40,10 @@ std::optional<ChapterData> StubChapterProvider::LoadChapter(
     const char* verse17 = "For God did not send his Son into the world to condemn the world but to save the world through him";
     const char* verse18 = "Whoever believes in him is not condemned but whoever does not believe stands condemned already because they have not believed in the name of Gods one and only Son";
 
-    auto w16 = TokenizeText(verse16, 16);
-    auto w17 = TokenizeText(verse17, 17);
-    auto w18 = TokenizeText(verse18, 18);
+    int nextId = 0;
+    auto w16 = TokenizeText(verse16, 16, nextId);
+    auto w17 = TokenizeText(verse17, 17, nextId);
+    auto w18 = TokenizeText(verse18, 18, nextId);
 
     data.words.reserve(w16.size() + w17.size() + w18.size());
     data.words.insert(data.words.end(), w16.begin(), w16.end());

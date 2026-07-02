@@ -4,6 +4,7 @@
 #include "CreditsOverlay.h"
 #include "HighlightBrowserScreen.h"
 #include "NavigationStack.h"
+#include "components.h"
 #include "core/Theme.h"
 #include "core/Config.h"
 #include <cmath>
@@ -32,17 +33,35 @@ CenterMenu::CenterMenu(const Font& font, float fontSize,
                        theword::highlight::Highlighter& highlighter,
                        theword::persistence::PersistenceManager& persistence,
                        const theword::core::UIScale& uiScale,
-                       float& currentFontSize, bool& versionOnline)
+                       float& currentFontSize, bool& versionOnline,
+                       const std::string& currentChapterRef)
     : font_(font), fontSize_(fontSize),
       navStack_(navStack), eventBus_(eventBus),
       highlighter_(highlighter), persistence_(persistence),
-      uiScale_(uiScale), currentFontSize_(currentFontSize), versionOnline_(versionOnline) {}
+      uiScale_(uiScale), currentFontSize_(currentFontSize), versionOnline_(versionOnline),
+      showTime_(GetTime()), currentChapterRef_(currentChapterRef) {}
 
 void CenterMenu::Draw() {
     float screenW = static_cast<float>(GetScreenWidth());
     float screenH = static_cast<float>(GetScreenHeight());
 
-    DrawRectangle(0, 0, static_cast<int>(screenW), static_cast<int>(screenH), theme::OVERLAY_BG);
+    float now = static_cast<float>(GetTime());
+    float fadeAlpha;
+    if (fadingOut_) {
+        float elapsed = now - static_cast<float>(fadeOutStartTime_);
+        fadeAlpha = std::max(0.0f, 1.0f - elapsed / FADE_DURATION);
+        if (fadeAlpha <= 0.0f) {
+            popPending_ = true;
+            return;
+        }
+    } else {
+        float elapsed = now - static_cast<float>(showTime_);
+        fadeAlpha = std::min(1.0f, elapsed / FADE_DURATION);
+    }
+
+    Color overlayColor = theme::OVERLAY_BG;
+    overlayColor.a = static_cast<unsigned char>(theme::OVERLAY_BG.a * fadeAlpha);
+    DrawRectangle(0, 0, static_cast<int>(screenW), static_cast<int>(screenH), overlayColor);
 
     float menuW = uiScale_.fitScreen(85, 320);
     float padding = uiScale_.dp(12);
@@ -51,39 +70,37 @@ void CenterMenu::Draw() {
     float panelX = (screenW - menuW) / 2.0f;
     float panelY = (screenH - totalHeight) / 2.0f;
 
-    DrawRectangle(static_cast<int>(panelX), static_cast<int>(panelY),
-                  static_cast<int>(menuW), static_cast<int>(totalHeight), theme::PANEL_BG);
-    DrawRectangleLines(static_cast<int>(panelX), static_cast<int>(panelY),
-                       static_cast<int>(menuW), static_cast<int>(totalHeight),
-                       theme::PANEL_BORDER);
+    DrawPanel({panelX, panelY, menuW, totalHeight},
+              Fade(theme::PANEL_BG, fadeAlpha),
+              Fade(theme::PANEL_BORDER, fadeAlpha));
 
     float itemY = panelY + padding;
     float labelSize = fontSize_ * 0.7f;
 
     for (int i = 0; i < ITEM_COUNT; ++i) {
-        if (i == selectedIndex_) {
-            DrawRectangle(static_cast<int>(panelX + padding),
-                          static_cast<int>(itemY),
-                          static_cast<int>(menuW - padding * 2),
-                          static_cast<int>(itemH), theme::SELECTED_BG);
-        }
-
-        float textX = panelX + (menuW - MeasureTextEx(font_, ItemLabel(i), labelSize, 1).x) / 2.0f;
-        float textY = itemY + (itemH - labelSize) / 2.0f;
-        DrawTextEx(font_, ItemLabel(i), {textX, textY}, labelSize, 1, theme::UI_TEXT);
-
-        if (i < ITEM_COUNT - 1) {
-            DrawRectangle(static_cast<int>(panelX + padding),
-                          static_cast<int>(itemY + itemH - 1),
-                          static_cast<int>(menuW - padding * 2), 1, LIGHTGRAY);
-        }
+        Rectangle itemRect = {panelX + padding, itemY, menuW - padding * 2, itemH};
+        DrawTextItem(itemRect, ItemLabel(i), font_, labelSize, i == selectedIndex_,
+                     Fade(theme::UI_TEXT, fadeAlpha), Fade(theme::UI_TITLE, fadeAlpha));
         itemY += itemH;
     }
+
+    Vector2 mouse = GetMousePosition();
+    bool overPanel = CheckCollisionPointRec(mouse, {panelX, panelY, menuW, totalHeight});
+    SetMouseCursor(overPanel ? MOUSE_CURSOR_POINTING_HAND : MOUSE_CURSOR_DEFAULT);
 }
 
 bool CenterMenu::HandleInput(float /*deltaTime*/) {
+    if (fadingOut_) {
+        if (popPending_) {
+            navStack_.Pop();
+            return true;
+        }
+        return true;
+    }
+
     if (IsKeyPressed(key::ESCAPE)) {
-        navStack_.Pop();
+        fadingOut_ = true;
+        fadeOutStartTime_ = GetTime();
         return true;
     }
 
@@ -103,7 +120,17 @@ bool CenterMenu::HandleInput(float /*deltaTime*/) {
     }
 
     if (IsMouseButtonPressed(MOUSE_LEFT_BUTTON)) {
+        pressStartPos_ = GetMousePosition();
+        hasPendingPress_ = true;
+    }
+
+    if (hasPendingPress_ && IsMouseButtonReleased(MOUSE_LEFT_BUTTON)) {
+        hasPendingPress_ = false;
         Vector2 mousePos = GetMousePosition();
+        float dx = mousePos.x - pressStartPos_.x;
+        float dy = mousePos.y - pressStartPos_.y;
+        if (dx * dx + dy * dy > uiScale_.dp(10) * uiScale_.dp(10)) return true;
+
         float screenW = static_cast<float>(GetScreenWidth());
         float screenH = static_cast<float>(GetScreenHeight());
 
@@ -116,7 +143,8 @@ bool CenterMenu::HandleInput(float /*deltaTime*/) {
         Rectangle panelRect = {panelX, panelY, menuW, totalHeight};
 
         if (!CheckCollisionPointRec(mousePos, panelRect)) {
-            navStack_.Pop();
+            fadingOut_ = true;
+            fadeOutStartTime_ = GetTime();
             return true;
         }
 
@@ -139,7 +167,7 @@ void CenterMenu::HandleAction(int action) {
     switch (action) {
         case 0: // Books
             navStack_.Push(std::make_unique<BookListScreen>(
-                font_, fontSize_, navStack_, eventBus_, uiScale_
+                font_, fontSize_, navStack_, eventBus_, uiScale_, currentChapterRef_
             ));
             return;
         case 1: // Settings

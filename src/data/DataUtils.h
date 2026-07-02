@@ -4,19 +4,19 @@
 #include <string>
 #include <vector>
 #include <sstream>
-#include "core/GlobalId.h"
 #include "ChapterProvider.h"
 
 namespace theword::data {
 
 inline void TokenizeToWords(const std::string& text, int verseId,
                             std::vector<Word>& chapterWords,
-                            std::vector<Word>& segmentWords) {
+                            std::vector<Word>& segmentWords,
+                            int& nextWordId) {
     std::istringstream stream(text);
     std::string word;
     while (stream >> word) {
         Word w;
-        w.id = theword::core::GetNextWordId();
+        w.id = nextWordId++;
         w.verseId = verseId;
         w.text = word;
         chapterWords.push_back(w);

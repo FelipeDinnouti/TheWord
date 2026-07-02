@@ -51,6 +51,7 @@ void DocumentManager::OnScroll(const theword::event::ScrollEvent& e) {
 }
 
 bool DocumentManager::HasPendingLoads() const {
+    if (initialLoadFuture_) return true;
     for (const auto& p : pendingLoads_) {
         if (!p.inserted) return true;
     }
@@ -68,7 +69,7 @@ void DocumentManager::UpdateLoadTime(float ms) {
 }
 
 void DocumentManager::OnResize(const theword::event::ResizeEvent& e) {
-    float newContentWidth = e.width - 60.0f;
+    float newContentWidth = static_cast<float>(e.width);
     layoutEngine.SetMaxWidth(newContentWidth);
     layoutEngine.InvalidateCache();
 
@@ -93,10 +94,16 @@ void DocumentManager::OnSourceSwitch(const theword::event::SourceSwitchEvent& /*
 }
 
 void DocumentManager::LoadInitialChapter(const std::string& chapterId) {
+    // Move any in-flight initial load to graveyard
+    if (initialLoadFuture_) {
+        pendingGraveyard_.push_back(
+            PendingLoad{visibleChapterId_, std::move(*initialLoadFuture_), false, false}
+        );
+        initialLoadFuture_.reset();
+    }
+
     visibleChapterId_ = chapterId;
     chapters.clear();
-    // Move pending loads to graveyard instead of destroying futures
-    // (std::future destructor blocks until async task completes)
     for (auto& p : pendingLoads_) {
         pendingGraveyard_.push_back(std::move(p));
     }
@@ -109,21 +116,57 @@ void DocumentManager::LoadInitialChapter(const std::string& chapterId) {
         return;
     }
 
-    std::optional<ChapterData> result;
+    auto& provider = primaryProvider;
+    auto& mutex = providerMutex_;
+
+    auto future = std::async(std::launch::async,
+        [&provider, &mutex, book, chapter]()
+            -> std::optional<ChapterData>
     {
-        std::lock_guard<std::mutex> lock(providerMutex_);
-        result = primaryProvider.LoadChapter(book, chapter);
+        std::lock_guard<std::mutex> lock(mutex);
+        return provider.LoadChapter(book, chapter);
+    });
+
+    initialLoadFuture_ = std::move(future);
+}
+
+void DocumentManager::LoadInitialChapterSync(const std::string& chapterId) {
+    if (initialLoadFuture_) {
+        pendingGraveyard_.push_back(
+            PendingLoad{visibleChapterId_, std::move(*initialLoadFuture_), false, false}
+        );
+        initialLoadFuture_.reset();
     }
-    if (!result) {
-        Logger::Warning("LoadInitialChapter: provider returned null for " + chapterId);
+
+    visibleChapterId_ = chapterId;
+    chapters.clear();
+    for (auto& p : pendingLoads_) {
+        pendingGraveyard_.push_back(std::move(p));
+    }
+    pendingLoads_.clear();
+
+    std::string book;
+    int chapter;
+    if (!ParseChapterRef(chapterId, book, chapter)) {
+        Logger::Warning("LoadInitialChapterSync: failed to parse ref: " + chapterId);
         return;
     }
 
-    ChapterLayout layout = layoutEngine.LayoutChapter(chapterId, *result);
+    std::optional<ChapterData> data;
+    {
+        std::lock_guard<std::mutex> lock(providerMutex_);
+        data = primaryProvider.LoadChapter(book, chapter);
+    }
+    if (!data) {
+        Logger::Warning("LoadInitialChapterSync: provider returned null for " + chapterId);
+        return;
+    }
+
+    ChapterLayout layout = layoutEngine.LayoutChapter(chapterId, *data);
 
     LoadedChapter lc;
     lc.chapterId = chapterId;
-    lc.data = std::move(*result);
+    lc.data = std::move(*data);
     lc.layout = std::move(layout);
     lc.startY = 0.0f;
     lc.height = lc.layout.totalHeight;
@@ -137,6 +180,35 @@ void DocumentManager::LoadInitialChapter(const std::string& chapterId) {
 }
 
 void DocumentManager::Update(float deltaTime) {
+    // Check if async initial chapter load has completed
+    if (initialLoadFuture_) {
+        if ((*initialLoadFuture_).wait_for(std::chrono::seconds(0)) == std::future_status::ready) {
+            auto data = (*initialLoadFuture_).get();
+            initialLoadFuture_.reset();
+            if (data) {
+                chapters.clear();
+                for (auto& p : pendingLoads_) {
+                    pendingGraveyard_.push_back(std::move(p));
+                }
+                pendingLoads_.clear();
+
+                ChapterLayout layout = layoutEngine.LayoutChapter(visibleChapterId_, *data);
+                LoadedChapter lc;
+                lc.chapterId = visibleChapterId_;
+                lc.data = std::move(*data);
+                lc.layout = std::move(layout);
+                lc.startY = 0.0f;
+                lc.height = layout.totalHeight;
+                chapters.push_back(std::move(lc));
+                scrollY = 0.0f;
+                targetScrollY = 0.0f;
+
+                Logger::Info("Loaded chapter: " + visibleChapterId_);
+                eventBus_.Emit(theword::event::ChapterLoadedEvent{visibleChapterId_});
+            }
+        }
+    }
+
     float diff = targetScrollY - scrollY;
     if (std::abs(diff) > 0.5f) {
         scrollY += diff * (1.0f - std::exp(-SMOOTH_SPEED * deltaTime));
@@ -151,22 +223,29 @@ void DocumentManager::Update(float deltaTime) {
         if (pending.future.wait_for(std::chrono::seconds(0)) != std::future_status::ready)
             continue;
 
-        auto result = pending.future.get();
+        auto data = pending.future.get();
         pending.inserted = true;
-        if (!result) break;
+        if (!data) break;
 
         auto t0 = std::chrono::steady_clock::now();
 
+        ChapterLayout layout = layoutEngine.LayoutChapter(pending.chapterId, *data);
+        LoadedChapter lc;
+        lc.chapterId = pending.chapterId;
+        lc.data = std::move(*data);
+        lc.layout = std::move(layout);
+        lc.height = layout.totalHeight;
+
         if (pending.prepend) {
-            float h = result->height;
-            chapters.insert(chapters.begin(), std::move(*result));
+            float h = lc.height;
+            chapters.insert(chapters.begin(), std::move(lc));
             RecalculateChapterPositions();
             targetScrollY += h;
         } else {
             float lastEnd = chapters.empty() ? 0.0f
                 : chapters.back().startY + chapters.back().height;
-            result->startY = lastEnd;
-            chapters.push_back(std::move(*result));
+            lc.startY = lastEnd;
+            chapters.push_back(std::move(lc));
         }
 
         auto t1 = std::chrono::steady_clock::now();
@@ -207,17 +286,20 @@ void DocumentManager::Update(float deltaTime) {
 void DocumentManager::UpdateVisibleChapter() {
     if (chapters.empty()) return;
     for (const auto& ch : chapters) {
-        if (scrollY >= ch.startY && scrollY < ch.startY + ch.height) {
+        if (scrollY >= ch.startY - 0.5f && scrollY < ch.startY + ch.height - 0.5f) {
             if (visibleChapterId_ != ch.chapterId) {
                 Logger::Info("Visible chapter: " + ch.chapterId);
                 visibleChapterId_ = ch.chapterId;
+                eventBus_.Emit(theword::event::ChapterLoadedEvent{visibleChapterId_});
             }
             return;
         }
     }
-    if (visibleChapterId_ != chapters.back().chapterId) {
-        Logger::Info("Visible chapter: " + chapters.back().chapterId);
-        visibleChapterId_ = chapters.back().chapterId;
+    if (chapters.size() == 1) {
+        if (visibleChapterId_ != chapters.back().chapterId) {
+            Logger::Info("Visible chapter: " + chapters.back().chapterId);
+            visibleChapterId_ = chapters.back().chapterId;
+        }
     }
 }
 
@@ -244,6 +326,12 @@ void DocumentManager::ScrollTo(float y) {
 }
 
 void DocumentManager::InvalidateLayouts() {
+    if (initialLoadFuture_) {
+        pendingGraveyard_.push_back(
+            PendingLoad{visibleChapterId_, std::move(*initialLoadFuture_), false, false}
+        );
+        initialLoadFuture_.reset();
+    }
     for (auto& p : pendingLoads_) {
         pendingGraveyard_.push_back(std::move(p));
     }
@@ -347,31 +435,15 @@ bool DocumentManager::TryLoadAdjacent(bool prepend) {
     int chapter;
     if (!ParseChapterRef(adjacent, book, chapter)) return false;
 
-    int gen = layoutEngine.GetGeneration();
-    auto& engine = layoutEngine;
     auto& provider = primaryProvider;
     auto& mutex = providerMutex_;
 
     auto future = std::async(std::launch::async,
-        [&provider, &mutex, &engine, book, chapter, adjacent, gen]()
-            -> std::optional<LoadedChapter>
+        [&provider, &mutex, book, chapter]()
+            -> std::optional<ChapterData>
     {
-        std::optional<ChapterData> data;
-        {
-            std::lock_guard<std::mutex> lock(mutex);
-            data = provider.LoadChapter(book, chapter);
-        }
-        if (!data) return std::nullopt;
-
-        ChapterLayout layout = engine.LayoutChapter(adjacent, *data, true);
-        if (gen != engine.GetGeneration()) return std::nullopt;
-
-        LoadedChapter lc;
-        lc.chapterId = adjacent;
-        lc.data = std::move(*data);
-        lc.layout = std::move(layout);
-        lc.height = layout.totalHeight;
-        return lc;
+        std::lock_guard<std::mutex> lock(mutex);
+        return provider.LoadChapter(book, chapter);
     });
 
     pendingLoads_.push_back({adjacent, std::move(future), false, prepend});

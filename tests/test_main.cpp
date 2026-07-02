@@ -970,3 +970,5 @@ TEST_CASE("NavigateToHighlightEvent struct carries correct data") {
     CHECK(e.chapterRef == "GEN.3");
     CHECK(e.wordId == 42);
 }
+
+

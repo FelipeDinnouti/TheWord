@@ -171,6 +171,7 @@ void ParseParagraphContent(const std::string& html, ChapterData& data) {
     int currentVerse = 1;
     std::vector<Word> currentWords;
     int segmentVerseStart = 1;
+    int nextWordId = static_cast<int>(data.words.size());
     size_t segmentStartWordIndex = data.words.size();
 
     while (pos < cleaned.size()) {
@@ -179,7 +180,7 @@ void ParseParagraphContent(const std::string& html, ChapterData& data) {
             std::string chunk = (nextTag == std::string::npos)
                 ? cleaned.substr(pos) : cleaned.substr(pos, nextTag - pos);
             std::string decoded = DecodeHtmlEntities(chunk);
-            TokenizeToWords(decoded, currentVerse, data.words, currentWords);
+            TokenizeToWords(decoded, currentVerse, data.words, currentWords, nextWordId);
             pos = (nextTag == std::string::npos) ? cleaned.size() : nextTag;
             continue;
         }
@@ -271,9 +272,10 @@ void ParsePoetryLine(const std::string& innerHtml, int segLevel, ChapterData& da
     }
 
     std::vector<Word> words;
+    int nextWordId = static_cast<int>(data.words.size());
     size_t startWordIndex = data.words.size();
     std::string decoded = DecodeHtmlEntities(text);
-    TokenizeToWords(decoded, verse, data.words, words);
+    TokenizeToWords(decoded, verse, data.words, words, nextWordId);
 
     if (words.empty()) return;
 

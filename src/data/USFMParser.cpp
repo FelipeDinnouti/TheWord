@@ -7,8 +7,8 @@
 
 namespace theword::data {
 
-USFMParser::USFMParser(const std::string& usfmDir, theword::core::IAssetProvider* assets)
-    : usfmDir(usfmDir), assets(assets) {}
+USFMParser::USFMParser(const std::string& usfmDir, std::unique_ptr<theword::core::IAssetProvider> assets)
+    : usfmDir(usfmDir), assets(std::move(assets)) {}
 
 const char* USFMParser::ProviderName() const {
     return "USFMParser";
@@ -155,6 +155,7 @@ namespace {
 struct ParseState {
     ChapterData chapter;
     std::vector<Word> currentWords;
+    int nextWordId = 0;
     int currentVerse = 0;
     size_t segmentStartWordIndex = 0;
     int segmentVerseStart = 0;
@@ -237,7 +238,7 @@ void HandleVerse(const std::string& rest, ParseState& st) {
     st.inDescription = false;
 
     if (!verseText.empty()) {
-        TokenizeToWords(verseText, st.currentVerse, st.chapter.words, st.currentWords);
+        TokenizeToWords(verseText, st.currentVerse, st.chapter.words, st.currentWords, st.nextWordId);
     }
 }
 
@@ -255,7 +256,7 @@ void HandleParagraph(const std::string& rest, ParseState& st) {
         st.segmentVerseStart = st.currentVerse;
         st.currentSegType = SegmentType::VerseText;
         st.currentSegLevel = 0;
-        TokenizeToWords(rest, st.currentVerse, st.chapter.words, st.currentWords);
+        TokenizeToWords(rest, st.currentVerse, st.chapter.words, st.currentWords, st.nextWordId);
     }
 }
 
@@ -308,7 +309,7 @@ void HandlePoetryLine(const std::string& marker, const std::string& rest, ParseS
     st.currentSegLevel = level;
 
     if (!rest.empty()) {
-        TokenizeToWords(rest, st.currentVerse, st.chapter.words, st.currentWords);
+        TokenizeToWords(rest, st.currentVerse, st.chapter.words, st.currentWords, st.nextWordId);
     }
 }
 
@@ -360,7 +361,7 @@ std::vector<ChapterData> USFMParser::ParseBook(const std::string& bookId) const 
 
         if (line[0] != '\\') {
             if (!st.inDescription && st.chapter.chapterNum > 0 && st.currentVerse > 0) {
-                TokenizeToWords(line, st.currentVerse, st.chapter.words, st.currentWords);
+                TokenizeToWords(line, st.currentVerse, st.chapter.words, st.currentWords, st.nextWordId);
             }
             continue;
         }

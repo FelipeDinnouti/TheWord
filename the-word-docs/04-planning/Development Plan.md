@@ -37,7 +37,7 @@ Phase-based development was ideal for the MVP because each phase was a clearly b
 2. Each release picks 3-5 items from the backlog + pending bug fixes
 3. Feature branches are optional — `main`-only workflow is the default
 4. When the release checklist is complete: bump version → build → test → tag → distribute
-5. Pre-release versions (`-beta.1`, `-rc.1`) for testing with friends
+5. Pre-release versions (`-alpha.1`, `-rc.1`) for testing with friends
 
 ### What's Next
 

@@ -4,6 +4,7 @@
 #include "Screen.h"
 #include "core/UIScale.h"
 #include <string>
+#include <memory>
 #include <raylib.h>
 
 namespace theword::event { class EventBus; }
@@ -19,7 +20,9 @@ public:
                       const std::string& bookCode,
                       const std::string& bookName,
                       int chapterCount,
-                      const theword::core::UIScale& uiScale);
+                      const theword::core::UIScale& uiScale,
+                      int currentChapter = 1);
+    ~ChapterGridScreen() override;
     void Draw() override;
     bool HandleInput(float deltaTime) override;
     const char* GetTitle() const override { return bookName_.c_str(); }
@@ -35,6 +38,15 @@ private:
     const theword::core::UIScale& uiScale_;
 
     int selectedChapter_ = 1;
+    bool hasCurrent_ = false;
+    float gridScrollY_ = 0.0f;
+
+    void KeepSelectionVisible(int columns, float rowH, float visibleH);
+
+    Vector2 pressStartPos_{};
+    bool hasPendingPress_ = false;
+
+    std::shared_ptr<bool> aliveGuard_ = std::make_shared<bool>(true);
 };
 
 } // namespace theword::ui

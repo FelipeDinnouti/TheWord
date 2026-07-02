@@ -23,6 +23,14 @@ private:
     float fontSize_;
     NavigationStack& navStack_;
     const theword::core::UIScale& uiScale_;
+    double showTime_;
+    double fadeOutStartTime_ = 0;
+    bool fadingOut_ = false;
+    bool popPending_ = false;
+    static constexpr float FADE_DURATION = 0.1f;
+
+    Vector2 pressStartPos_{};
+    bool hasPendingPress_ = false;
 };
 
 } // namespace theword::ui

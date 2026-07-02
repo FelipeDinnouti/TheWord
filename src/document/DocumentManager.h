@@ -32,7 +32,7 @@ struct LoadedChapter {
 
 struct PendingLoad {
     std::string chapterId;
-    std::future<std::optional<LoadedChapter>> future;
+    std::future<std::optional<theword::data::ChapterData>> future;
     bool inserted = false;
     bool prepend;
 };
@@ -44,6 +44,7 @@ public:
                     theword::data::ChapterProvider& primaryProvider, float contentTop = 60.0f);
 
     void LoadInitialChapter(const std::string& chapterId);
+    void LoadInitialChapterSync(const std::string& chapterId);
 
     void Update(float deltaTime);
 
@@ -90,6 +91,7 @@ private:
 
     std::vector<PendingLoad> pendingLoads_;
     std::vector<PendingLoad> pendingGraveyard_;
+    std::optional<std::future<std::optional<theword::data::ChapterData>>> initialLoadFuture_;
     std::mutex providerMutex_;
 
     void OnScroll(const theword::event::ScrollEvent& e);

@@ -32,9 +32,11 @@ case "$ABI" in
         ;;
 esac
 
-# Read version from CMakeLists.txt (project() line, not cmake_minimum_required)
+# Read version and pre-release suffix from CMakeLists.txt
 VERSION=$(grep -oP 'project\(\w+ VERSION \K[0-9.]+' CMakeLists.txt)
 [ -z "$VERSION" ] && VERSION="0.0.0"
+SUFFIX=$(grep -oP 'set\(THEWORD_VERSION_SUFFIX "\K[^"]*' CMakeLists.txt)
+FULL_VERSION="${VERSION}${SUFFIX}"
 
 ANDROID_NDK="${ANDROID_NDK:-$HOME/Android/Sdk/ndk/25.2.9519653}"
 ANDROID_SDK="${ANDROID_SDK:-$HOME/Android/Sdk}"
@@ -146,8 +148,8 @@ fi
 $BUILD_TOOLS/apksigner sign --ks "$KEYSTORE" \
     --ks-pass pass:android --key-pass pass:android \
     --min-sdk-version 24 \
-    --out "dist/theword-${ABI}-v${VERSION}.apk" /tmp/theword-aligned-$$.apk
+    --out "dist/theword-${ABI}-v${FULL_VERSION}.apk" /tmp/theword-aligned-$$.apk
 
 rm -rf "$APK_DIR" /tmp/theword-*-$$.apk
 
-echo "=== APK ready: dist/theword-${ABI}-v${VERSION}.apk ($(stat -c%s "dist/theword-${ABI}-v${VERSION}.apk") bytes) ==="
+echo "=== APK ready: dist/theword-${ABI}-v${FULL_VERSION}.apk ($(stat -c%s "dist/theword-${ABI}-v${FULL_VERSION}.apk") bytes) ==="

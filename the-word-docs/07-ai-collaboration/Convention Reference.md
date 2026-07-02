@@ -123,7 +123,7 @@ Types: `feat`, `fix`, `docs`, `refactor`, `test`, `chore`
   ```bash
   git tag -am "$(grep -oP 'VERSION \K[0-9.]+' CMakeLists.txt)" "v$(grep -oP 'VERSION \K[0-9.]+' CMakeLists.txt)"
   ```
-- **Pre-release versions**: Use SemVer suffixes (e.g. `1.5.0-beta.1`)
+- **Pre-release versions**: Use SemVer suffixes (e.g. `1.5.0-alpha.1`)
   for test releases — set them in CMakeLists.txt and tag as-is.
 - **Generated header**: `Version.h` is auto-generated from `src/core/Version.h.in` via `configure_file()`. Reconfigure to pick up version changes.
 - **Runtime access**: `#include "Version.h"` → `theword::core::APP_VERSION` (string), `APP_VERSION_MAJOR`/`MINOR`/`PATCH` (int)

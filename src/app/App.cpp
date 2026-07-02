@@ -104,7 +104,7 @@ bool App::Init(const std::string& title) {
 
     headingSize_ = currentFontSize_ * theme::FONT_HEADING * scale_;
     float contentTop = 0.0f;
-    float contentWidth = renderW - config::CONTENT_PADDING * scale_;
+    float contentWidth = static_cast<float>(renderW);
 
     int initBody = (int)(currentFontSize_ * scale_);
     float initBodyF = (float)std::max(1, initBody);
@@ -126,7 +126,7 @@ bool App::Init(const std::string& title) {
     std::string apiKey = EnvLoader::get(config::YVP_APP_KEY);
 
     Logger::Info("Creating USFM parser");
-    usfmParser_ = std::make_unique<USFMParser>(config::USFM_DIR, plat.assets.get());
+    usfmParser_ = std::make_unique<USFMParser>(config::USFM_DIR, std::move(plat.assets));
     offlineProv_ = usfmParser_.get();
 
     if (!apiKey.empty()) {
@@ -183,7 +183,7 @@ bool App::Init(const std::string& title) {
     ));
 
     Logger::Info("Loading initial chapter");
-    docManager_->LoadInitialChapter("GEN.1");
+    docManager_->LoadInitialChapterSync("GEN.1");
     {
         auto* chapterData = docManager_->GetCurrentChapterData();
         highlighter_->SetChapterContext("GEN", 1,
@@ -294,6 +294,9 @@ void App::WireEvents() {
 
     eventBus_->On<theword::event::NavigateEvent>([this](const auto& e) {
         docManager_->LoadInitialChapter(e.chapterRef);
+    });
+
+    eventBus_->On<theword::event::ChapterLoadedEvent>([this](const auto& e) {
         std::string book;
         int chapter;
         if (ParseChapterRef(e.chapterRef, book, chapter)) {

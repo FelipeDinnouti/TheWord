@@ -43,6 +43,10 @@ public:
     const std::string& GetChapterBookId() const { return currentBookId_; }
     int GetChapterNum() const { return currentChapterNum_; }
 
+    bool IsSelecting() const { return selecting; }
+    int GetSelectionStart() const { return selectionStart; }
+    int GetSelectionEnd() const { return selectionEnd; }
+
 private:
     theword::event::EventBus& eventBus_;
     PersistenceInterface& persistence;

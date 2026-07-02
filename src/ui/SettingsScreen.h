@@ -38,6 +38,9 @@ private:
 
     void ChangeFontSize(float delta);
     void SwitchSource(bool online);
+
+    Vector2 pressStartPos_{};
+    bool hasPendingPress_ = false;
 };
 
 } // namespace theword::ui

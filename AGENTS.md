@@ -27,10 +27,11 @@ cmake --build build --parallel
 
 1. **Read** — Find and read the relevant doc before writing code
 2. **Plan** — Check `the-word-docs/04-planning/Release Plan.md` for current release scope; read Doc-First Checklist (`the-word-docs/07-ai-collaboration/Doc-First Checklist.md`)
-3. **Implement** — Follow conventions below, write tests (doctest)
-4. **Verify** — Build and run
-5. **Document** — Update `the-word-docs/` with anything new
-6. **Version** — Bump version in `CMakeLists.txt` and tag (see [Versioning](#versioning) below)
+3. **Write Plan** — Persist the implementation plan to `.opencode/plans/<release>.md` with checklist items; update it throughout development as progress is made
+4. **Implement** — Follow conventions below, write tests (doctest)
+5. **Verify** — Build and run
+6. **Document** — Update `the-word-docs/` with anything new
+7. **Version** — Bump version in `CMakeLists.txt` and tag (see [Versioning](#versioning) below)
 
 ## Coding Conventions
 
@@ -39,6 +40,9 @@ cmake --build build --parallel
 - **Dependencies**: Acyclic: `core → data → text → document → renderer`
 - **No comments** unless explaining non-obvious logic
 - **Commits**: Always use [Conventional Commits](https://www.conventionalcommits.org/) — `feat:`, `fix:`, `refactor:`, `docs:`, `test:`, `chore:`, etc.
+  1. `git add` only intended files (check `git status` first)
+  2. `git commit -m "type: short description (max 72 chars)"`
+  3. Include scope if helpful: `fix(reader): prevent > arrow overflow on mobile`
 
 ## Build Commands
 
@@ -88,7 +92,7 @@ rm -rf build && cmake -B build -DCMAKE_BUILD_TYPE=Release -G "Unix Makefiles"
   cmake -B build -DCMAKE_BUILD_TYPE=Release && cmake --build build --parallel
   git tag -am "$(grep -oP 'VERSION \K[0-9.]+' CMakeLists.txt)" "v$(grep -oP 'VERSION \K[0-9.]+' CMakeLists.txt)"
   ```
-- **Pre-release versions**: Use SemVer suffixes (e.g. `1.5.0-beta.1`)
+- **Pre-release versions**: Use SemVer suffixes (e.g. `1.5.0-alpha.1`)
   for test releases — set them in CMakeLists.txt and tag as-is.
 - Generated `Version.h` is updated automatically on reconfigure (`cmake -B build ...`)
 - Version is displayed in the About overlay and accessible at runtime via `theword::core::APP_VERSION`

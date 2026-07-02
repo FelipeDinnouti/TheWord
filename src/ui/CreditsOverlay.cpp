@@ -1,5 +1,6 @@
 #include "CreditsOverlay.h"
 #include "NavigationStack.h"
+#include "components.h"
 #include "core/Theme.h"
 #include "core/Config.h"
 #include "Version.h"
@@ -11,13 +12,30 @@ using namespace theword::core;
 
 CreditsOverlay::CreditsOverlay(const Font& font, float fontSize, NavigationStack& navStack,
                                const theword::core::UIScale& uiScale)
-    : font_(font), fontSize_(fontSize), navStack_(navStack), uiScale_(uiScale) {}
+    : font_(font), fontSize_(fontSize), navStack_(navStack), uiScale_(uiScale),
+      showTime_(GetTime()) {}
 
 void CreditsOverlay::Draw() {
     float screenW = static_cast<float>(GetScreenWidth());
     float screenH = static_cast<float>(GetScreenHeight());
 
-    DrawRectangle(0, 0, static_cast<int>(screenW), static_cast<int>(screenH), theme::OVERLAY_BG);
+    float now = static_cast<float>(GetTime());
+    float fadeAlpha;
+    if (fadingOut_) {
+        float elapsed = now - static_cast<float>(fadeOutStartTime_);
+        fadeAlpha = std::max(0.0f, 1.0f - elapsed / FADE_DURATION);
+        if (fadeAlpha <= 0.0f) {
+            popPending_ = true;
+            return;
+        }
+    } else {
+        float elapsed = now - static_cast<float>(showTime_);
+        fadeAlpha = std::min(1.0f, elapsed / FADE_DURATION);
+    }
+
+    Color overlayColor = theme::OVERLAY_BG;
+    overlayColor.a = static_cast<unsigned char>(theme::OVERLAY_BG.a * fadeAlpha);
+    DrawRectangle(0, 0, static_cast<int>(screenW), static_cast<int>(screenH), overlayColor);
 
     float panelW = uiScale_.fitScreen(90, 400);
     float padding = uiScale_.dp(16);
@@ -33,38 +51,58 @@ void CreditsOverlay::Draw() {
         + smallSize + padding;
     float panelY = (screenH - contentH) / 2.0f;
 
-    DrawRectangle(static_cast<int>(panelX), static_cast<int>(panelY),
-                  static_cast<int>(panelW), static_cast<int>(contentH), theme::PANEL_BG);
-    DrawRectangleLines(static_cast<int>(panelX), static_cast<int>(panelY),
-                       static_cast<int>(panelW), static_cast<int>(contentH),
-                       theme::PANEL_BORDER);
+    DrawPanel({panelX, panelY, panelW, contentH},
+              Fade(theme::PANEL_BG, fadeAlpha),
+              Fade(theme::PANEL_BORDER, fadeAlpha));
 
     float y = panelY + padding;
 
     std::string title = std::string("TheWord v") + APP_VERSION;
-    DrawTextEx(font_, title.c_str(), {panelX + padding, y}, labelSize, 1, theme::UI_TITLE);
+    DrawTextEx(font_, title.c_str(), {panelX + padding, y}, labelSize, 1,
+               Fade(theme::UI_TITLE, fadeAlpha));
     y += labelSize + uiScale_.dp(12);
 
     DrawTextEx(font_, "Built with Raylib & C++17", {panelX + padding, y},
-               smallSize, 1, theme::UI_TEXT);
+               smallSize, 1, Fade(theme::UI_TEXT, fadeAlpha));
     y += smallSize + uiScale_.dp(8);
 
     DrawTextEx(font_, "Data: USFM (offline) + YouVersion API (online)",
-               {panelX + padding, y}, smallSize, 1, theme::UI_TEXT);
+               {panelX + padding, y}, smallSize, 1, Fade(theme::UI_TEXT, fadeAlpha));
     y += smallSize + uiScale_.dp(8);
 
     DrawTextEx(font_, "Press Escape or tap outside to close",
-               {panelX + padding, y}, smallSize, 1, theme::UI_TEXT);
+               {panelX + padding, y}, smallSize, 1, Fade(theme::UI_TEXT, fadeAlpha));
+
+    SetMouseCursor(MOUSE_CURSOR_DEFAULT);
 }
 
 bool CreditsOverlay::HandleInput(float /*deltaTime*/) {
+    if (fadingOut_) {
+        if (popPending_) {
+            navStack_.Pop();
+            return true;
+        }
+        return true;
+    }
+
     if (IsKeyPressed(key::ESCAPE)) {
-        navStack_.Pop();
+        fadingOut_ = true;
+        fadeOutStartTime_ = GetTime();
         return true;
     }
 
     if (IsMouseButtonPressed(MOUSE_LEFT_BUTTON)) {
+        pressStartPos_ = GetMousePosition();
+        hasPendingPress_ = true;
+    }
+
+    if (hasPendingPress_ && IsMouseButtonReleased(MOUSE_LEFT_BUTTON)) {
+        hasPendingPress_ = false;
         Vector2 mousePos = GetMousePosition();
+        float dx = mousePos.x - pressStartPos_.x;
+        float dy = mousePos.y - pressStartPos_.y;
+        if (dx * dx + dy * dy > uiScale_.dp(10) * uiScale_.dp(10)) return true;
+
         float screenW = static_cast<float>(GetScreenWidth());
         float screenH = static_cast<float>(GetScreenHeight());
         float panelW = uiScale_.fitScreen(90, 400);
@@ -77,11 +115,13 @@ bool CreditsOverlay::HandleInput(float /*deltaTime*/) {
         Rectangle panelRect = {panelX, panelY, panelW, contentH};
 
         if (!CheckCollisionPointRec(mousePos, panelRect)) {
-            navStack_.Pop();
+            fadingOut_ = true;
+            fadeOutStartTime_ = GetTime();
             return true;
         }
         if (mousePos.x >= panelX + panelW - uiScale_.dp(24) && mousePos.y < panelY + uiScale_.dp(24)) {
-            navStack_.Pop();
+            fadingOut_ = true;
+            fadeOutStartTime_ = GetTime();
             return true;
         }
     }

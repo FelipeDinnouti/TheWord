@@ -5,6 +5,7 @@
 #include "core/UIScale.h"
 #include <string>
 #include <vector>
+#include <memory>
 #include <raylib.h>
 
 namespace theword::event { class EventBus; }
@@ -17,7 +18,9 @@ public:
     BookListScreen(const Font& font, float fontSize,
                    NavigationStack& navStack,
                    theword::event::EventBus& eventBus,
-                   const theword::core::UIScale& uiScale);
+                   const theword::core::UIScale& uiScale,
+                   const std::string& currentChapterRef = "");
+    ~BookListScreen() override;
     void Draw() override;
     bool HandleInput(float deltaTime) override;
     const char* GetTitle() const override { return "Books"; }
@@ -30,11 +33,20 @@ private:
     const theword::core::UIScale& uiScale_;
 
     std::string search_;
+    std::string currentChapterRef_;
     int scrollOffset_ = 0;
     int selection_ = 0;
+    bool selectionInitialized_ = false;
 
     std::vector<int> GetFilteredIndices() const;
     int GetVisibleCount(float listHeight) const;
+
+    float scrollAccumulator_ = 0.0f;
+
+    Vector2 pressStartPos_{};
+    bool hasPendingPress_ = false;
+
+    std::shared_ptr<bool> aliveGuard_ = std::make_shared<bool>(true);
 };
 
 } // namespace theword::ui

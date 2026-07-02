@@ -35,12 +35,12 @@ struct Segment {
 
 struct Span {
     std::string text;
-    float x, y;
-    float width, height;
-    int verseId;
-    int startWord;
-    int endWord;
-    SegmentType type;
+    float x = 0.0f, y = 0.0f;
+    float width = 0.0f, height = 0.0f;
+    int verseId = 0;
+    int startWord = 0;
+    int endWord = 0;
+    SegmentType type = SegmentType::VerseText;
 };
 
 struct Line {
