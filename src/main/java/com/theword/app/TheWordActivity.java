@@ -20,7 +20,7 @@ public class TheWordActivity extends NativeActivity {
         if (w == null) return;
         InputMethodManager imm = (InputMethodManager) getSystemService(INPUT_METHOD_SERVICE);
         if (imm != null) {
-            imm.showSoftInput(w.getDecorView(), InputMethodManager.SHOW_IMPLICIT);
+            imm.showSoftInput(w.getDecorView(), InputMethodManager.SHOW_FORCED);
         }
     }
 
