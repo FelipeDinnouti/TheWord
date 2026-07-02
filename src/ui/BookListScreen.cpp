@@ -38,7 +38,7 @@ BookListScreen::BookListScreen(const Font& font, float fontSize,
         [this, alive = aliveGuard_](const theword::event::ScrollEvent& e) {
         if (!*alive) return;
         float itemH = std::max(uiScale_.dp(44), fontSize_ * 0.65f + uiScale_.dp(10));
-        scrollAccumulator_ += -e.delta;
+        scrollAccumulator_ += e.delta;
         int itemDelta = static_cast<int>(scrollAccumulator_ / itemH);
         if (itemDelta == 0) return;
         scrollAccumulator_ -= itemDelta * itemH;

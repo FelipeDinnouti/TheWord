@@ -202,7 +202,12 @@ void InputHandler::HandleTouchScroll() {
         lastTouchDelta = deltaY;
 
         slopAccumulator += deltaY;
-        if (std::abs(slopAccumulator) < TOUCH_SLOP) return;
+        if (std::abs(slopAccumulator) < TOUCH_SLOP) {
+            float dt = GetFrameTime();
+            touchVelocity *= std::exp(-dt / MOMENTUM_TIME_CONSTANT);
+            if (std::abs(touchVelocity) < 50.0f) touchVelocity = 0.0f;
+            return;
+        }
 
         float effectiveDelta = slopAccumulator;
         slopAccumulator = 0.0f;
