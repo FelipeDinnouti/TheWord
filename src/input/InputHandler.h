@@ -58,6 +58,7 @@ private:
     float touchLastY;
     float lastTouchDelta;
     float lastPinchDist;
+    double pauseTime_;
 
     void HandleScroll();
     void HandlePressFSM();

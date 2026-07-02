@@ -25,7 +25,8 @@ InputHandler::InputHandler(theword::event::EventBus& eventBus,
       slopAccumulator(0.0f),
       pressState(PressState::Idle), pressStartTime(0.0),
       pressStartPos{0, 0}, pressStartWord(-1), selectStartWord(-1),
-      touchActive(false), touchLastY(0.0f), lastTouchDelta(0.0f), lastPinchDist(0.0f) {
+      touchActive(false), touchLastY(0.0f), lastTouchDelta(0.0f), lastPinchDist(0.0f),
+      pauseTime_(0.0) {
 
     eventBus_.On<theword::event::DialogEvent>([this](const theword::event::DialogEvent& e) {
         dialogActive_ = (e.action != theword::event::DialogEvent::Action::Hide);
@@ -194,6 +195,7 @@ void InputHandler::HandleTouchScroll() {
             touchVelocity = 0.0f;
             deltaHistoryIdx = 0;
             slopAccumulator = 0.0f;
+            pauseTime_ = 0.0;
             return;
         }
 
@@ -203,9 +205,14 @@ void InputHandler::HandleTouchScroll() {
 
         slopAccumulator += deltaY;
         if (std::abs(slopAccumulator) < TOUCH_SLOP) {
-            touchVelocity = 0.0f;
+            if (pauseTime_ == 0.0) {
+                pauseTime_ = GetTime();
+            } else if (GetTime() - pauseTime_ > 0.15) {
+                touchVelocity = 0.0f;
+            }
             return;
         }
+        pauseTime_ = 0.0;
 
         float effectiveDelta = slopAccumulator;
         slopAccumulator = 0.0f;
