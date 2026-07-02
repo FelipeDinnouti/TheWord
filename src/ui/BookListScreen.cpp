@@ -5,6 +5,7 @@
 #include "core/BibleBooks.h"
 #include "core/Theme.h"
 #include "core/Config.h"
+#include "core/Platform.h"
 #include "event/EventBus.h"
 #include "event/Events.h"
 #include <algorithm>
@@ -34,6 +35,8 @@ BookListScreen::BookListScreen(const Font& font, float fontSize,
         }
     }
 
+    theword::core::platform::ShowKeyboard();
+
     eventBus_.On<theword::event::ScrollEvent>(
         [this, alive = aliveGuard_](const theword::event::ScrollEvent& e) {
         if (!*alive) return;
@@ -54,6 +57,7 @@ BookListScreen::BookListScreen(const Font& font, float fontSize,
 
 BookListScreen::~BookListScreen() {
     *aliveGuard_ = false;
+    theword::core::platform::HideKeyboard();
 }
 
 std::vector<int> BookListScreen::GetFilteredIndices() const {
@@ -216,6 +220,7 @@ bool BookListScreen::HandleInput(float /*deltaTime*/) {
                         currentCh = refCh;
                     }
                 }
+                theword::core::platform::HideKeyboard();
                 navStack_.Push(std::make_unique<ChapterGridScreen>(
                     font_, fontSize_, navStack_, eventBus_,
                     book.code, book.fullName, book.chapterCount, uiScale_, currentCh

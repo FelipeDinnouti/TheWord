@@ -28,6 +28,9 @@ void WriteLog(LogLevel level, const char* message);
 std::string GetClipboard();
 void SetClipboard(const std::string& text);
 
+void ShowKeyboard();
+void HideKeyboard();
+
 } } // namespace theword::core::platform
 
 #endif

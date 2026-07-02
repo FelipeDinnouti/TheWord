@@ -271,6 +271,40 @@ void SetClipboard(const std::string& text) {
 #endif
 }
 
+void ShowKeyboard() {
+#if defined(__ANDROID__)
+    android_app* app = GetAndroidApp();
+    JNIEnv* env = nullptr;
+    app->activity->vm->AttachCurrentThread(&env, nullptr);
+
+    jclass activityClass = env->GetObjectClass(app->activity->clazz);
+    jmethodID method = env->GetMethodID(activityClass, "showKeyboard", "()V");
+    if (method) {
+        env->CallVoidMethod(app->activity->clazz, method);
+    }
+    env->DeleteLocalRef(activityClass);
+
+    app->activity->vm->DetachCurrentThread();
+#endif
+}
+
+void HideKeyboard() {
+#if defined(__ANDROID__)
+    android_app* app = GetAndroidApp();
+    JNIEnv* env = nullptr;
+    app->activity->vm->AttachCurrentThread(&env, nullptr);
+
+    jclass activityClass = env->GetObjectClass(app->activity->clazz);
+    jmethodID method = env->GetMethodID(activityClass, "hideKeyboard", "()V");
+    if (method) {
+        env->CallVoidMethod(app->activity->clazz, method);
+    }
+    env->DeleteLocalRef(activityClass);
+
+    app->activity->vm->DetachCurrentThread();
+#endif
+}
+
 bool HasTouchInput() {
 #if defined(__ANDROID__) || defined(__EMSCRIPTEN__)
     return true;
