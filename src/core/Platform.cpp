@@ -11,6 +11,7 @@
 #include <android/asset_manager.h>
 #include <android/log.h>
 #include <jni.h>
+#include <EGL/egl.h>
 #include "AndroidAssetProvider.h"
 #include "CurlHttpClient.h"
 extern "C" struct android_app* GetAndroidApp(void);
@@ -32,7 +33,9 @@ Info Init(const char* title) {
     info.dpiScale = (density > 0) ? (float)density / 160.0f : 1.0f;
     if (info.dpiScale < 1.0f) info.dpiScale = 1.0f;
     if (info.dpiScale > 4.0f) info.dpiScale = 4.0f;
+    SetConfigFlags(FLAG_VSYNC_HINT);
     InitWindow(0, 0, title);
+    eglSwapInterval(eglGetCurrentDisplay(), 1);
 
     {
         JNIEnv* env = nullptr;
@@ -64,7 +67,7 @@ Info Init(const char* title) {
         app->activity->vm->DetachCurrentThread();
     }
 #else
-    SetConfigFlags(FLAG_WINDOW_HIGHDPI);
+    SetConfigFlags(FLAG_WINDOW_HIGHDPI | FLAG_VSYNC_HINT);
     InitWindow(config::WINDOW_WIDTH, config::WINDOW_HEIGHT, title);
     Vector2 dpi = GetWindowScaleDPI();
     info.dpiScale = std::max(dpi.x, dpi.y);
