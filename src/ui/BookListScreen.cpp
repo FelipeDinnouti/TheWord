@@ -250,6 +250,12 @@ bool BookListScreen::HandleInput(float /*deltaTime*/) {
             return true;
         }
 
+        // Search bar tap — show keyboard
+        if (mousePos.y >= headerH && mousePos.y < headerH + searchH) {
+            theword::core::platform::ShowKeyboard();
+            return true;
+        }
+
         // Book list click
         float listY = headerH + searchH + uiScale_.dp(4);
         if (mousePos.y >= listY) {
