@@ -89,12 +89,12 @@
             "name": "windows-mingw",
             "displayName": "Windows (MinGW cross-compile)",
             "description": "Windows cross-compile from Linux host via MinGW toolchain",
-            "generator": "MinGW Makefiles",
+            "generator": "Unix Makefiles",
             "binaryDir": "${sourceDir}/build-windows",
             "cacheVariables": {
                 "CMAKE_TOOLCHAIN_FILE": {
                     "type": "FILEPATH",
-                    "value": "$env{MINGW_CMAKE_TOOLCHAIN}"
+                    "value": "${sourceDir}/cmake/toolchain-mingw-x86_64.cmake"
                 },
                 "CMAKE_BUILD_TYPE": "Release",
                 "CMAKE_EXPORT_COMPILE_COMMANDS": "ON"

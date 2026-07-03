@@ -11,7 +11,7 @@
 #   2. ninja build — produces libtheword.so
 #   3. javac + d8 — compiles TheWordActivity.java → classes.dex (optional)
 #   4. aapt — creates base APK from AndroidManifest.xml
-#   5. zip — inserts .so, .dex, assets, shaders into APK
+#   5. zip — inserts .so, .dex, assets into APK
 #   6. zipalign — 4-byte aligns for mmap
 #   7. apksigner — signs with debug keystore
 #
@@ -122,9 +122,8 @@ if [ -n "$JAVA_OBJ" ] && [ -f "$JAVA_OBJ/classes.dex" ]; then
     cp "$JAVA_OBJ/classes.dex" "$APK_DIR/"
 fi
 cp -rL assets "$APK_DIR/"
-cp -rL shaders "$APK_DIR/" 2>/dev/null || true
 [ -f .env ] && cp .env "$APK_DIR/assets/"
-(cd "$APK_DIR" && zip -r /tmp/theword-unsigned-$$.apk lib/ classes.dex assets/ shaders/ 2>/dev/null)
+(cd "$APK_DIR" && zip -r /tmp/theword-unsigned-$$.apk lib/ classes.dex assets/ 2>/dev/null)
 
 # ── Step 6: zipalign ─────────────────────────────────────────────────────────
 # 4-byte alignment allows Android to mmap() ZIP entries directly into memory

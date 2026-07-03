@@ -134,7 +134,7 @@ bool App::Init(const std::string& title) {
         apiClient_ = platform::CreateHttpClient();
         if (apiClient_) {
             apiClient_->SetAppKey(apiKey);
-            bibleClient_ = std::make_unique<BibleClient>(*apiClient_, 3034);
+            bibleClient_ = std::make_unique<BibleClient>(*apiClient_, 129);
             compositeProv_ = std::make_unique<CompositeProvider>(*bibleClient_, *usfmParser_);
             onlineProv_ = bibleClient_.get();
             activeProv_ = compositeProv_.get();

@@ -56,7 +56,50 @@ FetchContent_Declare(
 FetchContent_MakeAvailable(doctest)
 
 # ── libcurl (optional, for online Bible API) ──────────────────────────────
-if(NOT EMSCRIPTEN AND NOT ANDROID)
+if(EMSCRIPTEN)
+    # No curl on Emscripten
+elseif(MINGW)
+    # Cross-compile curl from source for Windows (MinGW) with native SSL (Schannel)
+    FetchContent_Declare(
+        curl
+        URL https://curl.se/download/curl-8.4.0.tar.gz
+        DOWNLOAD_EXTRACT_TIMESTAMP TRUE
+    )
+    set(CURL_USE_SCHANNEL ON CACHE BOOL "" FORCE)
+    set(CURL_USE_OPENSSL OFF CACHE BOOL "" FORCE)
+    set(CURL_DISABLE_CRYPTO_AUTH ON CACHE BOOL "" FORCE)
+    set(ENABLE_ARES OFF CACHE BOOL "" FORCE)
+    set(BUILD_CURL_EXE OFF CACHE BOOL "" FORCE)
+    set(BUILD_TESTING OFF CACHE BOOL "" FORCE)
+    set(HTTP_ONLY ON CACHE BOOL "" FORCE)
+    FetchContent_GetProperties(curl)
+    if(NOT curl_POPULATED)
+        FetchContent_Populate(curl)
+    endif()
+    add_subdirectory(${curl_SOURCE_DIR} ${curl_BINARY_DIR} EXCLUDE_FROM_ALL)
+    set(CURL_FOUND TRUE)
+    set(CURL_INCLUDE_DIRS ${curl_SOURCE_DIR}/include)
+elseif(ANDROID)
+    # Build curl from source for Android NDK
+    FetchContent_Declare(
+        curl
+        URL https://curl.se/download/curl-8.4.0.tar.gz
+        DOWNLOAD_EXTRACT_TIMESTAMP TRUE
+    )
+    set(CURL_USE_OPENSSL OFF CACHE BOOL "" FORCE)
+    set(CURL_DISABLE_CRYPTO_AUTH ON CACHE BOOL "" FORCE)
+    set(ENABLE_ARES OFF CACHE BOOL "" FORCE)
+    set(BUILD_CURL_EXE OFF CACHE BOOL "" FORCE)
+    set(BUILD_TESTING OFF CACHE BOOL "" FORCE)
+    set(HTTP_ONLY ON CACHE BOOL "" FORCE)
+    FetchContent_GetProperties(curl)
+    if(NOT curl_POPULATED)
+        FetchContent_Populate(curl)
+    endif()
+    add_subdirectory(${curl_SOURCE_DIR} ${curl_BINARY_DIR} EXCLUDE_FROM_ALL)
+    set(CURL_FOUND TRUE)
+    set(CURL_INCLUDE_DIRS ${curl_SOURCE_DIR}/include)
+else()
     find_package(CURL QUIET)
 endif()
 
@@ -247,7 +290,7 @@ target_include_directories(theword PRIVATE src)
 
 target_compile_definitions(theword PRIVATE THEWORD_VERSION="1.0.0")
 
-if(NOT EMSCRIPTEN AND NOT ANDROID)
+if(NOT EMSCRIPTEN AND NOT ANDROID AND NOT WIN32)
     add_executable(theword_test tests/test_main.cpp $<TARGET_OBJECTS:theword_objects> $<TARGET_OBJECTS:sqlite3_obj>)
     target_include_directories(theword_test PRIVATE src ${doctest_SOURCE_DIR})
     target_include_directories(theword_test PRIVATE "${CMAKE_CURRENT_BINARY_DIR}/generated")
@@ -258,10 +301,7 @@ add_custom_command(TARGET theword POST_BUILD
     COMMAND ${CMAKE_COMMAND} -E copy_directory
         ${CMAKE_SOURCE_DIR}/assets
         $<TARGET_FILE_DIR:theword>/assets
-    COMMAND ${CMAKE_COMMAND} -E copy_directory
-        ${CMAKE_SOURCE_DIR}/shaders
-        $<TARGET_FILE_DIR:theword>/shaders
-    COMMENT "Copying assets and shaders to build directory"
+    COMMENT "Copying assets to build directory"
 )
 
 # ── Linking ───────────────────────────────────────────────────────────────
@@ -280,26 +320,6 @@ if(EMSCRIPTEN)
     set_target_properties(theword PROPERTIES SUFFIX ".html")
     target_link_libraries(theword PRIVATE raylib)
 elseif(ANDROID)
-    # Bundle libcurl for Android NDK
-    FetchContent_Declare(
-        curl
-        URL https://curl.se/download/curl-8.4.0.tar.gz
-        DOWNLOAD_EXTRACT_TIMESTAMP TRUE
-    )
-    set(CURL_USE_OPENSSL OFF CACHE BOOL "" FORCE)
-    set(CURL_DISABLE_CRYPTO_AUTH ON CACHE BOOL "" FORCE)
-    set(ENABLE_ARES OFF CACHE BOOL "" FORCE)
-    set(BUILD_CURL_EXE OFF CACHE BOOL "" FORCE)
-    set(BUILD_TESTING OFF CACHE BOOL "" FORCE)
-    set(HTTP_ONLY ON CACHE BOOL "" FORCE)
-    FetchContent_GetProperties(curl)
-    if(NOT curl_POPULATED)
-        FetchContent_Populate(curl)
-    endif()
-
-    # Build libcurl as a static library for Android NDK
-    add_subdirectory(${curl_SOURCE_DIR} ${curl_BINARY_DIR} EXCLUDE_FROM_ALL)
-
     target_compile_definitions(theword PRIVATE CURL_STATICLIB)
     target_include_directories(theword PRIVATE
         ${curl_SOURCE_DIR}/include
@@ -338,15 +358,14 @@ elseif(WIN32)
         gdi32
         winmm
     )
-    target_link_libraries(theword_test PRIVATE
-        raylib
-        opengl32
-        gdi32
-        winmm
-    )
-    if(CURL_FOUND)
+    if(MINGW AND CURL_FOUND)
+        target_compile_definitions(theword PRIVATE CURL_STATICLIB)
+        target_compile_definitions(theword_objects PRIVATE CURL_STATICLIB)
+        target_include_directories(theword PRIVATE ${curl_SOURCE_DIR}/include)
+        target_include_directories(theword_objects PRIVATE ${curl_SOURCE_DIR}/include)
+        target_link_libraries(theword PRIVATE libcurl_static)
+    elseif(CURL_FOUND)
         target_link_libraries(theword PRIVATE CURL::libcurl)
-        target_link_libraries(theword_test PRIVATE CURL::libcurl)
     endif()
 else()
     target_link_libraries(theword PRIVATE

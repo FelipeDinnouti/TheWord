@@ -93,6 +93,7 @@ Just tag the current working state. No code changes.
 - `UIManager::contextMenu`: change from raw `new`/`delete` to `std::unique_ptr<ContextMenu>` (code quality)
 - Bookmark System (expansion of highlight system, details TBD)
 - Footnote display in reader
+- **Bible Version Switcher** — dropdown/selector in SettingsScreen to choose from enabled YouVersion IDs; persist choice; re-init `BibleClient` + `CompositeProvider` on change
 - Search across books/chapters
 - Dark / sepia theme
 - Night mode
