@@ -3,6 +3,7 @@
 #include "components.h"
 #include "core/Theme.h"
 #include "core/Config.h"
+#include "core/Locale.h"
 #include "Version.h"
 #include <string>
 
@@ -62,15 +63,15 @@ void CreditsOverlay::Draw() {
                Fade(theme::UI_TITLE, fadeAlpha));
     y += labelSize + uiScale_.dp(12);
 
-    DrawTextEx(font_, "Built with Raylib & C++17", {panelX + padding, y},
+    DrawTextEx(font_, Locale::Get("Built with Raylib & C++17"), {panelX + padding, y},
                smallSize, 1, Fade(theme::UI_TEXT, fadeAlpha));
     y += smallSize + uiScale_.dp(8);
 
-    DrawTextEx(font_, "Data: USFM (offline) + YouVersion API (online)",
+    DrawTextEx(font_, Locale::Get("Data: USFM (offline) + YouVersion API (online)"),
                {panelX + padding, y}, smallSize, 1, Fade(theme::UI_TEXT, fadeAlpha));
     y += smallSize + uiScale_.dp(8);
 
-    DrawTextEx(font_, "Press Escape or tap outside to close",
+    DrawTextEx(font_, Locale::Get("Press Escape or tap outside to close"),
                {panelX + padding, y}, smallSize, 1, Fade(theme::UI_TEXT, fadeAlpha));
 
     SetMouseCursor(MOUSE_CURSOR_DEFAULT);

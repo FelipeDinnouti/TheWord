@@ -276,6 +276,8 @@ void SetClipboard(const std::string& text) {
 
 void ShowKeyboard() {
 #if defined(__ANDROID__)
+    // NOTE: SetTextInputEnabled() does not exist in raylib 5.0 — removed.
+    // The JNI keyboard show/hide below is sufficient.
     android_app* app = GetAndroidApp();
     JNIEnv* env = nullptr;
     app->activity->vm->AttachCurrentThread(&env, nullptr);
@@ -293,6 +295,7 @@ void ShowKeyboard() {
 
 void HideKeyboard() {
 #if defined(__ANDROID__)
+    // NOTE: SetTextInputEnabled() does not exist in raylib 5.0 — removed.
     android_app* app = GetAndroidApp();
     JNIEnv* env = nullptr;
     app->activity->vm->AttachCurrentThread(&env, nullptr);

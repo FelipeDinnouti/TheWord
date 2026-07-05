@@ -19,11 +19,12 @@ Tracked in `Release Plan.md`.
 | v1.5.0 | First stable release | After alpha feedback |
 ## MVP Complete (Phases 1-13, Historical)
 
-| Phase | Status | Description |
-|-------|--------|-------------|
-| 1-10 | ✅ Complete | MVP: build, text engine, data sources, highlights, persistence, UI, mobile |
-| 11. Navigation System | ✅ Complete | Bottom bar, center menu, book list, chapter grid, settings screen, navigation stack |
-| 12. Verse Number Identifiers | ✅ Complete | Layout-time verse spans, superscript rendering |
-| 13. Highlight Browser | ✅ Complete | Full screen with color filter, match list, navigation |
+| Status     | Phase                        | Description                                                                         |
+| ---------- | ---------------------------- | ----------------------------------------------------------------------------------- |
+| ✅ Complete | 1-10                         | MVP: build, text engine, data sources, highlights, persistence, UI, mobile          |
+| ✅ Complete | 11. Navigation System        | Bottom bar, center menu, book list, chapter grid, settings screen, navigation stack |
+| ✅ Complete | 12. Verse Number Identifiers | Layout-time verse spans, superscript rendering                                      |
+| ✅ Complete | 13. Highlight Browser        | Full screen with color filter, match list, navigation                               |
+|            |                              |                                                                                     |
 
 Phase details are preserved in the git history and `Development Plan.md` for reference.

@@ -3,6 +3,7 @@
 
 #include "Screen.h"
 #include "core/UIScale.h"
+#include "core/Locale.h"
 #include <vector>
 #include <string>
 #include <memory>
@@ -24,7 +25,7 @@ public:
     ~HighlightBrowserScreen();
     void Draw() override;
     bool HandleInput(float deltaTime) override;
-    const char* GetTitle() const override { return "Highlights"; }
+    const char* GetTitle() const override { return theword::core::Locale::Get("Highlights"); }
 
     struct ItemLayout {
         float height;

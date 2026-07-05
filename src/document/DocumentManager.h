@@ -75,6 +75,8 @@ private:
     std::vector<LoadedChapter> chapters;
 
     std::string visibleChapterId_;
+    std::string navigationChapterId_;
+    bool autoScrollActive_ = false;
     float scrollY;
     float targetScrollY;
     float viewportHeight;

@@ -34,6 +34,8 @@ void DocumentManager::OnScroll(const theword::event::ScrollEvent& e) {
     float maxScroll = GetTotalHeight() - viewportHeight;
     if (maxScroll < 0.0f) maxScroll = 0.0f;
 
+    autoScrollActive_ = false;
+
     if (e.direct) {
         scrollY += e.delta;
         if (scrollY < 0.0f) scrollY = 0.0f;
@@ -103,6 +105,8 @@ void DocumentManager::LoadInitialChapter(const std::string& chapterId) {
     }
 
     visibleChapterId_ = chapterId;
+    navigationChapterId_ = chapterId;
+    autoScrollActive_ = false;
     chapters.clear();
     for (auto& p : pendingLoads_) {
         pendingGraveyard_.push_back(std::move(p));
@@ -139,6 +143,8 @@ void DocumentManager::LoadInitialChapterSync(const std::string& chapterId) {
     }
 
     visibleChapterId_ = chapterId;
+    navigationChapterId_ = chapterId;
+    autoScrollActive_ = false;
     chapters.clear();
     for (auto& p : pendingLoads_) {
         pendingGraveyard_.push_back(std::move(p));
@@ -214,6 +220,7 @@ void DocumentManager::Update(float deltaTime) {
         scrollY += diff * (1.0f - std::exp(-SMOOTH_SPEED * deltaTime));
     } else {
         scrollY = targetScrollY;
+        autoScrollActive_ = false;
     }
 
     // Process one completed pending load per frame
@@ -241,6 +248,7 @@ void DocumentManager::Update(float deltaTime) {
             chapters.insert(chapters.begin(), std::move(lc));
             RecalculateChapterPositions();
             targetScrollY += h;
+            autoScrollActive_ = true;
         } else {
             float lastEnd = chapters.empty() ? 0.0f
                 : chapters.back().startY + chapters.back().height;
@@ -287,6 +295,13 @@ void DocumentManager::UpdateVisibleChapter() {
     if (chapters.empty()) return;
     for (const auto& ch : chapters) {
         if (scrollY >= ch.startY - 0.5f && scrollY < ch.startY + ch.height - 0.5f) {
+            // During auto-scroll from adjacent prepend, don't flip visibleChapterId_
+            // away from the navigation anchor — that causes the "stuck chapter" bug
+            // where repeated next/prev keys keep loading the same chapter.
+            if (autoScrollActive_ && ch.chapterId != navigationChapterId_
+                && visibleChapterId_ == navigationChapterId_) {
+                return;
+            }
             if (visibleChapterId_ != ch.chapterId) {
                 Logger::Info("Visible chapter: " + ch.chapterId);
                 visibleChapterId_ = ch.chapterId;

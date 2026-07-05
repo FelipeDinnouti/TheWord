@@ -1,5 +1,6 @@
 #include "components.h"
 #include "core/Theme.h"
+#include "core/Locale.h"
 #include <cctype>
 #include <algorithm>
 #include <cmath>
@@ -23,7 +24,8 @@ void DrawHeaderBar(const Font& font, float fontSize, const char* title,
     DrawRectangle(0, static_cast<int>(barHeight) - 1, screenWidth, 1, LIGHTGRAY);
 
     if (hasBack) {
-        DrawTextEx(font, "\xE2\x86\xA9 Back", {uiScale.dp(8), (barHeight - labelSize) / 2.0f},
+        std::string backLabel = std::string("\xE2\x86\xA9 ") + Locale::Get("Back");
+        DrawTextEx(font, backLabel.c_str(), {uiScale.dp(8), (barHeight - labelSize) / 2.0f},
                    labelSize, 1, theme::UI_TEXT);
     }
 

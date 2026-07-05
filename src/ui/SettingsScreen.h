@@ -3,6 +3,7 @@
 
 #include "Screen.h"
 #include "core/UIScale.h"
+#include "core/Locale.h"
 #include <raylib.h>
 
 namespace theword::event { class EventBus; }
@@ -23,7 +24,7 @@ public:
                    float& currentFontSize, bool& versionOnline);
     void Draw() override;
     bool HandleInput(float deltaTime) override;
-    const char* GetTitle() const override { return "Settings"; }
+    const char* GetTitle() const override { return theword::core::Locale::Get("Settings"); }
 
 private:
     const Font& font_;

@@ -2,11 +2,12 @@
 #include "event/EventBus.h"
 #include "event/Events.h"
 #include "core/Logger.h"
+#include "core/Locale.h"
 #include <algorithm>
 
 namespace theword::highlight {
 namespace {
-const HighlightType DEFAULT_HIGHLIGHT_TYPE { 1, "Yellow", {255, 255, 0, 100} };
+const HighlightType DEFAULT_HIGHLIGHT_TYPE { 1, "Amarelo", {255, 255, 0, 100} };
 Color ToColor(const SimpleColor& c) { return {c.r, c.g, c.b, c.a}; }
 } // namespace
 

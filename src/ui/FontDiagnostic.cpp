@@ -2,6 +2,7 @@
 #include "NavigationStack.h"
 #include "core/Theme.h"
 #include "core/Config.h"
+#include "core/Locale.h"
 #include <cstdio>
 #include <cstring>
 
@@ -91,26 +92,26 @@ void FontDiagnostic::Draw() {
     Font smallMut = smallFont_;
 
     // ─── POINT samples ───
-    DrawTextAt(bodyMut, "--- POINT ---", 10.0f, y + scrollY_, bodySz * 0.5f, DARKGRAY);
+    DrawTextAt(bodyMut, Locale::Get("--- POINT ---"), 10.0f, y + scrollY_, bodySz * 0.5f, DARKGRAY);
     y += bodySz * 0.5f + 12.0f;
     SetFilter(bodyMut, TEXTURE_FILTER_POINT);
     SetFilter(headingMut, TEXTURE_FILTER_POINT);
     SetFilter(largeMut, TEXTURE_FILTER_POINT);
     SetFilter(smallMut, TEXTURE_FILTER_POINT);
 
-    DrawSample(y, "body",
+    DrawSample(y, Locale::Get("body"),
                bodyMut, bodySz,
                "The quick brown fox jumps over the lazy dog.", docColor, TEXTURE_FILTER_POINT);
 
-    DrawSample(y, "heading",
+    DrawSample(y, Locale::Get("heading"),
                headingMut, headingSz,
                "The Quick Brown Fox Jumps", docColor, TEXTURE_FILTER_POINT);
 
-    DrawSample(y, "large",
+    DrawSample(y, Locale::Get("large"),
                largeMut, largeSz,
                "The Gospel According to John", docColor, TEXTURE_FILTER_POINT);
 
-    DrawSample(y, "small",
+    DrawSample(y, Locale::Get("small"),
                smallMut, smallSz,
                "1 2 3 4 5 6 7 8 9 10 11 12 13 14 15", docColor, TEXTURE_FILTER_POINT);
 
@@ -122,32 +123,32 @@ void FontDiagnostic::Draw() {
     SetFilter(largeMut, TEXTURE_FILTER_BILINEAR);
     SetFilter(smallMut, TEXTURE_FILTER_BILINEAR);
 
-    DrawSample(y, "body",
+    DrawSample(y, Locale::Get("body"),
                bodyMut, bodySz,
                "The quick brown fox jumps over the lazy dog.", docColor, TEXTURE_FILTER_BILINEAR);
 
-    DrawSample(y, "heading",
+    DrawSample(y, Locale::Get("heading"),
                headingMut, headingSz,
                "The Quick Brown Fox Jumps", docColor, TEXTURE_FILTER_BILINEAR);
 
-    DrawSample(y, "large",
+    DrawSample(y, Locale::Get("large"),
                largeMut, largeSz,
                "The Gospel According to John", docColor, TEXTURE_FILTER_BILINEAR);
 
-    DrawSample(y, "small",
+    DrawSample(y, Locale::Get("small"),
                smallMut, smallSz,
                "1 2 3 4 5 6 7 8 9 10 11 12 13 14 15", docColor, TEXTURE_FILTER_BILINEAR);
 
     // ─── Bold comparison (bold font, POINT) ───
-    DrawTextAt(bodyMut, "--- BOLD (POINT) ---", 10.0f, y + scrollY_, bodySz * 0.5f, DARKGRAY);
+    DrawTextAt(bodyMut, Locale::Get("--- BOLD (POINT) ---"), 10.0f, y + scrollY_, bodySz * 0.5f, DARKGRAY);
     y += bodySz * 0.5f + 12.0f;
     Font boldMut = boldFont_;
     SetFilter(boldMut, TEXTURE_FILTER_POINT);
-    DrawSample(y, "body bold",
+    DrawSample(y, Locale::Get("body bold"),
                boldMut, boldSz,
                "The quick brown fox jumps over the lazy dog.", docColor, TEXTURE_FILTER_POINT);
 
-    DrawSample(y, "body bold",
+    DrawSample(y, Locale::Get("body bold"),
                boldMut, boldSz,
                "The Quick Brown Fox Jumps In Bold", docColor, TEXTURE_FILTER_POINT);
 
@@ -160,17 +161,14 @@ void FontDiagnostic::Draw() {
     EndScissorMode();
 
     // ─── Non-scrolling header & footer ───
-    char header[128];
-    std::snprintf(header, sizeof(header),
-                  "Font Diagnostic  |  dpiScale=%.2f  window=%dx%d  baseFontSize=%.0f  [SCROLL]",
-                  dpiScale_, GetScreenWidth(), GetScreenHeight(), config::FONT_SIZE);
-    DrawTextAt(GetFontDefault(), header, 10.0f, 8.0f, 14.0f, DARKGRAY);
+    DrawTextAt(GetFontDefault(), Locale::Get("Font Diagnostic"), 10.0f, 8.0f, 14.0f, DARKGRAY);
 
     char footer[128];
     std::snprintf(footer, sizeof(footer),
-                  "Body atlas=%dpx  Heading=%dpx  Large=%dpx  Small=%dpx  |  ESC to close",
+                  "Body atlas=%dpx  Heading=%dpx  Large=%dpx  Small=%dpx  |  %s",
                   bodyFont_.baseSize, headingFont_.baseSize,
-                  largeFont_.baseSize, smallFont_.baseSize);
+                  largeFont_.baseSize, smallFont_.baseSize,
+                  Locale::Get("ESC to close"));
     DrawTextAt(GetFontDefault(), footer, 10.0f, screenH - 20.0f, 12.0f, GRAY);
 }
 

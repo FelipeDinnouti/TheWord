@@ -81,6 +81,75 @@ constexpr std::array<BookInfo, 66> BOOKS = {{
     {"REV", "Revelation", 22}
 }};
 
+constexpr const char* BOOK_NAMES_PT[] = {
+    "G\u00eanesis",
+    "\u00d4xodo",
+    "Lev\u00edtico",
+    "N\u00fameros",
+    "Deuteron\u00f4mio",
+    "Josu\u00e9",
+    "Ju\u00edzes",
+    "Rute",
+    "1 Samuel",
+    "2 Samuel",
+    "1 Reis",
+    "2 Reis",
+    "1 Cr\u00f4nicas",
+    "2 Cr\u00f4nicas",
+    "Esdras",
+    "Neemias",
+    "Ester",
+    "J\u00f3",
+    "Salmos",
+    "Prov\u00e9rbios",
+    "Eclesiastes",
+    "Cantares de Salom\u00e3o",
+    "Isa\u00edas",
+    "Jeremias",
+    "Lamenta\u00e7\u00f5es",
+    "Ezequiel",
+    "Daniel",
+    "Oseias",
+    "Joel",
+    "Am\u00f3s",
+    "Obadias",
+    "Jonas",
+    "Miqueias",
+    "Naum",
+    "Habacuque",
+    "Sofonias",
+    "Ageu",
+    "Zacarias",
+    "Malaquias",
+    "Mateus",
+    "Marcos",
+    "Lucas",
+    "Jo\u00e3o",
+    "Atos",
+    "Romanos",
+    "1 Cor\u00edntios",
+    "2 Cor\u00edntios",
+    "G\u00e1latas",
+    "Ef\u00e9sios",
+    "Filipenses",
+    "Colossenses",
+    "1 Tessalonicenses",
+    "2 Tessalonicenses",
+    "1 Tim\u00f3teo",
+    "2 Tim\u00f3teo",
+    "Tito",
+    "Filemom",
+    "Hebreus",
+    "Tiago",
+    "1 Pedro",
+    "2 Pedro",
+    "1 Jo\u00e3o",
+    "2 Jo\u00e3o",
+    "3 Jo\u00e3o",
+    "Judas",
+    "Apocalipse"
+};
+
 inline int FindBookIndex(const std::string& code) {
     for (size_t i = 0; i < BOOKS.size(); ++i) {
         if (code == BOOKS[i].code) return static_cast<int>(i);
@@ -127,7 +196,7 @@ inline std::string ChapterIdToTitle(const std::string& id) {
     if (!ParseChapterRef(id, book, chapter)) return id;
     int idx = FindBookIndex(book);
     if (idx < 0) return id;
-    return std::string(BOOKS[idx].fullName) + " " + std::to_string(chapter);
+    return std::string(BOOK_NAMES_PT[idx]) + " " + std::to_string(chapter);
 }
 
 } // namespace theword::core

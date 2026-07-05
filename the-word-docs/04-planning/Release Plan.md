@@ -1,6 +1,6 @@
 # Release Plan
 
-> Status: APKs built — ready for testing | Last Updated: 2026-07-02 (version bump to 1.5.0-alpha.1)
+> Status: APKs built — ready for testing | Last Updated: 2026-07-05 (Android text input fix)
 
 ## Last Release: v1.4.2
 
@@ -31,6 +31,7 @@ Just tag the current working state. No code changes.
 - [ ] Refactor all screens to use component primitives instead of raw `DrawRectangle()`
 
 ### Performance: Non-Blocking Chapter Navigation
+- [x] **Android text input (GetCharPressed)** — patched raylib 5.0's `rcore_android.c` to fix two issues: (1) gamepad/keyboard source flag collision that swallowed keyboard events on some devices, and (2) missing `charPressedQueue` population via JNI `KeyEvent.getUnicodeChar()`. Search bar and dialogs now accept text input on Android. See `cmake/patches/raylib-5.0-android-char-input.patch` for details.
 - [x] **Async chapter loading** — `LoadInitialChapter` now runs on a background thread via `std::async`; the screen switches to the reader immediately while the chapter loads in the background
 - [x] **ChapterLoadedEvent** — new event decouples DocumentManager from Highlighter; context is set when the chapter finishes loading, not inline in the navigation event handler
 - [x] **Graveyard pattern** — cancelled in-flight futures are moved to a graveyard and drained non-blockingly to prevent frame drops
@@ -78,8 +79,9 @@ Just tag the current working state. No code changes.
 ## Backlog (Future Releases)
 
 ### Phase 10 Remaining Items
-- [ ] Java activity stub (`TheWordActivity.java`) for IME/splash
-- [ ] Soft keyboard integration for go-to dialog
+- [x] Java activity stub (`TheWordActivity.java`) for IME/splash — done
+- [x] Soft keyboard integration for go-to dialog — done (raylib patch, basic char input via `getUnicodeChar()`)
+- [ ] Complex IME composition (CJK, emoji) — would require hidden EditText + TextWatcher (future)
 - [ ] Immersive mode (hide nav bar)
 - [ ] Lifecycle save/restore (scroll position on pause/resume)
 - [ ] WASM persistence via IDBFS
@@ -93,6 +95,7 @@ Just tag the current working state. No code changes.
 - `UIManager::contextMenu`: change from raw `new`/`delete` to `std::unique_ptr<ContextMenu>` (code quality)
 - Bookmark System (expansion of highlight system, details TBD)
 - Footnote display in reader
+- **Copy Verse** — long-press or right-click on a verse to copy its full text to clipboard (full verse, not section)
 - **Bible Version Switcher** — dropdown/selector in SettingsScreen to choose from enabled YouVersion IDs; persist choice; re-init `BibleClient` + `CompositeProvider` on change
 - Search across books/chapters
 - Dark / sepia theme

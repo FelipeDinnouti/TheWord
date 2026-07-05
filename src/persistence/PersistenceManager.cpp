@@ -1,5 +1,6 @@
 #include "PersistenceManager.h"
 #include "core/Logger.h"
+#include "core/Locale.h"
 #include <sqlite3.h>
 #include <sys/stat.h>
 #ifdef _WIN32
@@ -83,11 +84,11 @@ void PersistenceManager::InitSchema() {
         err = nullptr;
         if (sqlite3_exec(db,
             "INSERT INTO highlight_types (id, name, color_r, color_g, color_b) VALUES "
-            "(1, 'Yellow', 255, 235, 59),"
-            "(2, 'Pink', 244, 143, 177),"
-            "(3, 'Green', 165, 214, 167),"
-            "(4, 'Blue', 144, 202, 249),"
-            "(5, 'Orange', 255, 204, 128)",
+            "(1, 'Amarelo', 255, 235, 59),"
+            "(2, 'Rosa', 244, 143, 177),"
+            "(3, 'Verde', 165, 214, 167),"
+            "(4, 'Azul', 144, 202, 249),"
+            "(5, 'Laranja', 255, 204, 128)",
             nullptr, nullptr, &err) != SQLITE_OK) {
             Logger::Error("PersistenceManager: Failed to seed types: "
                           + std::string(err));

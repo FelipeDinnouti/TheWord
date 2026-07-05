@@ -1,0 +1,112 @@
+--- a/src/platforms/rcore_android.c	2026-07-05 18:51:50.002622919 -0300
++++ b/src/platforms/rcore_android.c	2026-07-05 18:52:18.646728190 -0300
+@@ -994,11 +994,17 @@
+     else if (type == AINPUT_EVENT_TYPE_KEY)
+     {
+         int32_t keycode = AKeyEvent_getKeyCode(event);
+-        //int32_t AKeyEvent_getMetaState(event);
++        int32_t metaState = AKeyEvent_getMetaState(event);
+ 
+         // Handle gamepad button presses and releases
+-        if (((source & AINPUT_SOURCE_JOYSTICK) == AINPUT_SOURCE_JOYSTICK) ||
+-            ((source & AINPUT_SOURCE_GAMEPAD) == AINPUT_SOURCE_GAMEPAD))
++        // NOTE: Skip gamepad handling if keyboard flag also set, because some
++        // devices report both AINPUT_SOURCE_KEYBOARD and AINPUT_SOURCE_GAMEPAD
++        // flags (they share the AINPUT_SOURCE_CLASS_BUTTON bit). Without this
++        // guard, keyboard events are swallowed by the gamepad handler.
++        // See raylib issue #5387 / PR #5441.
++        if (((source & AINPUT_SOURCE_JOYSTICK) == AINPUT_SOURCE_JOYSTICK ||
++             (source & AINPUT_SOURCE_GAMEPAD) == AINPUT_SOURCE_GAMEPAD) &&
++            !(source & AINPUT_SOURCE_KEYBOARD))
+         {
+             // For now we'll assume a single gamepad which we "detect" on its input event
+             CORE.Input.Gamepad.ready[0] = true;
+@@ -1024,8 +1030,87 @@
+ 
+             CORE.Input.Keyboard.keyPressedQueue[CORE.Input.Keyboard.keyPressedQueueCount] = keycode;
+             CORE.Input.Keyboard.keyPressedQueueCount++;
++
++            // Backspace sentinel: soft keyboards send DOWN/UP same-frame, so
++            // IsKeyPressed(KEY_BACKSPACE) never fires for AKEYCODE_DEL. Push '\b'
++            // to charPressedQueue so GetCharPressed() returns it.
++            if (keycode == AKEYCODE_DEL && CORE.Input.Keyboard.charPressedQueueCount < MAX_CHAR_PRESSED_QUEUE)
++            {
++                CORE.Input.Keyboard.charPressedQueue[CORE.Input.Keyboard.charPressedQueueCount] = '\b';
++                CORE.Input.Keyboard.charPressedQueueCount++;
++            }
++
++            // --- Android Text Input (GetCharPressed support) ----------
++            // On desktop (GLFW), raylib registers a CharCallback that populates
++            // charPressedQueue with UTF-32 codepoints. On Android, the NDK's
++            // AInputEvent system only delivers raw keycodes -- it never populates
++            // charPressedQueue. This means GetCharPressed() returns 0 on Android,
++            // breaking text input (search bars, dialogs, etc.).
++            //
++            // The fix: use JNI to construct a Java KeyEvent from the native event
++            // and call KeyEvent.getUnicodeChar(int metaState), which returns the
++            // actual Unicode codepoint considering the active keyboard layout and
++            // modifier keys. This is the standard approach used by SDL2, Godot,
++            // and other NDK-based engines.
++            //
++            // Always active (same as desktop GLFW CharCallback -- no gating
++            // by a text input flag in raylib 5.0). Unicode chars for non-text
++            // keys (function keys, arrows, etc.) return 0 and are skipped.
++            //
++            // Limitations:
++            //   - Complex IME composition (CJK, emoji sequences) may use
++            //     ACTION_MULTIPLE with AKEYCODE_UNKNOWN, which delivers text via
++            //     getCharacters() (deprecated, unreliable). For full IME support,
++            //     a hidden EditText + TextWatcher on the Java side is required.
++            //   - Requires JNI thread attachment. The main looper thread is used,
++            //     so AttachCurrentThread is safe (no-op if already attached).
++            if (CORE.Input.Keyboard.charPressedQueueCount < MAX_CHAR_PRESSED_QUEUE)
++            {
++                JavaVM *vm = platform.app->activity->vm;
++                JNIEnv *env = NULL;
++                (*vm)->AttachCurrentThread(vm, &env, NULL);
++
++                jclass keyEventClass = (*env)->FindClass(env, "android/view/KeyEvent");
++                if (keyEventClass != NULL)
++                {
++                    jmethodID ctor = (*env)->GetMethodID(env, keyEventClass, "<init>", "(II)V");
++                    jmethodID getUnicodeChar = (*env)->GetMethodID(env, keyEventClass, "getUnicodeChar", "(I)I");
++                    if ((ctor != NULL) && (getUnicodeChar != NULL))
++                    {
++                        jobject keyEventObj = (*env)->NewObject(env, keyEventClass, ctor, AKEY_EVENT_ACTION_DOWN, keycode);
++                        if (keyEventObj != NULL)
++                        {
++                            int unicodeChar = (*env)->CallIntMethod(env, keyEventObj, getUnicodeChar, metaState);
++                            if (unicodeChar != 0)
++                            {
++                                CORE.Input.Keyboard.charPressedQueue[CORE.Input.Keyboard.charPressedQueueCount] = unicodeChar;
++                                CORE.Input.Keyboard.charPressedQueueCount++;
++                            }
++                            (*env)->DeleteLocalRef(env, keyEventObj);
++                        }
++                    }
++                    (*env)->DeleteLocalRef(env, keyEventClass);
++                }
++                (*vm)->DetachCurrentThread(vm);
++            }
++        }
++        else if (AKeyEvent_getAction(event) == AKEY_EVENT_ACTION_MULTIPLE)
++        {
++            CORE.Input.Keyboard.keyRepeatInFrame[keycode] = 1;
++
++            // Some keyboards deliver backspace via ACTION_MULTIPLE
++            // with a repeat count rather than individual ACTION_DOWN events.
++            if (keycode == AKEYCODE_DEL && CORE.Input.Keyboard.charPressedQueueCount < MAX_CHAR_PRESSED_QUEUE)
++            {
++                CORE.Input.Keyboard.charPressedQueue[CORE.Input.Keyboard.charPressedQueueCount] = '\b';
++                CORE.Input.Keyboard.charPressedQueueCount++;
++            }
++
++            // NOTE: Some IMEs deliver composed text via ACTION_MULTIPLE with
++            // AKEYCODE_UNKNOWN + getCharacters(). That path is deprecated and
++            // unreliable across keyboard apps. Individual character keys from
++            // typical software keyboards arrive as ACTION_DOWN events above.
+         }
+-        else if (AKeyEvent_getAction(event) == AKEY_EVENT_ACTION_MULTIPLE) CORE.Input.Keyboard.keyRepeatInFrame[keycode] = 1;
+         else CORE.Input.Keyboard.currentKeyState[keycode] = 0;  // Key up
+ 
+         if (keycode == AKEYCODE_POWER)

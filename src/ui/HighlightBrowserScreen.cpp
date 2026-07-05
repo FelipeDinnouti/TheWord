@@ -4,6 +4,7 @@
 #include "highlight/Highlighter.h"
 #include "core/Theme.h"
 #include "core/Config.h"
+#include "core/Locale.h"
 #include "event/EventBus.h"
 #include "event/Events.h"
 #include <algorithm>
@@ -97,7 +98,7 @@ const std::vector<HighlightBrowserScreen::DisplayItem>& HighlightBrowserScreen::
 
         std::string title;
         if (h.bookId.empty()) {
-            title = "Unknown";
+            title = Locale::Get("Unknown");
         } else {
             title = h.bookId + "." + std::to_string(h.chapterNum);
             if (h.verseStart > 0) {
@@ -110,7 +111,7 @@ const std::vector<HighlightBrowserScreen::DisplayItem>& HighlightBrowserScreen::
 
         std::string subtitle;
         if (h.verseText.empty()) {
-            subtitle = "(highlighted text)";
+            subtitle = Locale::Get("(highlighted text)");
         } else {
             subtitle = h.verseText;
         }
@@ -153,7 +154,7 @@ void HighlightBrowserScreen::Draw() {
     float screenW = static_cast<float>(GetScreenWidth());
     float screenH = static_cast<float>(GetScreenHeight());
 
-    DrawHeaderBar(font_, fontSize_, "Highlights", true, static_cast<int>(screenW), uiScale_);
+    DrawHeaderBar(font_, fontSize_, Locale::Get("Highlights"), true, static_cast<int>(screenW), uiScale_);
 
     float headerH = uiScale_.dp(48);
     float controlSize = fontSize_ * 0.65f;
@@ -173,7 +174,7 @@ void HighlightBrowserScreen::Draw() {
 
     if (activeColorId_ == 0) {
         float allX = swatchStartX + types.size() * (swatchSize + swatchGap) + uiScale_.dp(8);
-        DrawTextEx(font_, "(tap to filter)", {allX, swatchRowY + uiScale_.dp(4)},
+        DrawTextEx(font_, Locale::Get("(tap to filter)"), {allX, swatchRowY + uiScale_.dp(4)},
                    controlSize, 1, GRAY);
     }
 
@@ -188,9 +189,9 @@ void HighlightBrowserScreen::Draw() {
     if (layouts_.empty()) {
         const char* msg;
         if (activeColorId_ == 0) {
-            msg = "No highlights yet.\nSelect text in the Reader to create one.";
+            msg = Locale::Get("No highlights yet.\nSelect text in the Reader to create one.");
         } else {
-            msg = "No highlights of this color.";
+            msg = Locale::Get("No highlights of this color.");
         }
         float msgSize = controlSize;
         Vector2 dims = MeasureTextEx(font_, msg, msgSize, 1);
@@ -208,6 +209,10 @@ void HighlightBrowserScreen::Draw() {
     }
     float maxScroll = std::max(0.0f, totalHeight - listH);
     scrollY_ = std::min(scrollY_, maxScroll);
+
+    // Clip list content below the swatch row
+    BeginScissorMode(0, static_cast<int>(listY), static_cast<int>(screenW),
+                     static_cast<int>(listH));
 
     // Draw visible items with pixel-based positioning
     float subSize = controlSize * 0.85f;
@@ -234,6 +239,8 @@ void HighlightBrowserScreen::Draw() {
 
         relY += layout.height;
     }
+
+    EndScissorMode();
 
     Vector2 mouse = GetMousePosition();
     bool overInteractive = mouse.y > listY;

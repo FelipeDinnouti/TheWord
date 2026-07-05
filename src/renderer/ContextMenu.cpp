@@ -2,6 +2,7 @@
 #include "ui/components.h"
 #include "highlight/Highlighter.h"
 #include "core/Theme.h"
+#include "core/Locale.h"
 
 namespace theword::renderer {
 
@@ -52,7 +53,7 @@ void ContextMenu::Draw() {
     float y0 = pos.y + mp;
     float contentH = mh - mp * 2;
 
-    theword::ui::DrawButton({x0, y0, dw, contentH}, "Del", headingFont, headingSize,
+    theword::ui::DrawButton({x0, y0, dw, contentH}, Locale::Get("Del"), headingFont, headingSize,
                             true, theme::UI_DELETE, theme::PANEL_BG);
 
     float swatchStartX = x0 + dw + lg;

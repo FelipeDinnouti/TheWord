@@ -3,6 +3,7 @@
 #include "components.h"
 #include "core/Theme.h"
 #include "core/Config.h"
+#include "core/Locale.h"
 #include "event/EventBus.h"
 #include "event/Events.h"
 #include "highlight/Highlighter.h"
@@ -29,7 +30,7 @@ void SettingsScreen::Draw() {
     float screenW = static_cast<float>(GetScreenWidth());
 
     float headerH = uiScale_.dp(48);
-    DrawHeaderBar(font_, fontSize_, "Settings", true, static_cast<int>(screenW), uiScale_);
+    DrawHeaderBar(font_, fontSize_, Locale::Get("Settings"), true, static_cast<int>(screenW), uiScale_);
 
     float labelSize = fontSize_ * 0.7f;
     float controlSize = fontSize_ * 0.65f;
@@ -48,7 +49,7 @@ void SettingsScreen::Draw() {
     float rowY = headerH + uiScale_.dp(40);
     float rowGap = uiScale_.dp(48);
 
-    DrawTextEx(font_, "Font:", {labelX, rowY}, labelSize, 1, theme::UI_TEXT);
+    DrawTextEx(font_, Locale::Get("Font:"), {labelX, rowY}, labelSize, 1, theme::UI_TEXT);
 
     bool atMin = currentFontSize_ <= config::FONT_SIZE_MIN;
     bool atMax = currentFontSize_ >= config::FONT_SIZE_MAX;
@@ -66,7 +67,7 @@ void SettingsScreen::Draw() {
 
     // Source row
     rowY += rowGap;
-    DrawTextEx(font_, "Source:", {labelX, rowY}, labelSize, 1, theme::UI_TEXT);
+    DrawTextEx(font_, Locale::Get("Source:"), {labelX, rowY}, labelSize, 1, theme::UI_TEXT);
 
     float srcBtnW = uiScale_.dp(80);
     float srcBtnH = uiScale_.dp(30);
@@ -80,7 +81,7 @@ void SettingsScreen::Draw() {
 
     // Color row
     rowY += rowGap;
-    DrawTextEx(font_, "Color:", {labelX, rowY}, labelSize, 1, theme::UI_TEXT);
+    DrawTextEx(font_, Locale::Get("Color:"), {labelX, rowY}, labelSize, 1, theme::UI_TEXT);
 
     const auto& types = highlighter_.GetTypes();
     int activeId = highlighter_.GetActiveTypeId();

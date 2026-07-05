@@ -3,6 +3,7 @@
 
 #include "Screen.h"
 #include "core/UIScale.h"
+#include "core/Locale.h"
 #include <string>
 #include <vector>
 #include <memory>
@@ -23,7 +24,7 @@ public:
     ~BookListScreen() override;
     void Draw() override;
     bool HandleInput(float deltaTime) override;
-    const char* GetTitle() const override { return "Books"; }
+    const char* GetTitle() const override { return theword::core::Locale::Get("Books"); }
 
 private:
     const Font& font_;

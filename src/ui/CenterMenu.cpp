@@ -7,6 +7,7 @@
 #include "components.h"
 #include "core/Theme.h"
 #include "core/Config.h"
+#include "core/Locale.h"
 #include <cmath>
 
 namespace theword::ui {
@@ -23,7 +24,7 @@ static const char* ITEM_LABELS[ITEM_COUNT] = {
 };
 
 const char* CenterMenu::ItemLabel(int idx) {
-    if (idx >= 0 && idx < ITEM_COUNT) return ITEM_LABELS[idx];
+    if (idx >= 0 && idx < ITEM_COUNT) return Locale::Get(ITEM_LABELS[idx]);
     return "";
 }
 

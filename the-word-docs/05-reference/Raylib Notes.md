@@ -189,6 +189,38 @@ font size changes:
 Both use `TEXTURE_FILTER_POINT`. Codepoints are extracted from the TTF `cmap`
 table by `LoadFontCodepoints()` (see `src/core/FontHelper.cpp`).
 
+## Android Text Input — Raylib Patch
+
+> **Status**: Active | `cmake/patches/raylib-5.0-android-char-input.patch`
+
+Raylib 5.0's Android backend (`rcore_android.c`) has two unfixed issues that break `GetCharPressed()`:
+
+### Issue 1: Gamepad Source Flag Collision
+
+Raylib issue [#5387](https://github.com/raysan5/raylib/issues/5387). On some devices (Motorola Razr 2024, Android 14+), keyboard input events have **both** `AINPUT_SOURCE_KEYBOARD` and `AINPUT_SOURCE_GAMEPAD` bits set (they share `AINPUT_SOURCE_CLASS_BUTTON`). The gamepad handler at line 1000 matches first and returns early, so keyboard events never reach the keyboard handler.
+
+**Fix** (upstream PR [#5441](https://github.com/raysan5/raylib/pull/5439)): add `&& !(source & AINPUT_SOURCE_KEYBOARD)` to the gamepad condition.
+
+### Issue 2: `charPressedQueue` Never Populated
+
+Every other raylib platform populates `charPressedQueue` via a platform-specific callback:
+- **Desktop** (GLFW): `CharCallback` — receives UTF-32 codepoints from the OS
+- **Web**: JavaScript `keypress` / `input` events
+- **DRM**: `EvkeyToUnicodeLUT[]` lookup table
+
+Android has **none of these**. `charPressedQueue` is reset to 0 every frame in `PollInputEvents()` but never filled. `GetCharPressed()` always returns 0.
+
+**Fix**: Inside the `ACTION_DOWN` handler, use JNI to construct a Java `KeyEvent` and call `getUnicodeChar(metaState)`. This returns the Unicode codepoint for the pressed key, accounting for the active keyboard layout and modifier keys (shift, caps lock, etc.). Non-printable keys (function keys, arrows) return 0 and are skipped — matching the behaviour of GLFW's `CharCallback` on desktop. No explicit "text input enabled" gate exists in raylib 5.0.
+
+### Patch Location
+
+The combined patch lives at `cmake/patches/raylib-5.0-android-char-input.patch` and is applied automatically during CMake configuration for Android builds (see `CMakeLists.txt`). It is NOT upstream in raylib 5.0.
+
+### Limitations
+
+- Complex IME composition (CJK, emoji sequences via `ACTION_MULTIPLE` + `AKEYCODE_UNKNOWN`) is not handled. For full IME support, a hidden `EditText` + `TextWatcher` on the Java side would be required (well-known NDK pattern used by SDL2, Unity).
+- Only active when `SetTextInputEnabled(true)` has been called, so normal key handling is unaffected.
+
 ## Important Note
 
 The `find_package(CURL)` call must come AFTER `FetchContent_MakeAvailable(raylib)` in CMakeLists.txt. If placed before, CMake may fail to find resolved dependencies.

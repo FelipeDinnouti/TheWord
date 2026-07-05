@@ -2,6 +2,7 @@
 #define FONT_DIAGNOSTIC_H
 
 #include "Screen.h"
+#include "core/Locale.h"
 #include <raylib.h>
 
 namespace theword::ui { class NavigationStack; }
@@ -16,7 +17,7 @@ public:
                    float dpiScale, NavigationStack& navStack);
     void Draw() override;
     bool HandleInput(float deltaTime) override;
-    const char* GetTitle() const override { return "FontDiagnostic"; }
+    const char* GetTitle() const override { return theword::core::Locale::Get("Font Diagnostic"); }
     bool IsOverlay() const override { return true; }
 
 private:

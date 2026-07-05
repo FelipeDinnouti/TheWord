@@ -3,6 +3,7 @@
 
 #include "Screen.h"
 #include "core/UIScale.h"
+#include "core/Locale.h"
 #include <memory>
 #include <string>
 #include <raylib.h>
@@ -26,7 +27,7 @@ public:
                const std::string& currentChapterRef = "");
     void Draw() override;
     bool HandleInput(float deltaTime) override;
-    const char* GetTitle() const override { return "Menu"; }
+    const char* GetTitle() const override { return theword::core::Locale::Get("Menu"); }
     bool IsOverlay() const override { return true; }
 
 private:

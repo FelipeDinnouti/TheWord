@@ -53,6 +53,23 @@ source ./emsdk_env.sh
 
 ---
 
+## Android-Specific: Raylib Patch for Text Input
+
+When building for Android, CMake automatically applies a patch to raylib 5.0's `rcore_android.c` (see `cmake/patches/raylib-5.0-android-char-input.patch`). This patch:
+
+1. Fixes a gamepad/keyboard source flag collision that can swallow keyboard events on some devices (upstream raylib issue [#5387](https://github.com/raysan5/raylib/issues/5387)).
+2. Adds JNI-based Unicode character capture so `GetCharPressed()` returns text input instead of always returning 0.
+
+The patch requires the `patch` command-line tool. CMake will error at configure time if it's not found. Install it with:
+
+```bash
+sudo apt install patch        # Debian/Ubuntu
+sudo pacman -S patch          # Arch
+brew install patch            # macOS
+```
+
+The patch is NOT upstream in raylib 5.0. It is maintained locally and applied per-build. If you upgrade raylib to a newer version, verify and update the patch accordingly.
+
 ## Build & Run
 
 ### Quick Reference — CMake Presets

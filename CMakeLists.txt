@@ -1,4 +1,13 @@
 cmake_minimum_required(VERSION 3.16)
+
+# Suppress deprecation warning when using FetchContent_Populate() for declared
+# dependencies (needed for the raylib Android patch workflow). We use Populate
+# instead of MakeAvailable so we can apply a patch before add_subdirectory.
+# Policy available in CMake >= 3.25; ignored silently on older versions.
+if(POLICY CMP0169)
+    cmake_policy(SET CMP0169 OLD)
+endif()
+
 project(theword VERSION 1.5.0 LANGUAGES C CXX)
 
 # Pre-release suffix (empty for release builds, e.g. "-alpha.1")
@@ -44,7 +53,38 @@ FetchContent_Declare(
 set(BUILD_GAMES OFF)
 set(BUILD_EXAMPLES OFF)
 
-FetchContent_MakeAvailable(raylib)
+# ── Android: apply patch for GetCharPressed support ────────────────────────
+# raylib 5.0's rcore_android.c has two unfixed issues:
+#   1. Gamepad source flag collision (#5387) — keyboard events with
+#      AINPUT_SOURCE_GAMEPAD bit set get swallowed by the gamepad handler.
+#   2. charPressedQueue is never populated — GetCharPressed() returns 0
+#      because there is no character callback like GLFW's CharCallback.
+#
+# The patch fixes both and adds JNI-based Unicode character capture.
+# See cmake/patches/raylib-5.0-android-char-input.patch for details.
+if(ANDROID)
+    FetchContent_GetProperties(raylib)
+    if(NOT raylib_POPULATED)
+        FetchContent_Populate(raylib)
+        find_program(PATCH_PROGRAM patch REQUIRED)
+        execute_process(
+            COMMAND ${PATCH_PROGRAM} -p1 -N -i
+                ${CMAKE_SOURCE_DIR}/cmake/patches/raylib-5.0-android-char-input.patch
+            WORKING_DIRECTORY ${raylib_SOURCE_DIR}
+            RESULT_VARIABLE _patch_result
+        )
+        if(_patch_result EQUAL 0)
+            message(STATUS "Applied raylib Android patch: GetCharPressed support + gamepad fix")
+        elseif(_patch_result EQUAL 1)
+            message(STATUS "Raylib Android patch already applied, skipping")
+        else()
+            message(FATAL_ERROR "Failed to patch raylib for Android text input support (exit=${_patch_result})")
+        endif()
+    endif()
+    add_subdirectory(${raylib_SOURCE_DIR} ${raylib_BINARY_DIR})
+else()
+    FetchContent_MakeAvailable(raylib)
+endif()
 
 # ── Doctest (header-only unit testing) ────────────────────────────────────
 FetchContent_Declare(
@@ -138,6 +178,8 @@ set(CORE_BASE_SOURCES
     src/core/Platform.h
     src/core/Config.h
     src/core/Theme.h
+    src/core/Locale.cpp
+    src/core/Locale.h
     src/core/BibleBooks.h
     src/core/GlobalId.h
     src/core/IHttpClient.h

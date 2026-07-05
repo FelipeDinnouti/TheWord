@@ -8,6 +8,7 @@
 #include "core/Logger.h"
 #include "core/EnvLoader.h"
 #include "core/Theme.h"
+#include "core/Locale.h"
 #include "event/EventBus.h"
 #include "event/Events.h"
 #include "data/USFMParser.h"
@@ -67,7 +68,7 @@ bool App::Init(const std::string& title) {
 
     {
         const char* splashTitle = "TheWord";
-        const char* subtitle = "Loading...";
+        const char* subtitle = Locale::Get("Loading...");
         float titleSize = 48.0f * scale_;
         float subSize = 20.0f * scale_;
         Vector2 titleDims = MeasureTextEx(GetFontDefault(), splashTitle, titleSize, 1);
@@ -182,11 +183,15 @@ bool App::Init(const std::string& title) {
         *navStack_, uiScale_, currentFontSize_, versionOnline_
     ));
 
-    Logger::Info("Loading initial chapter");
-    docManager_->LoadInitialChapterSync("GEN.1");
     {
+        std::string startChapter = persistence_->GetPreference("last_chapter", "GEN.1");
+        Logger::Info("Loading initial chapter: " + startChapter);
+        docManager_->LoadInitialChapterSync(startChapter);
         auto* chapterData = docManager_->GetCurrentChapterData();
-        highlighter_->SetChapterContext("GEN", 1,
+        std::string book;
+        int chapter = 0;
+        ParseChapterRef(startChapter, book, chapter);
+        highlighter_->SetChapterContext(book, chapter,
             chapterData ? &chapterData->words : nullptr);
     }
 
@@ -294,6 +299,7 @@ void App::WireEvents() {
 
     eventBus_->On<theword::event::NavigateEvent>([this](const auto& e) {
         docManager_->LoadInitialChapter(e.chapterRef);
+        persistence_->SetPreference("last_chapter", e.chapterRef);
     });
 
     eventBus_->On<theword::event::ChapterLoadedEvent>([this](const auto& e) {

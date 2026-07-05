@@ -6,6 +6,7 @@
 #include "core/Theme.h"
 #include "core/Config.h"
 #include "core/Platform.h"
+#include "core/Locale.h"
 #include "event/EventBus.h"
 #include "event/Events.h"
 #include <algorithm>
@@ -34,8 +35,6 @@ BookListScreen::BookListScreen(const Font& font, float fontSize,
             }
         }
     }
-
-    theword::core::platform::ShowKeyboard();
 
     eventBus_.On<theword::event::ScrollEvent>(
         [this, alive = aliveGuard_](const theword::event::ScrollEvent& e) {
@@ -69,7 +68,8 @@ std::vector<int> BookListScreen::GetFilteredIndices() const {
     std::vector<int> results;
     for (int i = 0; i < static_cast<int>(BOOKS.size()); ++i) {
         if (StartsWithIgnoreCase(BOOKS[i].code, search_) ||
-            StartsWithIgnoreCase(BOOKS[i].fullName, search_)) {
+            StartsWithIgnoreCase(BOOKS[i].fullName, search_) ||
+            StartsWithIgnoreCase(BOOK_NAMES_PT[i], search_)) {
             results.push_back(i);
         }
     }
@@ -99,7 +99,7 @@ void BookListScreen::Draw() {
         scrollOffset_ = std::min(maxScroll, std::max(0, selection_ - visibleCount / 2));
     }
 
-    DrawHeaderBar(font_, fontSize_, "Books", true, static_cast<int>(screenW), uiScale_);
+    DrawHeaderBar(font_, fontSize_, Locale::Get("Books"), true, static_cast<int>(screenW), uiScale_);
 
     // Search bar
     float searchY = headerH + uiScale_.dp(4);
@@ -128,7 +128,7 @@ void BookListScreen::Draw() {
         if (itemY + itemH > screenH) break;
 
         int bookIdx = indices[i];
-        std::string label = std::string(BOOKS[bookIdx].code) + "  " + BOOKS[bookIdx].fullName;
+        std::string label = std::string(BOOKS[bookIdx].code) + "  " + BOOK_NAMES_PT[bookIdx];
 
         DrawTextItem({0, itemY, screenW, itemH}, label.c_str(), font_, labelSize,
                      bookIdx == selection_, theme::UI_TEXT, theme::UI_TITLE);
@@ -142,6 +142,19 @@ void BookListScreen::Draw() {
 bool BookListScreen::HandleInput(float /*deltaTime*/) {
     int ch = GetCharPressed();
     while (ch > 0) {
+#if defined(__ANDROID__)
+        if (ch == '\b') {
+            if (!search_.empty()) {
+                search_.pop_back();
+                scrollOffset_ = 0;
+                scrollAccumulator_ = 0;
+                selection_ = 0;
+            } else {
+                navStack_.Pop();
+                return true;
+            }
+        } else
+#endif
         if (ch >= 32 && ch <= 126) {
             search_.push_back(static_cast<char>(ch));
             scrollOffset_ = 0;
@@ -151,6 +164,7 @@ bool BookListScreen::HandleInput(float /*deltaTime*/) {
         ch = GetCharPressed();
     }
 
+#if !defined(__ANDROID__)
     if (IsKeyPressed(key::BACKSPACE)) {
         if (!search_.empty()) {
             search_.pop_back();
@@ -162,6 +176,7 @@ bool BookListScreen::HandleInput(float /*deltaTime*/) {
             return true;
         }
     }
+#endif
 
     if (IsKeyPressed(key::ESCAPE)) {
         navStack_.Pop();
@@ -223,7 +238,7 @@ bool BookListScreen::HandleInput(float /*deltaTime*/) {
                 theword::core::platform::HideKeyboard();
                 navStack_.Push(std::make_unique<ChapterGridScreen>(
                     font_, fontSize_, navStack_, eventBus_,
-                    book.code, book.fullName, book.chapterCount, uiScale_, currentCh
+                    book.code, BOOK_NAMES_PT[selection_], book.chapterCount, uiScale_, currentCh
                 ));
                 return true;
             }
@@ -273,9 +288,10 @@ bool BookListScreen::HandleInput(float /*deltaTime*/) {
                         currentCh = refCh;
                     }
                 }
+                theword::core::platform::HideKeyboard();
                 navStack_.Push(std::make_unique<ChapterGridScreen>(
                     font_, fontSize_, navStack_, eventBus_,
-                    book.code, book.fullName, book.chapterCount, uiScale_, currentCh
+                    book.code, BOOK_NAMES_PT[selection_], book.chapterCount, uiScale_, currentCh
                 ));
                 return true;
             }
