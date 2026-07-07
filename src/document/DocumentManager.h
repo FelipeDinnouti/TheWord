@@ -83,7 +83,7 @@ private:
     float viewportHeight;
     float contentTop;
 
-    static constexpr float DRAG = 0.008f;
+    static constexpr float DRAG = 2.0f;
     static constexpr float VELOCITY_EPSILON = 10.0f;
     static constexpr float MAX_VELOCITY = 5000.0f;
     static constexpr float MIN_LOAD_MARGIN = 30.0f;
