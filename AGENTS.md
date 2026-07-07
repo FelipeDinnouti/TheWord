@@ -15,34 +15,26 @@ cmake --build build --parallel
 | Task | Read First |
 |------|------------|
 | Any task | `the-word-docs/00-INDEX.md` |
+| Project state | `memory/STATE.md` |
+| Current roadmap | `memory/ROADMAP.md` |
+| Agent workflow | `memory/` → `the-word-docs/07-ai-collaboration/Agent Workflow.md` |
 | Architecture questions | `the-word-docs/02-architecture/` |
 | Data source design | `the-word-docs/02-architecture/Data Source Architecture.md` |
 | Module details | `the-word-docs/03-modules/<Module>.md` |
 | Current release | `the-word-docs/04-planning/Release Plan.md` |
 | Current status | `the-word-docs/04-planning/Progress Tracking.md` |
-| Agent workflow | `the-word-docs/07-ai-collaboration/Agent Workflow.md` |
+| Coding conventions | `the-word-docs/07-ai-collaboration/Convention Reference.md` |
 | Font rendering | `the-word-docs/05-reference/Raylib Notes.md#crisp-font-rendering--directives` |
 
 ## Agent Workflow
 
-1. **Read** — Find and read the relevant doc before writing code
-2. **Plan** — Check `the-word-docs/04-planning/Release Plan.md` for current release scope; read Doc-First Checklist (`the-word-docs/07-ai-collaboration/Doc-First Checklist.md`)
-3. **Write Plan** — Persist the implementation plan to `.opencode/plans/<release>.md` with checklist items; update it throughout development as progress is made
-4. **Implement** — Follow conventions below, write tests (doctest)
-5. **Verify** — Build and run
-6. **Document** — Update `the-word-docs/` with anything new
-7. **Version** — Bump version in `CMakeLists.txt` and tag (see [Versioning](#versioning) below)
+See `the-word-docs/07-ai-collaboration/Agent Workflow.md` for the canonical workflow.
+Implementation checklists live in `memory/ROADMAP.md` — update as tasks progress.
 
 ## Coding Conventions
 
-- **Naming**: Classes = `PascalCase`, methods = `PascalCase`, variables = `camelCase`, constants = `SCREAMING_SNAKE_CASE`
-- **Files**: One class per file (`ClassName.h` + `ClassName.cpp`), include guards (`#ifndef NAME_H`)
-- **Dependencies**: Acyclic: `core → data → text → document → renderer`
-- **No comments** unless explaining non-obvious logic
-- **Commits**: Always use [Conventional Commits](https://www.conventionalcommits.org/) — `feat:`, `fix:`, `refactor:`, `docs:`, `test:`, `chore:`, etc.
-  1. `git add` only intended files (check `git status` first)
-  2. `git commit -m "type: short description (max 72 chars)"`
-  3. Include scope if helpful: `fix(reader): prevent > arrow overflow on mobile`
+See `the-word-docs/07-ai-collaboration/Convention Reference.md` for full conventions.
+Key points: PascalCase classes/methods, camelCase variables, acyclic `core → data → text → document → renderer` dependencies, no comments unless non-obvious, [Conventional Commits](https://www.conventionalcommits.org/).
 
 ## Build Commands
 

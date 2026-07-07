@@ -1,11 +1,13 @@
 # Doc-First Checklist
 
-> Status: Active | Last Updated: 2026-06-21
+> Status: Active | Last Updated: 2026-07-05
 
 **Mandatory steps before writing code.** Skip nothing.
 
 ## Before Writing Code
 
+- [ ] Read `memory/STATE.md` — current project state, version, known issues
+- [ ] Read `memory/ROADMAP.md` — active release checklist
 - [ ] Read `00-INDEX.md` to locate relevant docs
 - [ ] Read the module doc in `03-modules/<Module>.md` (or the closest existing doc)
 - [ ] Read `02-architecture/Data Structures.md` (if touching core types)

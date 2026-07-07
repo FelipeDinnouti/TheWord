@@ -13,7 +13,7 @@
 | Fixing a bug | `02-architecture/Data Flow.md` → relevant `03-modules/` doc |
 | Setting up the build | `06-ops/Build Guide.md` → `06-ops/Environment Setup.md` |
 | Integration testing | `06-ops/Integration Testing.md` |
-| An AI agent | `04-planning/Release Plan.md` → `07-ai-collaboration/Agent Workflow.md` → `07-ai-collaboration/Doc-First Checklist.md` |
+| An AI agent | `AGENTS.md` → `memory/` → `07-ai-collaboration/Agent Workflow.md` |
 | Planning work | `04-planning/Release Plan.md` → `04-planning/Development Plan.md` → `04-planning/Progress Tracking.md` |
 | Using the API | `03-modules/Bible API.md` → `05-reference/YouVersion API.md` |
 | Rich text / segments | `02-architecture/Data Structures.md#segment` → `03-modules/Text Layout Engine.md` |
