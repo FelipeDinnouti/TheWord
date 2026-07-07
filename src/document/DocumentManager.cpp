@@ -20,7 +20,6 @@ DocumentManager::DocumentManager(theword::event::EventBus& eventBus,
     , layoutEngine(engine)
     , primaryProvider(provider)
     , scrollY(0.0f)
-    , targetScrollY(0.0f)
     , viewportHeight(viewportHeight)
     , contentTop(contentTop) {
 
@@ -31,21 +30,24 @@ DocumentManager::DocumentManager(theword::event::EventBus& eventBus,
 }
 
 void DocumentManager::OnScroll(const theword::event::ScrollEvent& e) {
-    float maxScroll = GetTotalHeight() - viewportHeight;
-    if (maxScroll < 0.0f) maxScroll = 0.0f;
-
     autoScrollActive_ = false;
 
+    if (e.velocity != 0.0f) {
+        momentumActive_ = true;
+        scrollVelocity_ = std::clamp(e.velocity, -MAX_VELOCITY, MAX_VELOCITY);
+        return;
+    }
+
+    float maxScroll = std::max(0.0f, GetTotalHeight() - viewportHeight);
+
     if (e.direct) {
-        scrollY += e.delta;
-        if (scrollY < 0.0f) scrollY = 0.0f;
-        if (scrollY > maxScroll) scrollY = maxScroll;
-        targetScrollY = scrollY;
+        scrollY = std::clamp(scrollY + e.delta, 0.0f, maxScroll);
+        scrollVelocity_ = 0.0f;
+        momentumActive_ = false;
     } else {
-        float newTarget = targetScrollY + e.delta;
-        if (newTarget < 0.0f) newTarget = 0.0f;
-        if (newTarget > maxScroll) newTarget = maxScroll;
-        targetScrollY = newTarget;
+        scrollVelocity_ += e.delta;
+        scrollVelocity_ = std::clamp(scrollVelocity_, -MAX_VELOCITY, MAX_VELOCITY);
+        momentumActive_ = true;
     }
 
     float absDelta = std::abs(e.delta);
@@ -85,7 +87,8 @@ void DocumentManager::OnResize(const theword::event::ResizeEvent& e) {
 
     float newTotal = GetTotalHeight();
     scrollY = scrollFraction * newTotal;
-    targetScrollY = scrollY;
+    scrollVelocity_ = 0.0f;
+    momentumActive_ = false;
 }
 
 void DocumentManager::OnFontSize(const theword::event::FontSizeEvent& /*e*/) {
@@ -180,7 +183,8 @@ void DocumentManager::LoadInitialChapterSync(const std::string& chapterId) {
     chapters.push_back(std::move(lc));
 
     scrollY = 0.0f;
-    targetScrollY = 0.0f;
+    scrollVelocity_ = 0.0f;
+    momentumActive_ = false;
 
     Logger::Info("Loaded chapter: " + chapterId);
 }
@@ -207,7 +211,8 @@ void DocumentManager::Update(float deltaTime) {
                 lc.height = layout.totalHeight;
                 chapters.push_back(std::move(lc));
                 scrollY = 0.0f;
-                targetScrollY = 0.0f;
+                scrollVelocity_ = 0.0f;
+                momentumActive_ = false;
 
                 Logger::Info("Loaded chapter: " + visibleChapterId_);
                 eventBus_.Emit(theword::event::ChapterLoadedEvent{visibleChapterId_});
@@ -215,12 +220,15 @@ void DocumentManager::Update(float deltaTime) {
         }
     }
 
-    float diff = targetScrollY - scrollY;
-    if (std::abs(diff) > 0.5f) {
-        scrollY += diff * (1.0f - std::exp(-SMOOTH_SPEED * deltaTime));
-    } else {
-        scrollY = targetScrollY;
-        autoScrollActive_ = false;
+    if (momentumActive_ && std::abs(scrollVelocity_) > VELOCITY_EPSILON) {
+        scrollY += scrollVelocity_ * deltaTime;
+        scrollVelocity_ /= (1.0f + DRAG * std::abs(scrollVelocity_) * deltaTime);
+        if (std::abs(scrollVelocity_) < VELOCITY_EPSILON) {
+            scrollVelocity_ = 0.0f;
+            momentumActive_ = false;
+        }
+        float maxScroll = std::max(0.0f, GetTotalHeight() - viewportHeight);
+        scrollY = std::clamp(scrollY, 0.0f, maxScroll);
     }
 
     // Process one completed pending load per frame
@@ -247,7 +255,7 @@ void DocumentManager::Update(float deltaTime) {
             float h = lc.height;
             chapters.insert(chapters.begin(), std::move(lc));
             RecalculateChapterPositions();
-            targetScrollY += h;
+            scrollY += h;
             autoScrollActive_ = true;
         } else {
             float lastEnd = chapters.empty() ? 0.0f
@@ -337,7 +345,9 @@ void DocumentManager::SetViewportHeight(float height) {
 
 void DocumentManager::ScrollTo(float y) {
     float maxScroll = std::max(0.0f, GetTotalHeight() - viewportHeight);
-    targetScrollY = std::clamp(y, 0.0f, maxScroll);
+    scrollY = std::clamp(y, 0.0f, maxScroll);
+    scrollVelocity_ = 0.0f;
+    momentumActive_ = false;
 }
 
 void DocumentManager::InvalidateLayouts() {

@@ -18,22 +18,13 @@ InputHandler::InputHandler(theword::event::EventBus& eventBus,
     : eventBus_(eventBus),
       hitTestFn(std::move(hitTestFn)),
       isHighlightedFn(std::move(isHighlightedFn)),
-      scrollVelocity(0.0f),
-      touchVelocity(0.0f),
-      deltaHistory{},
-      deltaHistoryIdx(0),
       slopAccumulator(0.0f),
       pressState(PressState::Idle), pressStartTime(0.0),
       pressStartPos{0, 0}, pressStartWord(-1), selectStartWord(-1),
-      touchActive(false), touchLastY(0.0f), lastTouchDelta(0.0f), lastPinchDist(0.0f),
-      pauseTime_(0.0) {
+      touchActive(false), touchLastY(0.0f), lastTouchDelta(0.0f), lastPinchDist(0.0f) {
 
     eventBus_.On<theword::event::DialogEvent>([this](const theword::event::DialogEvent& e) {
         dialogActive_ = (e.action != theword::event::DialogEvent::Action::Hide);
-    });
-
-    eventBus_.On<theword::event::ScrollStopEvent>([this](const auto&) {
-        scrollVelocity = 0.0f;
     });
 }
 
@@ -81,18 +72,15 @@ void InputHandler::Poll(float deltaTime, theword::ui::NavigationStack* navStack,
 void InputHandler::HandleScroll() {
     float wheel = GetMouseWheelMove();
     if (wheel != 0) {
-        scrollVelocity = 0.0f;
         eventBus_.Emit(theword::event::ScrollEvent{-wheel * SCROLL_SENSITIVITY});
         return;
     }
 
     if (IsKeyDown(key::DOWN)) {
-        scrollVelocity = 0.0f;
         eventBus_.Emit(theword::event::ScrollEvent{SCROLL_SENSITIVITY * KEYBOARD_SCROLL_FACTOR});
         return;
     }
     if (IsKeyDown(key::UP)) {
-        scrollVelocity = 0.0f;
         eventBus_.Emit(theword::event::ScrollEvent{-SCROLL_SENSITIVITY * KEYBOARD_SCROLL_FACTOR});
         return;
     }
@@ -192,10 +180,7 @@ void InputHandler::HandleTouchScroll() {
             touchActive = true;
             touchLastY = pos.y;
             lastTouchDelta = 0.0f;
-            touchVelocity = 0.0f;
-            deltaHistoryIdx = 0;
             slopAccumulator = 0.0f;
-            pauseTime_ = 0.0;
             return;
         }
 
@@ -204,54 +189,17 @@ void InputHandler::HandleTouchScroll() {
         lastTouchDelta = deltaY;
 
         slopAccumulator += deltaY;
-        if (std::abs(slopAccumulator) < TOUCH_SLOP) {
-            if (pauseTime_ == 0.0) {
-                pauseTime_ = GetTime();
-            } else if (GetTime() - pauseTime_ > 0.15) {
-                touchVelocity = 0.0f;
-            }
-            return;
-        }
-        pauseTime_ = 0.0;
+        if (std::abs(slopAccumulator) < TOUCH_SLOP) return;
 
         float effectiveDelta = slopAccumulator;
         slopAccumulator = 0.0f;
 
-        deltaHistory[deltaHistoryIdx % DELTA_HISTORY_SIZE] = effectiveDelta;
-        deltaHistoryIdx++;
-        int count = std::min(deltaHistoryIdx, DELTA_HISTORY_SIZE);
-        float sumDelta = 0.0f;
-        for (int i = 0; i < count; i++) sumDelta += deltaHistory[i];
-
-        float dt = GetFrameTime();
-        if (dt > 0.0f && dt < 0.1f) {
-            float smoothVel = sumDelta / (count * dt);
-            touchVelocity = smoothVel * VELOCITY_ALPHA + touchVelocity * (1.0f - VELOCITY_ALPHA);
-        }
-
         eventBus_.Emit(theword::event::ScrollEvent{-effectiveDelta, true});
-    } else {
-        if (touchActive) {
-            touchActive = false;
-            scrollVelocity = -touchVelocity;
-            if (scrollVelocity > MAX_MOMENTUM_VELOCITY)
-                scrollVelocity = MAX_MOMENTUM_VELOCITY;
-            if (scrollVelocity < -MAX_MOMENTUM_VELOCITY)
-                scrollVelocity = -MAX_MOMENTUM_VELOCITY;
-            eventBus_.Emit(theword::event::ScrollEvent{scrollVelocity * GetFrameTime()});
-            return;
-        }
-
-        if (scrollVelocity != 0.0f) {
-            float dt = GetFrameTime();
-            scrollVelocity *= std::exp(-dt / MOMENTUM_TIME_CONSTANT);
-
-            if (std::abs(scrollVelocity) < MIN_VELOCITY) {
-                scrollVelocity = 0.0f;
-            } else {
-                eventBus_.Emit(theword::event::ScrollEvent{scrollVelocity * dt});
-            }
-        }
+    } else if (touchActive) {
+        touchActive = false;
+        float dt = GetFrameTime();
+        float launchVelocity = (dt > 0.0f) ? -lastTouchDelta / dt : 0.0f;
+        eventBus_.Emit(theword::event::ScrollEvent{0.0f, false, launchVelocity});
     }
 }
 

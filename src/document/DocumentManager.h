@@ -55,7 +55,7 @@ public:
     void SetViewportHeight(float height);
     void ScrollTo(float y);
     void InvalidateLayouts();
-    bool HasMomentum() const { return std::abs(targetScrollY - scrollY) > 0.5f; }
+    bool HasMomentum() const { return momentumActive_ && std::abs(scrollVelocity_) > VELOCITY_EPSILON; }
     bool HasPendingLoads() const;
 
     void GetVisibleSpans(std::vector<std::pair<theword::data::Span, float>>& docSpans) const;
@@ -77,12 +77,15 @@ private:
     std::string visibleChapterId_;
     std::string navigationChapterId_;
     bool autoScrollActive_ = false;
+    bool momentumActive_ = false;
     float scrollY;
-    float targetScrollY;
+    float scrollVelocity_ = 0.0f;
     float viewportHeight;
     float contentTop;
 
-    static constexpr float SMOOTH_SPEED = 20.0f;
+    static constexpr float DRAG = 0.008f;
+    static constexpr float VELOCITY_EPSILON = 10.0f;
+    static constexpr float MAX_VELOCITY = 5000.0f;
     static constexpr float MIN_LOAD_MARGIN = 30.0f;
     static constexpr float MAX_LOAD_MARGIN = 300.0f;
 
