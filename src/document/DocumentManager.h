@@ -84,7 +84,7 @@ private:
     float contentTop;
 
     static constexpr float DRAG = 0.004f;
-    static constexpr float VELOCITY_EPSILON = 10.0f;
+    static constexpr float VELOCITY_EPSILON = 80.0f;
     static constexpr float MAX_VELOCITY = 7500.0f;
     static constexpr float MIN_LOAD_MARGIN = 30.0f;
     static constexpr float MAX_LOAD_MARGIN = 300.0f;
