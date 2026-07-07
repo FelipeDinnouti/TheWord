@@ -217,9 +217,10 @@ void DocumentManager::Update(float deltaTime) {
     }
 
     if (momentumActive_ && std::abs(scrollVelocity_) > VELOCITY_EPSILON) {
-        float decay = std::exp(-DRAG * deltaTime);
-        scrollY += (scrollVelocity_ / DRAG) * (1.0f - decay);
-        scrollVelocity_ *= decay;
+        float vBefore = scrollVelocity_;
+        float vAbs = std::abs(vBefore);
+        scrollVelocity_ = vBefore / (1.0f + DRAG * vAbs * deltaTime);
+        scrollY += (vBefore + scrollVelocity_) * 0.5f * deltaTime;
         if (std::abs(scrollVelocity_) < VELOCITY_EPSILON) {
             scrollVelocity_ = 0.0f;
             momentumActive_ = false;
