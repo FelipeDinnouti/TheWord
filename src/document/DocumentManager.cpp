@@ -39,15 +39,11 @@ void DocumentManager::OnScroll(const theword::event::ScrollEvent& e) {
     }
 
     float maxScroll = std::max(0.0f, GetTotalHeight() - viewportHeight);
+    scrollY = std::clamp(scrollY + e.delta, 0.0f, maxScroll);
 
     if (e.direct) {
-        scrollY = std::clamp(scrollY + e.delta, 0.0f, maxScroll);
         scrollVelocity_ = 0.0f;
         momentumActive_ = false;
-    } else {
-        scrollVelocity_ += e.delta;
-        scrollVelocity_ = std::clamp(scrollVelocity_, -MAX_VELOCITY, MAX_VELOCITY);
-        momentumActive_ = true;
     }
 
     float absDelta = std::abs(e.delta);

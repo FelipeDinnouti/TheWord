@@ -47,7 +47,7 @@ private:
     int selectStartWord;
     bool touchActive;
     float touchLastY;
-    float lastTouchDelta;
+    float touchLaunchVelocity_ = 0.0f;
     float lastPinchDist;
 
     void HandleScroll();
