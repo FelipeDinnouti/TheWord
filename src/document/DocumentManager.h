@@ -91,7 +91,7 @@ private:
     static constexpr float DECEL_RATE = 2.358f;   // ln(0.78)/ln(0.9) — Android spline exponent
     static constexpr float INFLEXION = 0.35f;      // spline inflection point
     static constexpr float PHYSICAL_COEFF = 51890.0f; // g * in/m * px/in * 0.84
-    static constexpr float FRICTION = 0.015f;      // main tuning knob (higher = shorter scroll)
+    static constexpr float FRICTION = 0.005f;      // main tuning knob (higher = shorter scroll)
     static constexpr float MAX_VELOCITY = 7500.0f;
     static constexpr float MIN_LOAD_MARGIN = 30.0f;
     static constexpr float MAX_LOAD_MARGIN = 300.0f;
