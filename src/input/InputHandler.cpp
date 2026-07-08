@@ -181,6 +181,7 @@ void InputHandler::HandleTouchScroll() {
             touchLastY = pos.y;
             slopAccumulator = 0.0f;
             touchLaunchVelocity_ = 0.0f;
+            eventBus_.Emit(theword::event::ScrollEvent{0.0f, true, 0.0f});
             return;
         }
 

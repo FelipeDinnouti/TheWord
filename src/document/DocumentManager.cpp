@@ -239,8 +239,7 @@ void DocumentManager::Update(float deltaTime) {
             scrollY = momentumStartY_ + momentumDistance_ * pos;
 
             float maxScroll = std::max(0.0f, GetTotalHeight() - viewportHeight);
-            if (scrollY < 0.0f) { scrollY = 0.0f; scrollVelocity_ = 0.0f; momentumActive_ = false; }
-            if (scrollY > maxScroll && maxScroll > 0.0f) { scrollY = maxScroll; scrollVelocity_ = 0.0f; momentumActive_ = false; }
+            scrollY = std::clamp(scrollY, 0.0f, maxScroll);
         }
     }
 
