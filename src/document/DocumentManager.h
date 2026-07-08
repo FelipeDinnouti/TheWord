@@ -55,7 +55,7 @@ public:
     void SetViewportHeight(float height);
     void ScrollTo(float y);
     void InvalidateLayouts();
-    bool HasMomentum() const { return momentumActive_ && std::abs(scrollVelocity_) > VELOCITY_EPSILON; }
+    bool HasMomentum() const { return momentumActive_; }
     bool HasPendingLoads() const;
 
     void GetVisibleSpans(std::vector<std::pair<theword::data::Span, float>>& docSpans) const;
@@ -80,11 +80,18 @@ private:
     bool momentumActive_ = false;
     float scrollY;
     float scrollVelocity_ = 0.0f;
+    float momentumStartY_ = 0.0f;
+    float momentumStartVelocity_ = 0.0f;
+    float momentumDuration_ = 0.0f;
+    float momentumDistance_ = 0.0f;
+    float momentumElapsed_ = 0.0f;
     float viewportHeight;
     float contentTop;
 
-    static constexpr float DRAG = 0.004f;
-    static constexpr float VELOCITY_EPSILON = 150.0f;
+    static constexpr float DECEL_RATE = 2.358f;   // ln(0.78)/ln(0.9) — Android spline exponent
+    static constexpr float INFLEXION = 0.35f;      // spline inflection point
+    static constexpr float PHYSICAL_COEFF = 51890.0f; // g * in/m * px/in * 0.84
+    static constexpr float FRICTION = 0.015f;      // main tuning knob (higher = shorter scroll)
     static constexpr float MAX_VELOCITY = 7500.0f;
     static constexpr float MIN_LOAD_MARGIN = 30.0f;
     static constexpr float MAX_LOAD_MARGIN = 300.0f;

@@ -33,8 +33,17 @@ void DocumentManager::OnScroll(const theword::event::ScrollEvent& e) {
     autoScrollActive_ = false;
 
     if (e.velocity != 0.0f) {
-        momentumActive_ = true;
         scrollVelocity_ = std::clamp(e.velocity, -MAX_VELOCITY, MAX_VELOCITY);
+        momentumStartY_ = scrollY;
+        momentumStartVelocity_ = scrollVelocity_;
+        momentumElapsed_ = 0.0f;
+        momentumActive_ = true;
+
+        float vAbs = std::abs(momentumStartVelocity_);
+        float refVel = FRICTION * PHYSICAL_COEFF / INFLEXION;
+        float androidDur = std::pow(vAbs / refVel, 1.0f / (DECEL_RATE - 1.0f));
+        momentumDuration_ = DECEL_RATE * INFLEXION * androidDur;
+        momentumDistance_ = momentumStartVelocity_ * momentumDuration_ / DECEL_RATE;
         return;
     }
 
@@ -216,17 +225,23 @@ void DocumentManager::Update(float deltaTime) {
         }
     }
 
-    if (momentumActive_ && std::abs(scrollVelocity_) > VELOCITY_EPSILON) {
-        float vBefore = scrollVelocity_;
-        float vAbs = std::abs(vBefore);
-        scrollVelocity_ = vBefore / (1.0f + DRAG * vAbs * deltaTime);
-        scrollY += (vBefore + scrollVelocity_) * 0.5f * deltaTime;
-        if (std::abs(scrollVelocity_) < VELOCITY_EPSILON) {
+    if (momentumActive_) {
+        momentumElapsed_ += deltaTime;
+        if (momentumElapsed_ >= momentumDuration_) {
+            scrollY = momentumStartY_ + momentumDistance_;
             scrollVelocity_ = 0.0f;
             momentumActive_ = false;
+        } else {
+            float t = momentumElapsed_ / momentumDuration_;
+            float decay = std::pow(1.0f - t, DECEL_RATE - 1.0f);
+            scrollVelocity_ = momentumStartVelocity_ * decay;
+            float pos = 1.0f - std::pow(1.0f - t, DECEL_RATE);
+            scrollY = momentumStartY_ + momentumDistance_ * pos;
+
+            float maxScroll = std::max(0.0f, GetTotalHeight() - viewportHeight);
+            if (scrollY < 0.0f) { scrollY = 0.0f; scrollVelocity_ = 0.0f; momentumActive_ = false; }
+            if (scrollY > maxScroll && maxScroll > 0.0f) { scrollY = maxScroll; scrollVelocity_ = 0.0f; momentumActive_ = false; }
         }
-        float maxScroll = std::max(0.0f, GetTotalHeight() - viewportHeight);
-        scrollY = std::clamp(scrollY, 0.0f, maxScroll);
     }
 
     // Process one completed pending load per frame
