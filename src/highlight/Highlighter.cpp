@@ -86,11 +86,29 @@ void Highlighter::EndSelection() {
     int end = (std::max)(selectionStart, selectionEnd);
     if (start < 0) return;
 
+    CommitSelection(start, end);
+}
+
+void Highlighter::ClearCommittedSelection() {
+    committedStart_ = -1;
+    committedEnd_ = -1;
+}
+
+void Highlighter::CommitSelection(int startWord, int endWord) {
+    committedStart_ = startWord;
+    committedEnd_ = endWord;
+}
+
+void Highlighter::CreateHighlight(int startWord, int endWord, int typeId) {
+    int start = (std::min)(startWord, endWord);
+    int end = (std::max)(startWord, endWord);
+    if (start < 0) return;
+
     Highlight h;
     h.id = nextId++;
     h.startWord = start;
     h.endWord = end;
-    h.typeId = activeTypeId;
+    h.typeId = typeId;
     h.providerName = currentProvider;
     h.bookId = currentBookId_;
     h.chapterNum = currentChapterNum_;
@@ -117,6 +135,7 @@ void Highlighter::EndSelection() {
 
     highlights.push_back(h);
     persistence.SaveHighlight(h);
+    ClearCommittedSelection();
     theword::core::Logger::Debug("Highlight saved: " + h.bookId + "." + std::to_string(h.chapterNum)
         + " words " + std::to_string(start) + "-" + std::to_string(end));
 }

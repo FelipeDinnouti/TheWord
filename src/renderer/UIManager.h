@@ -2,14 +2,25 @@
 #define UI_MANAGER_H
 
 #include <string>
+#include <memory>
 #include <raylib.h>
 
 namespace theword::event { class EventBus; }
-namespace theword::highlight { class Highlighter; }
+namespace theword::highlight { class Highlighter; struct HighlightType; }
 
 namespace theword::renderer {
 
-class ContextMenu;
+class RadialMenu;
+
+struct RadialMenuActionResult {
+    bool consumed = false;
+    bool isHighlight = false;
+    bool isCopy = false;
+    bool isDelete = false;
+    int colorIndex = -1;
+    int startWord = -1;
+    int endWord = -1;
+};
 
 class UIManager {
 public:
@@ -20,14 +31,15 @@ public:
 
     ~UIManager();
 
-    void ShowContextMenu(Vector2 position, int highlightId, int typeId);
-    void HideContextMenu();
-    bool IsContextMenuActive() const;
-    void DrawContextMenu();
-    bool HandleContextMenuClick(Vector2 pos);
+    void DrawRadialMenu();
+    RadialMenuActionResult HandleRadialMenuClick(Vector2 pos);
+    void ShowRadialMenu(Vector2 position, int startWord, int endWord);
+    bool IsRadialMenuActive() const;
+    void HideRadialMenu();
 
 private:
-    ContextMenu* contextMenu;
+    std::unique_ptr<RadialMenu> radialMenu;
+    theword::highlight::Highlighter& highlighter_;
 };
 
 } // namespace theword::renderer

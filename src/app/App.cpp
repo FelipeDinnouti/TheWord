@@ -18,7 +18,6 @@
 #include "document/DocumentManager.h"
 #include "renderer/Renderer.h"
 #include "renderer/UIManager.h"
-#include "renderer/ContextMenu.h"
 #include "input/InputHandler.h"
 #include "highlight/Highlighter.h"
 #include "persistence/PersistenceManager.h"
@@ -30,6 +29,7 @@
 
 #include <cstdlib>
 #include <algorithm>
+#include <sstream>
 
 namespace theword::app {
 
@@ -49,6 +49,39 @@ App::~App() {
     UnloadFont(largeFont_);
     UnloadFont(smallFont_);
     CloseWindow();
+}
+
+static std::string AssembleSelectedText(const ChapterData& data, int startWord, int endWord) {
+    int s = (std::min)(startWord, endWord);
+    int e = (std::max)(startWord, endWord);
+    std::ostringstream oss;
+    for (const auto& w : data.words) {
+        if (w.id >= s && w.id <= e) {
+            if (oss.tellp() > 0) oss << " ";
+            oss << w.text;
+        }
+    }
+    return oss.str();
+}
+
+static void FindVerseRange(const std::vector<Word>& words, int anchorWord, int& verseStart, int& verseEnd) {
+    int targetVerse = -1;
+    for (const auto& w : words) {
+        if (w.id == anchorWord) {
+            targetVerse = w.verseId;
+            break;
+        }
+    }
+    if (targetVerse < 0) { verseStart = anchorWord; verseEnd = anchorWord; return; }
+
+    verseStart = anchorWord;
+    verseEnd = anchorWord;
+    for (const auto& w : words) {
+        if (w.verseId == targetVerse) {
+            if (w.id < verseStart) verseStart = w.id;
+            if (w.id > verseEnd) verseEnd = w.id;
+        }
+    }
 }
 
 bool App::Init(const std::string& title) {
@@ -286,17 +319,6 @@ void App::WireEvents() {
         docManager_->LoadInitialChapter(docManager_->GetCurrentChapterId());
     });
 
-    eventBus_->On<theword::event::RightClickEvent>([this](const auto& e) {
-        float scrollY = docManager_->GetScrollY();
-        int wordId = docManager_->HitTestWord(e.x, e.y, scrollY);
-        if (wordId >= 0) {
-            const Highlight* hl = highlighter_->HighlightAtWord(wordId);
-            if (hl) {
-                uiManager_->ShowContextMenu({e.x, e.y}, hl->id, hl->typeId);
-            }
-        }
-    });
-
     eventBus_->On<theword::event::NavigateEvent>([this](const auto& e) {
         docManager_->LoadInitialChapter(e.chapterRef);
         persistence_->SetPreference("last_chapter", e.chapterRef);
@@ -328,17 +350,61 @@ void App::Run() {
         float deltaTime = (float)(currentTime - lastTime);
         lastTime = currentTime;
 
-        auto ctxHandler = [this](Vector2 pos) {
-            return uiManager_->HandleContextMenuClick(pos);
+        auto radialClickHandler = [this](Vector2 pos) -> bool {
+            RadialMenuActionResult result = uiManager_->HandleRadialMenuClick(pos);
+            if (!result.consumed) return false;
+
+            if (result.isCopy) {
+                auto* chapterData = docManager_->GetCurrentChapterData();
+                if (chapterData) {
+                    std::string text = AssembleSelectedText(*chapterData,
+                        result.startWord, result.endWord);
+                    if (!text.empty()) {
+                        platform::SetClipboard(text);
+                        Logger::Debug("Copied to clipboard: " + text);
+                    }
+                }
+            } else if (result.isDelete) {
+                auto* chapterData = docManager_->GetCurrentChapterData();
+                if (chapterData) {
+                    int s = (std::min)(result.startWord, result.endWord);
+                    int e = (std::max)(result.startWord, result.endWord);
+                    for (const auto& h : highlighter_->GetHighlights()) {
+                        if (h.bookId == chapterData->bookId &&
+                            h.chapterNum == chapterData->chapterNum &&
+                            h.startWord <= e && h.endWord >= s) {
+                            highlighter_->RemoveHighlight(h.id);
+                        }
+                    }
+                }
+            }
+
+            return true;
         };
-        auto ctxDismiss = [this]() {
-            if (uiManager_->IsContextMenuActive()) {
-                uiManager_->HideContextMenu();
+
+        auto radialDismiss = [this]() -> bool {
+            if (uiManager_->IsRadialMenuActive()) {
+                uiManager_->HideRadialMenu();
                 return true;
             }
             return false;
         };
-        inputHandler_->Poll(deltaTime, navStack_.get(), ctxHandler, ctxDismiss);
+
+        auto radialShowHandler = [this](int startWord, int endWord, Vector2 position, bool selectFullVerse) {
+            auto* chapterData = docManager_->GetCurrentChapterData();
+            if (!chapterData) return;
+
+            if (selectFullVerse) {
+                int vStart, vEnd;
+                FindVerseRange(chapterData->words, startWord, vStart, vEnd);
+                startWord = vStart;
+                endWord = vEnd;
+            }
+
+            uiManager_->ShowRadialMenu(position, startWord, endWord);
+        };
+
+        inputHandler_->Poll(deltaTime, navStack_.get(), radialClickHandler, radialDismiss, radialShowHandler);
         docManager_->Update(deltaTime);
 
         // Keyboard shortcuts that push screens (only when on root Reader)
@@ -368,7 +434,7 @@ void App::Run() {
                         || docManager_->HasMomentum()
                         || docManager_->HasPendingLoads();
         bool hasUiOverlay = inputHandler_->IsDialogActive()
-                         || uiManager_->IsContextMenuActive()
+                         || uiManager_->IsRadialMenuActive()
                          || !navStack_->IsOnRoot();
 
         static int idleFrameCount = 0;
@@ -395,7 +461,7 @@ void App::Run() {
 
             navStack_->DrawActive();
 
-            uiManager_->DrawContextMenu();
+            uiManager_->DrawRadialMenu();
 #ifndef NDEBUG
             renderer_->DrawFpsCounter(10, GetScreenHeight() - 30);
 #endif

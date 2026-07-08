@@ -1,44 +1,79 @@
 # Roadmap: v1.6.0-alpha.1
 
-> Theme: Copy Verse + Code Quality
-> Status: Planning complete, ready to implement
+> Theme: Radial Action Menu (replaces ContextMenu) + Copy Verse + Double-click
+> Status: Phases 1-2 complete, ready for Phase 3 release
 
 ## Overview
 
-Two features, no dependencies between them:
+Replace the old right-click context menu with a unified radial action menu that
+appears after any text selection (drag, tap, or double-click). The same menu
+handles highlight (pick a color), copy, and delete actions.
 
-| # | Feature | Type | Est. files touched |
-|---|---------|------|-------------------|
-| 1 | `unique_ptr<ContextMenu>` refactor | refactor | 2 |
-| 2 | Copy Verse | feat | 5-6 |
+```
+Select text (tap/drag/double-click)
+  → radial menu centered on last pointer position
+       ├─ 5 color circles → highlight selection with that color
+       ├─ C (Copy)       → copy selected word text to clipboard
+       └─ X (Delete)     → remove overlapping highlights
+  → tap outside / Escape → dismiss, clear selection
+```
 
-## Checklist
+## Phase 1 — Radial Menu + New Selection Flow
 
-### Phase 0: Version Bump & Doc Updates
-- [x] Bump `CMakeLists.txt` → `VERSION 1.6.0`, suffix `-alpha.1`
-- [x] `reconfigure` — `rm -rf build && cmake -B build ...`
-- [x] Update `Release Plan.md` — move 1.5.0 to past, add 1.6.0 section
-- [x] Update `Progress Tracking.md` — mark 1.5.0-alpha.x done, add 1.6.0 section
-- [x] Update `Agent Workflow.md` — reference `memory/` for state + roadmap
+### Files Created
+| File | Purpose |
+|------|---------|
+| `src/renderer/RadialMenu.h` | 7-circle radial menu widget |
+| `src/renderer/RadialMenu.cpp` | Layout, draw, hit-test |
 
-### Phase 1: unique_ptr<ContextMenu> Refactor
-- [ ] `UIManager.h` — change `ContextMenu*` → `std::unique_ptr<ContextMenu>`
-- [ ] `UIManager.cpp` — `new` → `std::make_unique`, remove `delete`
-- [ ] Build + verify no regressions
-- [ ] Run tests (should still be 70/72)
+### Files Modified
+| File | Change |
+|------|--------|
+| `Highlighter.h/cpp` | EndSelection() records committed range, doesn't auto-create. Add CreateHighlight(), ClearCommittedSelection(), HasCommittedSelection() |
+| `UIManager.h/cpp` | Replace ContextMenu with RadialMenu. ShowRadialMenu(), DrawRadialMenu(), HandleRadialMenuClick() returns action struct |
+| `InputHandler.h/cpp` | Tap/drag show radial menu instead of auto-highlight. Add double-click detection + RadialMenuCallbacks. Remove old RightClickEvent emission |
+| `App.cpp` | Wire radial lifecycle (show on selection end, process Copy/Delete/Highlight) |
+| `ReaderScreen.cpp` | Persist selection tint after release. Lighter shade for verse-exact selections |
+| `CMakeLists.txt` | RadialMenu.cpp added, ContextMenu.cpp/h removed |
 
-### Phase 2: Copy Verse
-- [ ] **Research / design**: Determine exact context menu expansion approach
-- [ ] **ContextMenu**: Add "Copy" button alongside existing highlight controls; support showing on non-highlighted words
-- [ ] **UIManager**: Add copy callback or extend ShowContextMenu to include copy action
-- [ ] **App.cpp**: Modify right-click handler to show context menu even when word is NOT highlighted; handle copy action (assemble verse text from `ChapterData::words`, call `platform::SetClipboard`)
-- [ ] **Verse text assembly**: Helper to collect all words with matching `verseId` → format as "Book Chapter:Verse text"
-- [ ] **Mobile long-press**: Ensure long-press on non-highlighted text also triggers copy context menu
-- [ ] Build + run tests
-- [ ] Manual verification (desktop: right-click a verse → copy → paste)
+### Files Deleted
+| File | Reason |
+|------|--------|
+| `src/renderer/ContextMenu.h` | Replaced by RadialMenu |
+| `src/renderer/ContextMenu.cpp` | Replaced by RadialMenu |
 
-### Phase 3: Release
+### Checklist
+- [x] Plan written
+- [x] Create RadialMenu.h — class with Show/Hide/Draw/HandleClick, Button struct for 7 circles
+- [x] Create RadialMenu.cpp — LayoutButtons (evenly spaced around center), draw circles, hit-test
+- [x] Modify Highlighter.h — add committedStart/End, HasCommittedSelection(), ClearCommittedSelection(), CreateHighlight(start,end,typeId)
+- [x] Modify Highlighter.cpp — EndSelection() records range, doesn't create. CreateHighlight() extracted. ClearCommittedSelection() added
+- [x] Modify UIManager.h — unique_ptr<RadialMenu>, RadialMenuActionResult struct, ShowRadialMenu(), HandleRadialMenuClick()
+- [x] Modify UIManager.cpp — wire RadialMenu, handle Highlight action
+- [x] Modify InputHandler.h — RadialMenuClickCallback, RadialMenuShowCallback, double-click tracking
+- [x] Modify InputHandler.cpp — tap no longer auto-highlights, drag-release shows radial menu, double-click detection, right-click select+show, mobile tap any word shows menu
+- [x] Modify App.cpp — radial lifecycle (show/handle), copy action (AssembleSelectedText + SetClipboard), delete action (remove overlapping highlights), double-click verse expansion (FindVerseRange)
+- [x] Modify ReaderScreen.cpp — draw committed selection tint + lighter shade for verse-exact
+- [x] Update CMakeLists.txt — +RadialMenu, -ContextMenu
+- [x] Delete ContextMenu.h/cpp
+- [x] Build + verify (70/72 tests pass, same 2 locale failures)
+- [x] Update tests — replace all OnSelection(End) with CreateHighlight calls
+
+## Phase 2 — Copy, Delete, Double-Click
+All Phase 2 items implemented as part of Phase 1.
+
+### Checklist
+- [x] RadialMenu: Copy ("C") and Delete ("X") buttons in the ring
+- [x] App.cpp: Copy action → AssembleSelectedText, platform::SetClipboard
+- [x] App.cpp: Delete action → find overlapping highlights, remove each
+- [x] InputHandler: double-click detection (lastClickTime + lastClickWord, DOUBLE_CLICK_TIME)
+- [x] App.cpp: double-click → FindVerseRange, expand selection to whole verse
+- [x] ReaderScreen: lighter blue tint when selection exactly matches verse boundary
+- [x] Build + 70/72 tests passing
+
+## Phase 3 — Release
 - [ ] Full test suite passes (72/72, or 70/72 locale pending)
 - [ ] Desktop build clean
+- [ ] Android APK build
 - [ ] Tag `v1.6.0-alpha.1`
 - [ ] Update `STATE.md` with final state

@@ -29,19 +29,22 @@ InputHandler::InputHandler(theword::event::EventBus& eventBus,
 }
 
 void InputHandler::Poll(float deltaTime, theword::ui::NavigationStack* navStack,
-                        ContextMenuHandler contextMenuHandler,
-                        ContextDismissHandler contextDismissHandler) {
-    // Context menu gets first chance to consume clicks and escape
+                        RadialMenuClickCallback radialClickHandler,
+                        ContextDismissHandler contextDismissHandler,
+                        RadialMenuShowCallback radialShowHandler) {
+    showRadialCallback_ = radialShowHandler;
+
+    // Radial menu gets first chance to consume clicks and escape
     if (IsKeyPressed(key::ESCAPE) && contextDismissHandler && contextDismissHandler()) {
         return;
     }
-    if (contextMenuHandler && IsMouseButtonPressed(MOUSE_LEFT_BUTTON)) {
-        if (contextMenuHandler(GetMousePosition())) {
+    if (radialClickHandler && IsMouseButtonPressed(MOUSE_LEFT_BUTTON)) {
+        if (radialClickHandler(GetMousePosition())) {
             return;
         }
     }
 
-    // Let the active screen process input first — if it consumes it, skip normal handling
+    // Let the active screen process input first
     if (navStack && navStack->HandleInput(deltaTime)) return;
 
     if (IsKeyPressed(key::ESCAPE)) {
@@ -67,6 +70,28 @@ void InputHandler::Poll(float deltaTime, theword::ui::NavigationStack* navStack,
     }
 
     HandleWindowResize();
+}
+
+void InputHandler::FinishSelection(int startWord, int endWord, Vector2 position) {
+    bool isDoubleClick = false;
+    double now = GetTime();
+
+    if (startWord == lastClickWord_ && (now - lastClickTime_) < DOUBLE_CLICK_TIME) {
+        isDoubleClick = true;
+    }
+
+    lastClickTime_ = now;
+    lastClickWord_ = startWord;
+
+    // Emit SelectionEvent for Highlighter to track visually
+    eventBus_.Emit(theword::event::SelectionEvent{
+        theword::event::SelectionEvent::Action::Start, startWord, startWord, {}, 0});
+    eventBus_.Emit(theword::event::SelectionEvent{
+        theword::event::SelectionEvent::Action::End, startWord, endWord, {}, 0});
+
+    if (showRadialCallback_) {
+        showRadialCallback_(startWord, endWord, position, isDoubleClick);
+    }
 }
 
 void InputHandler::HandleScroll() {
@@ -103,16 +128,17 @@ void InputHandler::HandlePressFSM() {
 
         case PressState::Pending:
             if (!IsMouseButtonDown(MOUSE_LEFT_BUTTON)) {
+                // Tap: select word + show radial menu
                 if (pressStartWord >= 0) {
-                    eventBus_.Emit(theword::event::SelectionEvent{
-                        theword::event::SelectionEvent::Action::Start, pressStartWord, pressStartWord, {}, 0});
-                    eventBus_.Emit(theword::event::SelectionEvent{
-                        theword::event::SelectionEvent::Action::End, pressStartWord, pressStartWord, {}, 0});
+                    FinishSelection(pressStartWord, pressStartWord, GetMousePosition());
                 }
                 pressState = PressState::Idle;
             } else if (GetTime() - pressStartTime > LONG_PRESS_TIME) {
+                // Long press: treat same as tap (show radial menu)
+                if (pressStartWord >= 0) {
+                    FinishSelection(pressStartWord, pressStartWord, GetMousePosition());
+                }
                 pressState = PressState::LongPress;
-                eventBus_.Emit(theword::event::RightClickEvent{pressStartPos.x, pressStartPos.y});
             } else {
                 Vector2 m = GetMousePosition();
                 float dx = m.x - pressStartPos.x;
@@ -146,8 +172,12 @@ void InputHandler::HandlePressFSM() {
                 }
             }
             if (IsMouseButtonReleased(MOUSE_LEFT_BUTTON)) {
-                eventBus_.Emit(theword::event::SelectionEvent{
-                    theword::event::SelectionEvent::Action::End, pressStartWord, pressStartWord, {}, 0});
+                if (pressStartWord >= 0) {
+                    Vector2 m = GetMousePosition();
+                    int endWord = hitTestFn ? hitTestFn(m.x, m.y) : pressStartWord;
+                    if (endWord < 0) endWord = pressStartWord;
+                    FinishSelection(pressStartWord, endWord, m);
+                }
                 pressState = PressState::Idle;
             }
             break;
@@ -166,7 +196,10 @@ void InputHandler::HandlePressFSM() {
 void InputHandler::HandleRightClick() {
     if (IsMouseButtonPressed(MOUSE_BUTTON_RIGHT)) {
         Vector2 mousePos = GetMousePosition();
-        eventBus_.Emit(theword::event::RightClickEvent{mousePos.x, mousePos.y});
+        int wordId = hitTestFn ? hitTestFn(mousePos.x, mousePos.y) : -1;
+        if (wordId >= 0) {
+            FinishSelection(wordId, wordId, mousePos);
+        }
     }
 }
 
@@ -181,7 +214,6 @@ void InputHandler::HandleTouchScroll() {
             touchLastY = pos.y;
             slopAccumulator = 0.0f;
             touchLaunchVelocity_ = 0.0f;
-            eventBus_.Emit(theword::event::ScrollEvent{0.0f, true, 0.0f});
             return;
         }
 
@@ -229,13 +261,13 @@ void InputHandler::HandleTouchPressFSM() {
 
         case PressState::Pending:
             if (touchCount == 0) {
-                // Tap: show context menu if word is highlighted, otherwise do nothing
-                if (pressStartWord >= 0 && isHighlightedFn && isHighlightedFn(pressStartWord)) {
-                    eventBus_.Emit(theword::event::RightClickEvent{pressStartPos.x, pressStartPos.y});
+                // Tap on any word → show radial menu
+                if (pressStartWord >= 0) {
+                    FinishSelection(pressStartWord, pressStartWord, pressStartPos);
                 }
                 pressState = PressState::Idle;
             } else if (GetTime() - pressStartTime > LONG_PRESS_TIME) {
-                // Longpress: start highlighting selection
+                // Long-press: start selection
                 if (pressStartWord >= 0) {
                     selectStartWord = pressStartWord;
                     eventBus_.Emit(theword::event::SelectionEvent{
@@ -254,12 +286,14 @@ void InputHandler::HandleTouchPressFSM() {
 
         case PressState::Selecting:
             if (touchCount == 0) {
-                // Release: end selection and save highlight
-                eventBus_.Emit(theword::event::SelectionEvent{
-                    theword::event::SelectionEvent::Action::End, selectStartWord, pressStartWord, {}, 0});
+                // Release: finalize selection + show radial menu
+                if (selectStartWord >= 0) {
+                    eventBus_.Emit(theword::event::SelectionEvent{
+                        theword::event::SelectionEvent::Action::End, selectStartWord, pressStartWord, {}, 0});
+                    FinishSelection(selectStartWord, pressStartWord, pressStartPos);
+                }
                 pressState = PressState::Idle;
             } else {
-                // Drag: extend selection range
                 if (hitTestFn) {
                     int wordId = hitTestFn(touchPos.x, touchPos.y);
                     if (wordId >= 0 && wordId != pressStartWord) {

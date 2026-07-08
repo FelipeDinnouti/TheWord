@@ -554,8 +554,9 @@ TEST_CASE("Highlighter startSelection records word ID") {
     InMemoryStorage store;
     theword::event::EventBus eb;
     Highlighter h(eb, store);
+    h.SetChapterContext("GEN", 1, nullptr);
     h.OnSelection(theword::event::SelectionEvent{theword::event::SelectionEvent::Action::Start, 42, 42});
-    h.OnSelection(theword::event::SelectionEvent{theword::event::SelectionEvent::Action::End, 42, 42});
+    h.CreateHighlight(42, 42, 1);
     auto& highlights = h.GetHighlights();
     REQUIRE(highlights.size() == 1);
     CHECK(highlights[0].startWord == 42);
@@ -566,9 +567,10 @@ TEST_CASE("Highlighter selection range covers start to end") {
     InMemoryStorage store;
     theword::event::EventBus eb;
     Highlighter h(eb, store);
+    h.SetChapterContext("GEN", 1, nullptr);
     h.OnSelection(theword::event::SelectionEvent{theword::event::SelectionEvent::Action::Start, 5, 5});
     h.OnSelection(theword::event::SelectionEvent{theword::event::SelectionEvent::Action::Update, 5, 12});
-    h.OnSelection(theword::event::SelectionEvent{theword::event::SelectionEvent::Action::End, 5, 12});
+    h.CreateHighlight(5, 12, 1);
     auto& highlights = h.GetHighlights();
     REQUIRE(highlights.size() == 1);
     CHECK(highlights[0].startWord == 5);
@@ -579,9 +581,10 @@ TEST_CASE("Highlighter handles reverse drag direction") {
     InMemoryStorage store;
     theword::event::EventBus eb;
     Highlighter h(eb, store);
+    h.SetChapterContext("GEN", 1, nullptr);
     h.OnSelection(theword::event::SelectionEvent{theword::event::SelectionEvent::Action::Start, 20, 20});
     h.OnSelection(theword::event::SelectionEvent{theword::event::SelectionEvent::Action::Update, 20, 10});
-    h.OnSelection(theword::event::SelectionEvent{theword::event::SelectionEvent::Action::End, 20, 10});
+    h.CreateHighlight(20, 10, 1);
     auto& highlights = h.GetHighlights();
     REQUIRE(highlights.size() == 1);
     CHECK(highlights[0].startWord == 10);
@@ -600,9 +603,8 @@ TEST_CASE("Highlighter isWordHighlighted checks ranges") {
     InMemoryStorage store;
     theword::event::EventBus eb;
     Highlighter h(eb, store);
-    h.OnSelection(theword::event::SelectionEvent{theword::event::SelectionEvent::Action::Start, 5, 5});
-    h.OnSelection(theword::event::SelectionEvent{theword::event::SelectionEvent::Action::Update, 5, 10});
-    h.OnSelection(theword::event::SelectionEvent{theword::event::SelectionEvent::Action::End, 5, 10});
+    h.SetChapterContext("GEN", 1, nullptr);
+    h.CreateHighlight(5, 10, 1);
     CHECK(h.IsWordHighlighted(7));
     CHECK(h.IsWordHighlighted(10));
     CHECK_FALSE(h.IsWordHighlighted(4));
@@ -613,9 +615,8 @@ TEST_CASE("Highlighter getHighlightForWord returns color for highlighted word") 
     InMemoryStorage store;
     theword::event::EventBus eb;
     Highlighter h(eb, store);
-    h.OnSelection(theword::event::SelectionEvent{theword::event::SelectionEvent::Action::Start, 5, 5});
-    h.OnSelection(theword::event::SelectionEvent{theword::event::SelectionEvent::Action::Update, 5, 10});
-    h.OnSelection(theword::event::SelectionEvent{theword::event::SelectionEvent::Action::End, 5, 10});
+    h.SetChapterContext("GEN", 1, nullptr);
+    h.CreateHighlight(5, 10, 1);
     Color c = h.GetHighlightForWord(7);
     CHECK(c.a > 0);
     Color c2 = h.GetHighlightForWord(99);
@@ -673,9 +674,8 @@ TEST_CASE("Highlighter highlightAtWord returns pointer for highlighted word") {
     InMemoryStorage store;
     theword::event::EventBus eb;
     Highlighter h(eb, store);
-    h.OnSelection(theword::event::SelectionEvent{theword::event::SelectionEvent::Action::Start, 5, 5});
-    h.OnSelection(theword::event::SelectionEvent{theword::event::SelectionEvent::Action::Update, 5, 10});
-    h.OnSelection(theword::event::SelectionEvent{theword::event::SelectionEvent::Action::End, 5, 10});
+    h.SetChapterContext("GEN", 1, nullptr);
+    h.CreateHighlight(5, 10, 1);
     const Highlight* hl = h.HighlightAtWord(7);
     REQUIRE(hl != nullptr);
     CHECK(hl->startWord == 5);
@@ -686,9 +686,8 @@ TEST_CASE("Highlighter highlightAtWord returns nullptr for unhighlighted word") 
     InMemoryStorage store;
     theword::event::EventBus eb;
     Highlighter h(eb, store);
-    h.OnSelection(theword::event::SelectionEvent{theword::event::SelectionEvent::Action::Start, 5, 5});
-    h.OnSelection(theword::event::SelectionEvent{theword::event::SelectionEvent::Action::Update, 5, 10});
-    h.OnSelection(theword::event::SelectionEvent{theword::event::SelectionEvent::Action::End, 5, 10});
+    h.SetChapterContext("GEN", 1, nullptr);
+    h.CreateHighlight(5, 10, 1);
     const Highlight* hl = h.HighlightAtWord(4);
     CHECK(hl == nullptr);
     hl = h.HighlightAtWord(11);
@@ -699,9 +698,8 @@ TEST_CASE("Highlighter removeHighlight removes from internal vector") {
     InMemoryStorage store;
     theword::event::EventBus eb;
     Highlighter h(eb, store);
-    h.OnSelection(theword::event::SelectionEvent{theword::event::SelectionEvent::Action::Start, 5, 5});
-    h.OnSelection(theword::event::SelectionEvent{theword::event::SelectionEvent::Action::Update, 5, 10});
-    h.OnSelection(theword::event::SelectionEvent{theword::event::SelectionEvent::Action::End, 5, 10});
+    h.SetChapterContext("GEN", 1, nullptr);
+    h.CreateHighlight(5, 10, 1);
     REQUIRE(h.GetHighlights().size() == 1);
     h.RemoveHighlight(h.GetHighlights()[0].id);
     CHECK(h.GetHighlights().empty());
@@ -712,9 +710,8 @@ TEST_CASE("Highlighter recolorHighlight changes typeId") {
     InMemoryStorage store;
     theword::event::EventBus eb;
     Highlighter h(eb, store);
-    h.OnSelection(theword::event::SelectionEvent{theword::event::SelectionEvent::Action::Start, 5, 5});
-    h.OnSelection(theword::event::SelectionEvent{theword::event::SelectionEvent::Action::Update, 5, 10});
-    h.OnSelection(theword::event::SelectionEvent{theword::event::SelectionEvent::Action::End, 5, 10});
+    h.SetChapterContext("GEN", 1, nullptr);
+    h.CreateHighlight(5, 10, 1);
     int hlId = h.GetHighlights()[0].id;
     int oldType = h.GetHighlights()[0].typeId;
     int newType = (oldType == 1) ? 2 : 1;
@@ -722,14 +719,12 @@ TEST_CASE("Highlighter recolorHighlight changes typeId") {
     CHECK(h.GetHighlights()[0].typeId == newType);
 }
 
-TEST_CASE("Highlighter activeTypeId used by endSelection") {
+TEST_CASE("Highlighter CreateHighlight uses provided typeId") {
     InMemoryStorage store;
     theword::event::EventBus eb;
     Highlighter h(eb, store);
-    h.SetActiveTypeId(99);
-    h.OnSelection(theword::event::SelectionEvent{theword::event::SelectionEvent::Action::Start, 1, 1});
-    h.OnSelection(theword::event::SelectionEvent{theword::event::SelectionEvent::Action::Update, 1, 5});
-    h.OnSelection(theword::event::SelectionEvent{theword::event::SelectionEvent::Action::End, 1, 5});
+    h.SetChapterContext("GEN", 1, nullptr);
+    h.CreateHighlight(1, 5, 99);
     CHECK(h.GetHighlights()[0].typeId == 99);
 }
 
@@ -809,12 +804,7 @@ TEST_CASE("Highlighter stores reference fields via SetChapterContext") {
     words.push_back({2, 2, "beginning"});
 
     h.SetChapterContext("GEN", 1, &words);
-    h.OnSelection(theword::event::SelectionEvent{
-        theword::event::SelectionEvent::Action::Start, 0, 0});
-    h.OnSelection(theword::event::SelectionEvent{
-        theword::event::SelectionEvent::Action::Update, 0, 2});
-    h.OnSelection(theword::event::SelectionEvent{
-        theword::event::SelectionEvent::Action::End, 0, 2});
+    h.CreateHighlight(0, 2, 1);
 
     auto& highlights = h.GetHighlights();
     REQUIRE(highlights.size() == 1);
@@ -835,12 +825,7 @@ TEST_CASE("Highlighter verseText populated from word data") {
     words.push_back({2, 1, "beginning"});
 
     h.SetChapterContext("GEN", 1, &words);
-    h.OnSelection(theword::event::SelectionEvent{
-        theword::event::SelectionEvent::Action::Start, 0, 0});
-    h.OnSelection(theword::event::SelectionEvent{
-        theword::event::SelectionEvent::Action::Update, 0, 2});
-    h.OnSelection(theword::event::SelectionEvent{
-        theword::event::SelectionEvent::Action::End, 0, 2});
+    h.CreateHighlight(0, 2, 1);
 
     auto& highlights = h.GetHighlights();
     REQUIRE(highlights.size() == 1);
@@ -857,12 +842,7 @@ TEST_CASE("Highlighter verseText truncated at 80 characters") {
     words.push_back({1, 1, std::string(40, 'B')});
 
     h.SetChapterContext("GEN", 1, &words);
-    h.OnSelection(theword::event::SelectionEvent{
-        theword::event::SelectionEvent::Action::Start, 0, 0});
-    h.OnSelection(theword::event::SelectionEvent{
-        theword::event::SelectionEvent::Action::Update, 0, 1});
-    h.OnSelection(theword::event::SelectionEvent{
-        theword::event::SelectionEvent::Action::End, 0, 1});
+    h.CreateHighlight(0, 1, 1);
 
     auto& highlights = h.GetHighlights();
     REQUIRE(highlights.size() == 1);
@@ -876,17 +856,9 @@ TEST_CASE("GetHighlightsByType filters correctly") {
     Highlighter h(eb, store);
 
     h.SetChapterContext("GEN", 1, nullptr);
-    h.SetActiveTypeId(1);
-    h.OnSelection(theword::event::SelectionEvent{
-        theword::event::SelectionEvent::Action::Start, 0, 0});
-    h.OnSelection(theword::event::SelectionEvent{
-        theword::event::SelectionEvent::Action::End, 0, 0});
+    h.CreateHighlight(0, 0, 1);
 
-    h.SetActiveTypeId(2);
-    h.OnSelection(theword::event::SelectionEvent{
-        theword::event::SelectionEvent::Action::Start, 10, 10});
-    h.OnSelection(theword::event::SelectionEvent{
-        theword::event::SelectionEvent::Action::End, 10, 10});
+    h.CreateHighlight(10, 10, 2);
 
     REQUIRE(h.GetHighlights().size() == 2);
 

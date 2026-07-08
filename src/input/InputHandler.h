@@ -16,11 +16,13 @@ public:
                  std::function<int(float, float)> hitTestFn = nullptr,
                  std::function<bool(int)> isHighlightedFn = nullptr);
 
-    using ContextMenuHandler = std::function<bool(Vector2)>;
+    using RadialMenuClickCallback = std::function<bool(Vector2)>;
+    using RadialMenuShowCallback = std::function<void(int startWord, int endWord, Vector2 position, bool selectFullVerse)>;
     using ContextDismissHandler = std::function<bool()>;
     void Poll(float deltaTime, theword::ui::NavigationStack* navStack = nullptr,
-              ContextMenuHandler contextMenuHandler = nullptr,
-              ContextDismissHandler contextDismissHandler = nullptr);
+              RadialMenuClickCallback radialClickHandler = nullptr,
+              ContextDismissHandler contextDismissHandler = nullptr,
+              RadialMenuShowCallback radialShowHandler = nullptr);
     bool IsDialogActive() const { return dialogActive_; }
     bool HasMomentum() const { return false; }
 
@@ -39,6 +41,7 @@ private:
     static constexpr float TOUCH_SLOP = 10.0f;
     static constexpr double LONG_PRESS_TIME = 0.5;
     static constexpr float LONG_PRESS_MOVE_THRESHOLD = 10.0f;
+    static constexpr double DOUBLE_CLICK_TIME = 0.35;
 
     PressState pressState;
     double pressStartTime;
@@ -50,6 +53,12 @@ private:
     float touchLaunchVelocity_ = 0.0f;
     float lastPinchDist;
 
+    double lastClickTime_ = 0.0;
+    int lastClickWord_ = -1;
+
+    RadialMenuShowCallback showRadialCallback_;
+
+    void FinishSelection(int startWord, int endWord, Vector2 position);
     void HandleScroll();
     void HandlePressFSM();
     void HandleWindowResize();

@@ -27,9 +27,15 @@
 
 ## Current Focus
 
-Implementing **v1.6.0-alpha.1** with two features:
-1. Copy Verse — right-click/long-press to copy verse text to clipboard
-2. Code quality — `unique_ptr<ContextMenu>` refactor
+Implementing **v1.6.0-alpha.1** — Radial Action Menu + Copy Verse + Double-click.
+
+Completed:
+- RadialMenu widget replaces old ContextMenu (7-button radial: 5 colors + Copy + Delete)
+- Selection flow: tap/drag/double-click → radial menu appears (no auto-highlight)
+- Highlight: pick a color from radial menu → creates highlight
+- Copy: assembles selected word text → `SetClipboard`
+- Delete: removes highlights overlapping selection
+- Double-click: selects full verse (lighter tint) → radial menu appears
 
 ## Known Issues
 

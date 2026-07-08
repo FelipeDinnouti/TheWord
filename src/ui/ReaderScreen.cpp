@@ -99,22 +99,47 @@ void ReaderScreen::Draw() {
 
     renderer_.DrawFrame(scrollY, totalHeight, viewHeight, docSpans, hlRects);
 
-    // Selection tint during drag
+    // Determine active selection range (during drag or committed)
+    int selMin = -1, selMax = -1;
     if (highlighter_.IsSelecting()) {
-        int selStart = highlighter_.GetSelectionStart();
-        int selEnd = highlighter_.GetSelectionEnd();
-        if (selStart >= 0 && selEnd >= 0) {
-            int minW = std::min(selStart, selEnd);
-            int maxW = std::max(selStart, selEnd);
-            for (const auto& [span, docY] : docSpans) {
-                if (span.startWord >= 0 && span.endWord >= minW && span.startWord <= maxW) {
-                    float screenY = docY - scrollY + contentTop_;
-                    DrawRectangle(static_cast<int>(span.x),
-                                  static_cast<int>(screenY),
-                                  static_cast<int>(span.width),
-                                  static_cast<int>(span.height),
-                                  {135, 206, 250, 80});
+        selMin = std::min(highlighter_.GetSelectionStart(), highlighter_.GetSelectionEnd());
+        selMax = std::max(highlighter_.GetSelectionStart(), highlighter_.GetSelectionEnd());
+    } else if (highlighter_.HasCommittedSelection()) {
+        selMin = std::min(highlighter_.GetCommittedStart(), highlighter_.GetCommittedEnd());
+        selMax = std::max(highlighter_.GetCommittedStart(), highlighter_.GetCommittedEnd());
+    }
+
+    if (selMin >= 0 && selMax >= 0) {
+        // Check if selection spans exactly one full verse
+        auto* chapterData = docManager_.GetCurrentChapterData();
+        bool fullVerse = false;
+        if (chapterData && !chapterData->words.empty()) {
+            int firstV = -1, lastV = -1;
+            for (const auto& w : chapterData->words) {
+                if (w.id == selMin) firstV = w.verseId;
+                if (w.id == selMax) lastV = w.verseId;
+            }
+            if (firstV >= 0 && firstV == lastV) {
+                int vMin = selMax, vMax = selMin;
+                for (const auto& w : chapterData->words) {
+                    if (w.verseId == firstV) {
+                        if (w.id < vMin) vMin = w.id;
+                        if (w.id > vMax) vMax = w.id;
+                    }
                 }
+                fullVerse = (vMin == selMin && vMax == selMax);
+            }
+        }
+
+        Color tint = fullVerse ? Color{180, 220, 255, 80} : Color{135, 206, 250, 80};
+        for (const auto& [span, docY] : docSpans) {
+            if (span.startWord >= 0 && span.endWord >= selMin && span.startWord <= selMax) {
+                float screenY = docY - scrollY + contentTop_;
+                DrawRectangle(static_cast<int>(span.x),
+                              static_cast<int>(screenY),
+                              static_cast<int>(span.width),
+                              static_cast<int>(span.height),
+                              tint);
             }
         }
     }

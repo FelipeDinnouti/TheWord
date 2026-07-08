@@ -47,6 +47,13 @@ public:
     int GetSelectionStart() const { return selectionStart; }
     int GetSelectionEnd() const { return selectionEnd; }
 
+    bool HasCommittedSelection() const { return committedStart_ >= 0; }
+    int GetCommittedStart() const { return committedStart_; }
+    int GetCommittedEnd() const { return committedEnd_; }
+    void ClearCommittedSelection();
+    void CommitSelection(int startWord, int endWord);
+    void CreateHighlight(int startWord, int endWord, int typeId);
+
 private:
     theword::event::EventBus& eventBus_;
     PersistenceInterface& persistence;
@@ -63,6 +70,9 @@ private:
     std::string currentBookId_;
     int currentChapterNum_ = 0;
     std::vector<theword::data::Word> currentWords_;
+
+    int committedStart_ = -1;
+    int committedEnd_ = -1;
 
     void StartSelection(int wordId);
     void UpdateSelection(int wordId);

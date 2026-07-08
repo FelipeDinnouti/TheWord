@@ -8,10 +8,10 @@ if(POLICY CMP0169)
     cmake_policy(SET CMP0169 OLD)
 endif()
 
-project(theword VERSION 1.5.0 LANGUAGES C CXX)
+project(theword VERSION 1.6.0 LANGUAGES C CXX)
 
 # Pre-release suffix (empty for release builds, e.g. "-alpha.1")
-set(THEWORD_VERSION_SUFFIX "-alpha.2")
+set(THEWORD_VERSION_SUFFIX "-alpha.1")
 set(APP_VERSION_FULL "${PROJECT_VERSION}${THEWORD_VERSION_SUFFIX}")
 
 # Auto-generate Version.h from template (substitutes @PROJECT_VERSION@ etc.)
@@ -255,8 +255,8 @@ set(RENDERER_SOURCES
     src/renderer/Renderer.h
     src/renderer/UIManager.cpp
     src/renderer/UIManager.h
-    src/renderer/ContextMenu.cpp
-    src/renderer/ContextMenu.h
+    src/renderer/RadialMenu.cpp
+    src/renderer/RadialMenu.h
 )
 
 set(UI_SOURCES
