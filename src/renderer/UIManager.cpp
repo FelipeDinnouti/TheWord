@@ -1,26 +1,20 @@
 #include "UIManager.h"
 #include "RadialMenu.h"
-#include "event/EventBus.h"
 #include "highlight/Highlighter.h"
-#include "core/Theme.h"
 
 namespace theword::renderer {
 
-using namespace theword::core;
-
-UIManager::UIManager(theword::event::EventBus& /*eventBus*/,
-                     const Font& /*headingFont*/, float /*headingSize*/,
-                     theword::highlight::Highlighter& highlighter,
-                     float /*scaleFactor*/)
-    : highlighter_(highlighter) {}
+UIManager::UIManager(theword::highlight::Highlighter& highlighter, float dpiScale)
+    : highlighter_(highlighter), dpiScale_(dpiScale) {}
 
 UIManager::~UIManager() = default;
 
-void UIManager::ShowRadialMenu(Vector2 position, int startWord, int endWord) {
+void UIManager::ShowRadialMenu(Vector2 position, int startWord, int endWord,
+                               const std::string& bookId, int chapterNum) {
     if (!radialMenu) {
-        radialMenu = std::make_unique<RadialMenu>();
+        radialMenu = std::make_unique<RadialMenu>(dpiScale_);
     }
-    radialMenu->Show(position, startWord, endWord, highlighter_.GetTypes());
+    radialMenu->Show(position, startWord, endWord, bookId, chapterNum, highlighter_.GetTypes());
 }
 
 void UIManager::HideRadialMenu() {
@@ -43,20 +37,14 @@ RadialMenuActionResult UIManager::HandleRadialMenuClick(Vector2 pos) {
     auto [action, colorIndex] = radialMenu->HandleClick(pos);
     result.startWord = radialMenu->GetStartWord();
     result.endWord = radialMenu->GetEndWord();
+    result.bookId = radialMenu->GetBookId();
+    result.chapterNum = radialMenu->GetChapterNum();
 
     switch (action) {
         case RadialMenu::Action::Highlight:
             result.consumed = true;
             result.isHighlight = true;
             result.colorIndex = colorIndex;
-            {
-                const auto& types = highlighter_.GetTypes();
-                if (colorIndex >= 0 && colorIndex < static_cast<int>(types.size())) {
-                    highlighter_.CreateHighlight(
-                        result.startWord, result.endWord, types[colorIndex].id);
-                }
-            }
-            HideRadialMenu();
             break;
 
         case RadialMenu::Action::Copy:
@@ -72,8 +60,7 @@ RadialMenuActionResult UIManager::HandleRadialMenuClick(Vector2 pos) {
             break;
 
         case RadialMenu::Action::None:
-            result.consumed = true;
-            HideRadialMenu();
+            result.consumed = false;
             break;
     }
 

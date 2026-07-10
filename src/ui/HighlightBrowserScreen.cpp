@@ -63,7 +63,8 @@ HighlightBrowserScreen::HighlightBrowserScreen(const Font& font, float fontSize,
                                                const theword::core::UIScale& uiScale)
     : font_(font), fontSize_(fontSize),
       navStack_(navStack), eventBus_(eventBus),
-      highlighter_(highlighter), uiScale_(uiScale) {
+      highlighter_(highlighter), uiScale_(uiScale),
+      tapDetector_(uiScale_.dp(10)) {
     eventBus_.On<theword::event::ScrollEvent>(
         [this, alive = aliveGuard_](const theword::event::ScrollEvent& e) {
         if (!*alive) return;
@@ -266,17 +267,13 @@ bool HighlightBrowserScreen::HandleInput(float /*deltaTime*/) {
 
     const auto& types = highlighter_.GetTypes();
 
-    if (IsMouseButtonPressed(MOUSE_LEFT_BUTTON)) {
-        pressStartPos_ = GetMousePosition();
-        hasPendingPress_ = true;
-    }
+    if (IsMouseButtonPressed(MOUSE_LEFT_BUTTON))
+        tapDetector_.OnPress(GetMousePosition());
 
-    if (hasPendingPress_ && IsMouseButtonReleased(MOUSE_LEFT_BUTTON)) {
-        hasPendingPress_ = false;
-        Vector2 mousePos = GetMousePosition();
-        float dx = mousePos.x - pressStartPos_.x;
-        float dy = mousePos.y - pressStartPos_.y;
-        if (dx * dx + dy * dy > uiScale_.dp(10) * uiScale_.dp(10)) return true;
+    Vector2 mousePos;
+    auto tr = tapDetector_.OnRelease(GetMousePosition(), mousePos);
+    if (tr == TapDetector::Result::Drag) return true;
+    if (tr == TapDetector::Result::Tap) {
 
         // Back button via header bar tap
         if (mousePos.y < headerH && mousePos.x < uiScale_.dp(56)) {

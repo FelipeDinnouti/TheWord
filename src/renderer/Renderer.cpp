@@ -1,6 +1,4 @@
 #include "Renderer.h"
-#include "event/EventBus.h"
-#include "event/Events.h"
 #include <algorithm>
 
 namespace theword::renderer {
@@ -8,14 +6,13 @@ namespace theword::renderer {
 using namespace theword::core;
 using namespace theword::data;
 
-Renderer::Renderer(theword::event::EventBus& eventBus,
-                   const Font& bodyFont, const Font& headingFont,
+Renderer::Renderer(const Font& bodyFont, const Font& headingFont,
                    const Font& largeFont, const Font& smallFont,
                    float contentTop,
                    float bodySize, float headingSize,
                    float largeSize, float smallSize,
                    float dpiScale)
-    : eventBus_(eventBus), bodyFont(bodyFont), headingFont(headingFont),
+    : bodyFont(bodyFont), headingFont(headingFont),
       largeFont(largeFont), smallFont(smallFont),
       contentTop(contentTop),
       bodySize_(bodySize), headingSize_(headingSize),
@@ -41,6 +38,7 @@ void Renderer::DrawFrame(float scrollY, float totalHeight, float viewportHeight,
                           const std::vector<std::pair<Span, float>>& docSpans,
                           const std::vector<HighlightRect>& highlightRects) {
     for (const auto& hr : highlightRects) {
+        if (hr.y < -CULL_MARGIN || hr.y > GetScreenHeight()) continue;
         DrawRectangle(hr.x, hr.y, hr.width, hr.height, hr.color);
     }
 

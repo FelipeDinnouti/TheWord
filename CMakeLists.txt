@@ -10,8 +10,11 @@ endif()
 
 project(theword VERSION 1.6.0 LANGUAGES C CXX)
 
+set(CMAKE_CXX_STANDARD 17)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
+
 # Pre-release suffix (empty for release builds, e.g. "-alpha.1")
-set(THEWORD_VERSION_SUFFIX "-alpha.1")
+set(THEWORD_VERSION_SUFFIX "-alpha.2")
 set(APP_VERSION_FULL "${PROJECT_VERSION}${THEWORD_VERSION_SUFFIX}")
 
 # Auto-generate Version.h from template (substitutes @PROJECT_VERSION@ etc.)
@@ -84,6 +87,10 @@ if(ANDROID)
     add_subdirectory(${raylib_SOURCE_DIR} ${raylib_BINARY_DIR})
 else()
     FetchContent_MakeAvailable(raylib)
+endif()
+
+if(CMAKE_CXX_COMPILER_ID MATCHES "Clang")
+    target_compile_options(raylib PRIVATE -Wno-implicit-const-int-float-conversion)
 endif()
 
 # ── Doctest (header-only unit testing) ────────────────────────────────────
@@ -277,6 +284,7 @@ set(UI_SOURCES
     src/ui/SettingsScreen.cpp
     src/ui/CreditsOverlay.h
     src/ui/CreditsOverlay.cpp
+    src/ui/TapDetector.h
     src/ui/FontDiagnostic.h
     src/ui/FontDiagnostic.cpp
     src/ui/HighlightBrowserScreen.h
@@ -308,7 +316,7 @@ add_library(theword_objects OBJECT
     ${UI_SOURCES}
 )
 
-target_compile_features(theword_objects PUBLIC cxx_std_17)
+
 target_include_directories(theword_objects PUBLIC src)
 target_include_directories(theword_objects PRIVATE "${CMAKE_CURRENT_BINARY_DIR}/generated")
 target_link_libraries(theword_objects PRIVATE raylib sqlite3_obj)
@@ -319,6 +327,9 @@ endif()
 
 if(NOT MSVC)
     target_compile_options(theword_objects PRIVATE -Wall -Wextra -Wpedantic)
+    if(ANDROID OR CMAKE_CXX_COMPILER_ID MATCHES "Clang")
+        target_compile_options(theword_objects PRIVATE -Wno-implicit-const-int-float-conversion)
+    endif()
 endif()
 
 # ── Executables ────────────────────────────────────────────────────────────

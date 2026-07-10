@@ -152,7 +152,7 @@ bool App::Init(const std::string& title) {
                                                    largeFont_, initLargeF,
                                                    smallFont_, initSmallF,
                                                    config::LINE_SPACING, scale_);
-    renderer_ = std::make_unique<Renderer>(*eventBus_, bodyFont_, headingFont_, largeFont_, smallFont_,
+    renderer_ = std::make_unique<Renderer>(bodyFont_, headingFont_, largeFont_, smallFont_,
                                             contentTop, initBodyF, initHeadingF, initLargeF, initSmallF, scale_);
 
     float viewportHeight = renderH - contentTop;
@@ -194,15 +194,18 @@ bool App::Init(const std::string& title) {
 
     highlighter_->SetProvider(versionOnline_ ? "BibleClient" : "USFMParser");
 
-    uiManager_ = std::make_unique<UIManager>(*eventBus_, headingFont_, headingSize_, *highlighter_, scale_);
+    uiManager_ = std::make_unique<UIManager>(*highlighter_, scale_);
 
     std::string savedColor = persistence_->GetPreference("active_color", "");
     if (!savedColor.empty()) {
         try { highlighter_->SetActiveTypeId(std::stoi(savedColor)); } catch (...) {}
     }
 
-    auto hitTestFn = [this](float x, float y) {
-        return docManager_->HitTestWord(x, y, docManager_->GetScrollY());
+    auto hitTestFn = [this](float x, float y) -> theword::input::HitInfo {
+        auto result = docManager_->HitTestWithChapter(x, y);
+        return {result.wordId,
+                result.chapterData ? result.chapterData->bookId : "",
+                result.chapterData ? result.chapterData->chapterNum : 0};
     };
     auto isHighlightedFn = [this](int wordId) {
         return highlighter_->IsWordHighlighted(wordId);
@@ -325,6 +328,8 @@ void App::WireEvents() {
     });
 
     eventBus_->On<theword::event::ChapterLoadedEvent>([this](const auto& e) {
+        accumStartWord_ = -1;
+        accumEndWord_ = -1;
         std::string book;
         int chapter;
         if (ParseChapterRef(e.chapterRef, book, chapter)) {
@@ -343,6 +348,173 @@ void App::Run() {
     double lastTime = GetTime();
     int drawCountdown = config::IDLE_DRAIN_FRAMES;
 
+    bool longPressHandled = false;
+
+    auto onTap = [this](theword::input::HitInfo hit, Vector2 pos, bool isDouble) {
+        int wordId = hit.wordId;
+        auto* cd = docManager_->GetChapterData(hit.bookId, hit.chapterNum);
+        if (!cd) cd = docManager_->GetCurrentChapterData();
+        Logger::Debug("onTap: wordId=" + std::to_string(hit.wordId)
+            + " hitChapter=" + hit.bookId + "." + std::to_string(hit.chapterNum)
+            + " visibleChapter=" + docManager_->GetCurrentChapterId()
+            + " cd=" + (cd ? cd->bookId + "." + std::to_string(cd->chapterNum) : "null"));
+
+        if (uiManager_->IsRadialMenuActive()) {
+            RadialMenuActionResult result = uiManager_->HandleRadialMenuClick(pos);
+            if (result.consumed) {
+                accumStartWord_ = -1;
+                accumEndWord_ = -1;
+                if (result.isCopy) {
+                    if (cd) {
+                        std::string text = AssembleSelectedText(*cd, result.startWord, result.endWord);
+                        if (!text.empty()) {
+                            platform::SetClipboard(text);
+                            Logger::Debug("Copied to clipboard: " + text);
+                        }
+                    }
+                } else if (result.isDelete) {
+                    if (cd) {
+                        int s = (std::min)(result.startWord, result.endWord);
+                        int e = (std::max)(result.startWord, result.endWord);
+                        for (const auto& h : highlighter_->GetHighlights()) {
+                            if (h.bookId == cd->bookId &&
+                                h.chapterNum == cd->chapterNum &&
+                                h.startWord <= e && h.endWord >= s) {
+                                highlighter_->RemoveHighlight(h.id);
+                            }
+                        }
+                    }
+                } else if (result.isHighlight) {
+                    const auto& types = highlighter_->GetTypes();
+                    if (result.colorIndex >= 0 && result.colorIndex < static_cast<int>(types.size())) {
+                        const auto* existing = highlighter_->HighlightAtWord(result.startWord, result.bookId, result.chapterNum);
+                        if (existing) {
+                            highlighter_->RecolorHighlight(existing->id, types[result.colorIndex].id);
+                        } else {
+                            auto* hcd = docManager_->GetChapterData(result.bookId, result.chapterNum);
+                            highlighter_->CreateHighlight(result.startWord, result.endWord, types[result.colorIndex].id,
+                                result.bookId, result.chapterNum, hcd ? &hcd->words : nullptr);
+                        }
+                    }
+                    uiManager_->HideRadialMenu();
+                }
+                return;
+            }
+            // Missed buttons: expansion or dismiss
+            if (wordId >= 0 && accumStartWord_ >= 0 && cd) {
+                int vStart, vEnd;
+                FindVerseRange(cd->words, wordId, vStart, vEnd);
+                accumStartWord_ = (std::min)(accumStartWord_, vStart);
+                accumEndWord_ = (std::max)(accumEndWord_, vEnd);
+                highlighter_->CommitSelection(accumStartWord_, accumEndWord_, cd->bookId, cd->chapterNum);
+                uiManager_->ShowRadialMenu(pos, accumStartWord_, accumEndWord_, cd->bookId, cd->chapterNum);
+                return;
+            }
+            if (wordId >= 0) {
+                const auto* h = highlighter_->HighlightAtWord(wordId, hit.bookId, hit.chapterNum);
+                if (h) {
+                    accumStartWord_ = -1;
+                    accumEndWord_ = -1;
+                    highlighter_->CommitSelection(h->startWord, h->endWord, h->bookId, h->chapterNum);
+                    uiManager_->ShowRadialMenu(pos, h->startWord, h->endWord, h->bookId, h->chapterNum);
+                } else {
+                    uiManager_->HideRadialMenu();
+                    accumStartWord_ = -1;
+                    accumEndWord_ = -1;
+                }
+                return;
+            }
+            // Empty space — dismiss
+            uiManager_->HideRadialMenu();
+            accumStartWord_ = -1;
+            accumEndWord_ = -1;
+            return;
+        }
+
+        // No menu active
+        if (!cd || wordId < 0) return;
+
+        if (isDouble) {
+            int vStart, vEnd;
+            FindVerseRange(cd->words, wordId, vStart, vEnd);
+            accumStartWord_ = accumStartWord_ >= 0
+                ? (std::min)(accumStartWord_, vStart) : vStart;
+            accumEndWord_ = accumEndWord_ >= 0
+                ? (std::max)(accumEndWord_, vEnd) : vEnd;
+            highlighter_->CommitSelection(accumStartWord_, accumEndWord_, hit.bookId, hit.chapterNum);
+            uiManager_->ShowRadialMenu(pos, accumStartWord_, accumEndWord_, hit.bookId, hit.chapterNum);
+        } else if (auto* h = highlighter_->HighlightAtWord(wordId, hit.bookId, hit.chapterNum)) {
+            accumStartWord_ = -1;
+            accumEndWord_ = -1;
+            highlighter_->CommitSelection(h->startWord, h->endWord, h->bookId, h->chapterNum);
+            uiManager_->ShowRadialMenu(pos, h->startWord, h->endWord, h->bookId, h->chapterNum);
+        }
+        // else: unhighlighted single word — nothing
+    };
+
+    auto onTapEmpty = [this](Vector2 /*pos*/) {
+        if (uiManager_->IsRadialMenuActive()) {
+            uiManager_->HideRadialMenu();
+            accumStartWord_ = -1;
+            accumEndWord_ = -1;
+        }
+    };
+
+    auto onDragStart = [this](int startWord, Vector2 /*pos*/) {
+        auto& ph = inputHandler_->GetPressStartHit();
+        eventBus_->Emit(theword::event::SelectionEvent{
+            theword::event::SelectionEvent::Action::Start, startWord, startWord, ph.bookId, ph.chapterNum});
+    };
+
+    auto onDragUpdate = [this](int startWord, int currentWord, Vector2 /*pos*/) {
+        auto& ph = inputHandler_->GetPressStartHit();
+        eventBus_->Emit(theword::event::SelectionEvent{
+            theword::event::SelectionEvent::Action::Update, startWord, currentWord, ph.bookId, ph.chapterNum});
+    };
+
+    auto onDragEnd = [this, &longPressHandled](int startWord, int endWord, Vector2 pos) {
+        if (longPressHandled) {
+            longPressHandled = false;
+            return;
+        }
+        auto& ph = inputHandler_->GetPressStartHit();
+        eventBus_->Emit(theword::event::SelectionEvent{
+            theword::event::SelectionEvent::Action::End, startWord, endWord, ph.bookId, ph.chapterNum});
+        uiManager_->ShowRadialMenu(pos, startWord, endWord, ph.bookId, ph.chapterNum);
+    };
+
+    auto onLongPress = [this, &longPressHandled](int wordId, Vector2 pos) {
+        auto& ph = inputHandler_->GetPressStartHit();
+        eventBus_->Emit(theword::event::SelectionEvent{
+            theword::event::SelectionEvent::Action::Start, wordId, wordId, ph.bookId, ph.chapterNum});
+        if (!platform::HasTouchInput() && highlighter_->IsWordHighlighted(wordId, ph.bookId, ph.chapterNum)) {
+            eventBus_->Emit(theword::event::SelectionEvent{
+                theword::event::SelectionEvent::Action::End, wordId, wordId, ph.bookId, ph.chapterNum});
+            uiManager_->ShowRadialMenu(pos, wordId, wordId, ph.bookId, ph.chapterNum);
+            longPressHandled = true;
+        } else {
+            longPressHandled = false;
+        }
+    };
+
+    auto onDismiss = [this]() -> bool {
+        if (uiManager_->IsRadialMenuActive()) {
+            uiManager_->HideRadialMenu();
+            accumStartWord_ = -1;
+            accumEndWord_ = -1;
+            return true;
+        }
+        return false;
+    };
+
+    inputHandler_->onTap = onTap;
+    inputHandler_->onTapEmpty = onTapEmpty;
+    inputHandler_->onDragStart = onDragStart;
+    inputHandler_->onDragUpdate = onDragUpdate;
+    inputHandler_->onDragEnd = onDragEnd;
+    inputHandler_->onLongPress = onLongPress;
+    inputHandler_->onDismiss = onDismiss;
+
     while (!WindowShouldClose()) {
         if (platform::ShouldQuit()) break;
 
@@ -350,61 +522,7 @@ void App::Run() {
         float deltaTime = (float)(currentTime - lastTime);
         lastTime = currentTime;
 
-        auto radialClickHandler = [this](Vector2 pos) -> bool {
-            RadialMenuActionResult result = uiManager_->HandleRadialMenuClick(pos);
-            if (!result.consumed) return false;
-
-            if (result.isCopy) {
-                auto* chapterData = docManager_->GetCurrentChapterData();
-                if (chapterData) {
-                    std::string text = AssembleSelectedText(*chapterData,
-                        result.startWord, result.endWord);
-                    if (!text.empty()) {
-                        platform::SetClipboard(text);
-                        Logger::Debug("Copied to clipboard: " + text);
-                    }
-                }
-            } else if (result.isDelete) {
-                auto* chapterData = docManager_->GetCurrentChapterData();
-                if (chapterData) {
-                    int s = (std::min)(result.startWord, result.endWord);
-                    int e = (std::max)(result.startWord, result.endWord);
-                    for (const auto& h : highlighter_->GetHighlights()) {
-                        if (h.bookId == chapterData->bookId &&
-                            h.chapterNum == chapterData->chapterNum &&
-                            h.startWord <= e && h.endWord >= s) {
-                            highlighter_->RemoveHighlight(h.id);
-                        }
-                    }
-                }
-            }
-
-            return true;
-        };
-
-        auto radialDismiss = [this]() -> bool {
-            if (uiManager_->IsRadialMenuActive()) {
-                uiManager_->HideRadialMenu();
-                return true;
-            }
-            return false;
-        };
-
-        auto radialShowHandler = [this](int startWord, int endWord, Vector2 position, bool selectFullVerse) {
-            auto* chapterData = docManager_->GetCurrentChapterData();
-            if (!chapterData) return;
-
-            if (selectFullVerse) {
-                int vStart, vEnd;
-                FindVerseRange(chapterData->words, startWord, vStart, vEnd);
-                startWord = vStart;
-                endWord = vEnd;
-            }
-
-            uiManager_->ShowRadialMenu(position, startWord, endWord);
-        };
-
-        inputHandler_->Poll(deltaTime, navStack_.get(), radialClickHandler, radialDismiss, radialShowHandler);
+        inputHandler_->Poll(deltaTime, navStack_.get());
         docManager_->Update(deltaTime);
 
         // Keyboard shortcuts that push screens (only when on root Reader)

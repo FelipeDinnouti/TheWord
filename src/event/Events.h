@@ -32,9 +32,6 @@ struct DialogEvent {
 struct KeyEvent          { int key; };
 struct NavigateEvent     { std::string chapterRef; };
 
-struct RightClickEvent   { float x; float y; };
-struct ScrollStopEvent   {};
-
 struct NavigateToHighlightEvent {
     std::string chapterRef;
     int wordId;

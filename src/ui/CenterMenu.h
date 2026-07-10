@@ -4,6 +4,7 @@
 #include "Screen.h"
 #include "core/UIScale.h"
 #include "core/Locale.h"
+#include "TapDetector.h"
 #include <memory>
 #include <string>
 #include <raylib.h>
@@ -52,8 +53,7 @@ private:
     std::string currentChapterRef_;
     static constexpr float FADE_DURATION = 0.1f;
 
-    Vector2 pressStartPos_{};
-    bool hasPendingPress_ = false;
+    TapDetector tapDetector_;
 };
 
 } // namespace theword::ui

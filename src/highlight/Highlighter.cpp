@@ -31,13 +31,13 @@ Highlighter::Highlighter(theword::event::EventBus& eventBus, PersistenceInterfac
 void Highlighter::OnSelection(const theword::event::SelectionEvent& e) {
     switch (e.action) {
         case theword::event::SelectionEvent::Action::Start:
-            StartSelection(e.startWordId);
+            StartSelection(e.startWordId, e.bookId, e.chapterNum);
             break;
         case theword::event::SelectionEvent::Action::Update:
             UpdateSelection(e.endWordId);
             break;
         case theword::event::SelectionEvent::Action::End:
-            EndSelection();
+            EndSelection(e.bookId, e.chapterNum);
             break;
         case theword::event::SelectionEvent::Action::Cancel:
             selecting = false;
@@ -67,10 +67,12 @@ void Highlighter::Load() {
     }
 }
 
-void Highlighter::StartSelection(int wordId) {
+void Highlighter::StartSelection(int wordId, const std::string& bookId, int chapterNum) {
     selecting = true;
     selectionStart = wordId;
     selectionEnd = wordId;
+    selectBookId_ = bookId;
+    selectChapterNum_ = chapterNum;
 }
 
 void Highlighter::UpdateSelection(int wordId) {
@@ -78,7 +80,7 @@ void Highlighter::UpdateSelection(int wordId) {
     selectionEnd = wordId;
 }
 
-void Highlighter::EndSelection() {
+void Highlighter::EndSelection(const std::string& bookId, int chapterNum) {
     if (!selecting) return;
     selecting = false;
 
@@ -86,20 +88,26 @@ void Highlighter::EndSelection() {
     int end = (std::max)(selectionStart, selectionEnd);
     if (start < 0) return;
 
-    CommitSelection(start, end);
+    CommitSelection(start, end, bookId, chapterNum);
 }
 
 void Highlighter::ClearCommittedSelection() {
     committedStart_ = -1;
     committedEnd_ = -1;
+    committedBookId_.clear();
+    committedChapterNum_ = 0;
 }
 
-void Highlighter::CommitSelection(int startWord, int endWord) {
+void Highlighter::CommitSelection(int startWord, int endWord, const std::string& bookId, int chapterNum) {
     committedStart_ = startWord;
     committedEnd_ = endWord;
+    committedBookId_ = bookId;
+    committedChapterNum_ = chapterNum;
 }
 
-void Highlighter::CreateHighlight(int startWord, int endWord, int typeId) {
+void Highlighter::CreateHighlight(int startWord, int endWord, int typeId,
+                                   const std::string& bookId, int chapterNum,
+                                   const std::vector<theword::data::Word>* words) {
     int start = (std::min)(startWord, endWord);
     int end = (std::max)(startWord, endWord);
     if (start < 0) return;
@@ -110,14 +118,14 @@ void Highlighter::CreateHighlight(int startWord, int endWord, int typeId) {
     h.endWord = end;
     h.typeId = typeId;
     h.providerName = currentProvider;
-    h.bookId = currentBookId_;
-    h.chapterNum = currentChapterNum_;
+    h.bookId = bookId;
+    h.chapterNum = chapterNum;
 
-    if (!currentWords_.empty()) {
+    if (words && !words->empty()) {
         int vStart = 9999;
         int vEnd = 0;
         std::string snippet;
-        for (const auto& w : currentWords_) {
+        for (const auto& w : *words) {
             if (w.id >= start && w.id <= end) {
                 if (w.verseId < vStart) vStart = w.verseId;
                 if (w.verseId > vEnd) vEnd = w.verseId;
@@ -161,9 +169,40 @@ Color Highlighter::GetHighlightForWord(int wordId) const {
     return {0, 0, 0, 0};
 }
 
+bool Highlighter::IsWordHighlighted(int wordId, const std::string& bookId, int chapterNum) const {
+    for (const auto& h : highlights) {
+        if (h.bookId == bookId && h.chapterNum == chapterNum
+            && wordId >= h.startWord && wordId <= h.endWord) return true;
+    }
+    return false;
+}
+
+Color Highlighter::GetHighlightForWord(int wordId, const std::string& bookId, int chapterNum) const {
+    for (const auto& h : highlights) {
+        if (h.bookId == bookId && h.chapterNum == chapterNum
+            && wordId >= h.startWord && wordId <= h.endWord) {
+            for (const auto& t : types) {
+                if (t.id == h.typeId) return ToColor(t.color);
+            }
+            return ToColor(DEFAULT_HIGHLIGHT_TYPE.color);
+        }
+    }
+    return {0, 0, 0, 0};
+}
+
 const Highlight* Highlighter::HighlightAtWord(int wordId) const {
     for (const auto& h : highlights) {
         if (h.bookId == currentBookId_ && h.chapterNum == currentChapterNum_
+            && wordId >= h.startWord && wordId <= h.endWord) {
+            return &h;
+        }
+    }
+    return nullptr;
+}
+
+const Highlight* Highlighter::HighlightAtWord(int wordId, const std::string& bookId, int chapterNum) const {
+    for (const auto& h : highlights) {
+        if (h.bookId == bookId && h.chapterNum == chapterNum
             && wordId >= h.startWord && wordId <= h.endWord) {
             return &h;
         }

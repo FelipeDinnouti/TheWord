@@ -88,11 +88,11 @@ void ReaderScreen::Draw() {
 
     std::vector<HighlightRect> hlRects;
     for (const auto& [span, docY] : docSpans) {
-        if (span.startWord >= 0 && highlighter_.IsWordHighlighted(span.startWord)) {
+        if (span.startWord >= 0 && highlighter_.IsWordHighlighted(span.startWord, span.bookId, span.chapterNum)) {
             float screenY = docY - scrollY + contentTop_;
             hlRects.push_back({
                 span.x, screenY, span.width, span.height,
-                highlighter_.GetHighlightForWord(span.startWord)
+                highlighter_.GetHighlightForWord(span.startWord, span.bookId, span.chapterNum)
             });
         }
     }
@@ -101,17 +101,23 @@ void ReaderScreen::Draw() {
 
     // Determine active selection range (during drag or committed)
     int selMin = -1, selMax = -1;
+    std::string selBookId;
+    int selChapterNum = 0;
     if (highlighter_.IsSelecting()) {
         selMin = std::min(highlighter_.GetSelectionStart(), highlighter_.GetSelectionEnd());
         selMax = std::max(highlighter_.GetSelectionStart(), highlighter_.GetSelectionEnd());
+        selBookId = highlighter_.GetSelectBookId();
+        selChapterNum = highlighter_.GetSelectChapterNum();
     } else if (highlighter_.HasCommittedSelection()) {
         selMin = std::min(highlighter_.GetCommittedStart(), highlighter_.GetCommittedEnd());
         selMax = std::max(highlighter_.GetCommittedStart(), highlighter_.GetCommittedEnd());
+        selBookId = highlighter_.GetCommittedBookId();
+        selChapterNum = highlighter_.GetCommittedChapterNum();
     }
 
     if (selMin >= 0 && selMax >= 0) {
         // Check if selection spans exactly one full verse
-        auto* chapterData = docManager_.GetCurrentChapterData();
+        auto* chapterData = docManager_.GetChapterData(selBookId, selChapterNum);
         bool fullVerse = false;
         if (chapterData && !chapterData->words.empty()) {
             int firstV = -1, lastV = -1;
@@ -133,8 +139,10 @@ void ReaderScreen::Draw() {
 
         Color tint = fullVerse ? Color{180, 220, 255, 80} : Color{135, 206, 250, 80};
         for (const auto& [span, docY] : docSpans) {
-            if (span.startWord >= 0 && span.endWord >= selMin && span.startWord <= selMax) {
+            if (span.startWord >= 0 && span.endWord >= selMin && span.startWord <= selMax
+                && span.bookId == selBookId && span.chapterNum == selChapterNum) {
                 float screenY = docY - scrollY + contentTop_;
+                if (screenY < -Renderer::CULL_MARGIN || screenY > GetScreenHeight()) continue;
                 DrawRectangle(static_cast<int>(span.x),
                               static_cast<int>(screenY),
                               static_cast<int>(span.width),

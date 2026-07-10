@@ -40,7 +40,8 @@ CenterMenu::CenterMenu(const Font& font, float fontSize,
       navStack_(navStack), eventBus_(eventBus),
       highlighter_(highlighter), persistence_(persistence),
       uiScale_(uiScale), currentFontSize_(currentFontSize), versionOnline_(versionOnline),
-      showTime_(GetTime()), currentChapterRef_(currentChapterRef) {}
+      showTime_(GetTime()), currentChapterRef_(currentChapterRef),
+      tapDetector_(uiScale_.dp(10)) {}
 
 void CenterMenu::Draw() {
     float screenW = static_cast<float>(GetScreenWidth());
@@ -120,17 +121,13 @@ bool CenterMenu::HandleInput(float /*deltaTime*/) {
         return true;
     }
 
-    if (IsMouseButtonPressed(MOUSE_LEFT_BUTTON)) {
-        pressStartPos_ = GetMousePosition();
-        hasPendingPress_ = true;
-    }
+    if (IsMouseButtonPressed(MOUSE_LEFT_BUTTON))
+        tapDetector_.OnPress(GetMousePosition());
 
-    if (hasPendingPress_ && IsMouseButtonReleased(MOUSE_LEFT_BUTTON)) {
-        hasPendingPress_ = false;
-        Vector2 mousePos = GetMousePosition();
-        float dx = mousePos.x - pressStartPos_.x;
-        float dy = mousePos.y - pressStartPos_.y;
-        if (dx * dx + dy * dy > uiScale_.dp(10) * uiScale_.dp(10)) return true;
+    Vector2 mousePos;
+    auto tr = tapDetector_.OnRelease(GetMousePosition(), mousePos);
+    if (tr == TapDetector::Result::Drag) return true;
+    if (tr == TapDetector::Result::Tap) {
 
         float screenW = static_cast<float>(GetScreenWidth());
         float screenH = static_cast<float>(GetScreenHeight());

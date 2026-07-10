@@ -364,12 +364,7 @@ Extracted in Phase 9 Sprint 1. Lives in `src/renderer/UIManager.h/cpp`.
 ```cpp
 class UIManager {
 public:
-    UIManager(const Font& headingFont, float headingSize, Highlighter& highlighter,
-              DocumentManager& docManager, LayoutEngine& layoutEngine,
-              Renderer& renderer, PersistenceManager& persistence,
-              ChapterProvider& onlineProv, ChapterProvider& offlineProv,
-              CompositeProvider* compositeProv, float initialFontSize = 24.0f,
-              bool initialVersionOnline = false, float scale = 1.0f);
+    UIManager(Highlighter& highlighter);
     float getContentTop() const;
     float getFontSize() const;
     void drawTopBar(const std::string& chapterTitle);

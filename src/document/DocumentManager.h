@@ -14,7 +14,6 @@ namespace theword::text { class LayoutEngine; }
 namespace theword::event {
     class EventBus;
     struct ScrollEvent;
-    struct ScrollStopEvent;
     struct ResizeEvent;
     struct FontSizeEvent;
     struct SourceSwitchEvent;
@@ -60,12 +59,16 @@ public:
 
     void GetVisibleSpans(std::vector<std::pair<theword::data::Span, float>>& docSpans) const;
 
+    struct HitResult { int wordId = -1; const theword::data::ChapterData* chapterData = nullptr; };
     int HitTestWord(float screenX, float screenY, float scrollY) const;
+    HitResult HitTestWithChapter(float screenX, float screenY) const;
+    const theword::data::ChapterData* GetChapterDataAtPosition(float screenY) const;
 
     const std::string& GetCurrentChapterId() const;
     std::string GetChapterTitle() const;
     const theword::data::ChapterLayout* GetCurrentLayout() const;
     const theword::data::ChapterData* GetCurrentChapterData() const;
+    const theword::data::ChapterData* GetChapterData(const std::string& bookId, int chapterNum) const;
 
 private:
     theword::event::EventBus& eventBus_;

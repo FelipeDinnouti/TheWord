@@ -4,6 +4,7 @@
 #include "Screen.h"
 #include "core/UIScale.h"
 #include "core/Locale.h"
+#include "TapDetector.h"
 #include <raylib.h>
 
 namespace theword::event { class EventBus; }
@@ -40,8 +41,7 @@ private:
     void ChangeFontSize(float delta);
     void SwitchSource(bool online);
 
-    Vector2 pressStartPos_{};
-    bool hasPendingPress_ = false;
+    TapDetector tapDetector_;
 };
 
 } // namespace theword::ui

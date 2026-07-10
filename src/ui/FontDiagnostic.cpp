@@ -13,10 +13,10 @@ using namespace theword::core;
 FontDiagnostic::FontDiagnostic(const Font& bodyFont, const Font& headingFont,
                                const Font& largeFont, const Font& smallFont,
                                const Font& boldFont,
-                               float dpiScale, NavigationStack& navStack)
+                               float /*dpiScale*/, NavigationStack& navStack)
     : bodyFont_(bodyFont), headingFont_(headingFont),
       largeFont_(largeFont), smallFont_(smallFont), boldFont_(boldFont),
-      dpiScale_(dpiScale), navStack_(navStack) {}
+      navStack_(navStack) {}
 
 static void SetFilter(Font& font, int mode) {
     SetTextureFilter(font.texture, mode);

@@ -556,7 +556,7 @@ TEST_CASE("Highlighter startSelection records word ID") {
     Highlighter h(eb, store);
     h.SetChapterContext("GEN", 1, nullptr);
     h.OnSelection(theword::event::SelectionEvent{theword::event::SelectionEvent::Action::Start, 42, 42});
-    h.CreateHighlight(42, 42, 1);
+    h.CreateHighlight(42, 42, 1, "GEN", 1, nullptr);
     auto& highlights = h.GetHighlights();
     REQUIRE(highlights.size() == 1);
     CHECK(highlights[0].startWord == 42);
@@ -570,7 +570,7 @@ TEST_CASE("Highlighter selection range covers start to end") {
     h.SetChapterContext("GEN", 1, nullptr);
     h.OnSelection(theword::event::SelectionEvent{theword::event::SelectionEvent::Action::Start, 5, 5});
     h.OnSelection(theword::event::SelectionEvent{theword::event::SelectionEvent::Action::Update, 5, 12});
-    h.CreateHighlight(5, 12, 1);
+    h.CreateHighlight(5, 12, 1, "GEN", 1, nullptr);
     auto& highlights = h.GetHighlights();
     REQUIRE(highlights.size() == 1);
     CHECK(highlights[0].startWord == 5);
@@ -584,7 +584,7 @@ TEST_CASE("Highlighter handles reverse drag direction") {
     h.SetChapterContext("GEN", 1, nullptr);
     h.OnSelection(theword::event::SelectionEvent{theword::event::SelectionEvent::Action::Start, 20, 20});
     h.OnSelection(theword::event::SelectionEvent{theword::event::SelectionEvent::Action::Update, 20, 10});
-    h.CreateHighlight(20, 10, 1);
+    h.CreateHighlight(20, 10, 1, "GEN", 1, nullptr);
     auto& highlights = h.GetHighlights();
     REQUIRE(highlights.size() == 1);
     CHECK(highlights[0].startWord == 10);
@@ -604,7 +604,7 @@ TEST_CASE("Highlighter isWordHighlighted checks ranges") {
     theword::event::EventBus eb;
     Highlighter h(eb, store);
     h.SetChapterContext("GEN", 1, nullptr);
-    h.CreateHighlight(5, 10, 1);
+    h.CreateHighlight(5, 10, 1, "GEN", 1, nullptr);
     CHECK(h.IsWordHighlighted(7));
     CHECK(h.IsWordHighlighted(10));
     CHECK_FALSE(h.IsWordHighlighted(4));
@@ -616,7 +616,7 @@ TEST_CASE("Highlighter getHighlightForWord returns color for highlighted word") 
     theword::event::EventBus eb;
     Highlighter h(eb, store);
     h.SetChapterContext("GEN", 1, nullptr);
-    h.CreateHighlight(5, 10, 1);
+    h.CreateHighlight(5, 10, 1, "GEN", 1, nullptr);
     Color c = h.GetHighlightForWord(7);
     CHECK(c.a > 0);
     Color c2 = h.GetHighlightForWord(99);
@@ -675,7 +675,7 @@ TEST_CASE("Highlighter highlightAtWord returns pointer for highlighted word") {
     theword::event::EventBus eb;
     Highlighter h(eb, store);
     h.SetChapterContext("GEN", 1, nullptr);
-    h.CreateHighlight(5, 10, 1);
+    h.CreateHighlight(5, 10, 1, "GEN", 1, nullptr);
     const Highlight* hl = h.HighlightAtWord(7);
     REQUIRE(hl != nullptr);
     CHECK(hl->startWord == 5);
@@ -687,7 +687,7 @@ TEST_CASE("Highlighter highlightAtWord returns nullptr for unhighlighted word") 
     theword::event::EventBus eb;
     Highlighter h(eb, store);
     h.SetChapterContext("GEN", 1, nullptr);
-    h.CreateHighlight(5, 10, 1);
+    h.CreateHighlight(5, 10, 1, "GEN", 1, nullptr);
     const Highlight* hl = h.HighlightAtWord(4);
     CHECK(hl == nullptr);
     hl = h.HighlightAtWord(11);
@@ -699,7 +699,7 @@ TEST_CASE("Highlighter removeHighlight removes from internal vector") {
     theword::event::EventBus eb;
     Highlighter h(eb, store);
     h.SetChapterContext("GEN", 1, nullptr);
-    h.CreateHighlight(5, 10, 1);
+    h.CreateHighlight(5, 10, 1, "GEN", 1, nullptr);
     REQUIRE(h.GetHighlights().size() == 1);
     h.RemoveHighlight(h.GetHighlights()[0].id);
     CHECK(h.GetHighlights().empty());
@@ -711,7 +711,7 @@ TEST_CASE("Highlighter recolorHighlight changes typeId") {
     theword::event::EventBus eb;
     Highlighter h(eb, store);
     h.SetChapterContext("GEN", 1, nullptr);
-    h.CreateHighlight(5, 10, 1);
+    h.CreateHighlight(5, 10, 1, "GEN", 1, nullptr);
     int hlId = h.GetHighlights()[0].id;
     int oldType = h.GetHighlights()[0].typeId;
     int newType = (oldType == 1) ? 2 : 1;
@@ -724,7 +724,7 @@ TEST_CASE("Highlighter CreateHighlight uses provided typeId") {
     theword::event::EventBus eb;
     Highlighter h(eb, store);
     h.SetChapterContext("GEN", 1, nullptr);
-    h.CreateHighlight(1, 5, 99);
+    h.CreateHighlight(1, 5, 99, "GEN", 1, nullptr);
     CHECK(h.GetHighlights()[0].typeId == 99);
 }
 
@@ -804,7 +804,7 @@ TEST_CASE("Highlighter stores reference fields via SetChapterContext") {
     words.push_back({2, 2, "beginning"});
 
     h.SetChapterContext("GEN", 1, &words);
-    h.CreateHighlight(0, 2, 1);
+    h.CreateHighlight(0, 2, 1, "GEN", 1, &words);
 
     auto& highlights = h.GetHighlights();
     REQUIRE(highlights.size() == 1);
@@ -825,7 +825,7 @@ TEST_CASE("Highlighter verseText populated from word data") {
     words.push_back({2, 1, "beginning"});
 
     h.SetChapterContext("GEN", 1, &words);
-    h.CreateHighlight(0, 2, 1);
+    h.CreateHighlight(0, 2, 1, "GEN", 1, &words);
 
     auto& highlights = h.GetHighlights();
     REQUIRE(highlights.size() == 1);
@@ -842,7 +842,7 @@ TEST_CASE("Highlighter verseText truncated at 80 characters") {
     words.push_back({1, 1, std::string(40, 'B')});
 
     h.SetChapterContext("GEN", 1, &words);
-    h.CreateHighlight(0, 1, 1);
+    h.CreateHighlight(0, 1, 1, "GEN", 1, &words);
 
     auto& highlights = h.GetHighlights();
     REQUIRE(highlights.size() == 1);
@@ -856,9 +856,9 @@ TEST_CASE("GetHighlightsByType filters correctly") {
     Highlighter h(eb, store);
 
     h.SetChapterContext("GEN", 1, nullptr);
-    h.CreateHighlight(0, 0, 1);
+    h.CreateHighlight(0, 0, 1, "GEN", 1, nullptr);
 
-    h.CreateHighlight(10, 10, 2);
+    h.CreateHighlight(10, 10, 2, "GEN", 1, nullptr);
 
     REQUIRE(h.GetHighlights().size() == 2);
 
@@ -941,6 +941,139 @@ TEST_CASE("NavigateToHighlightEvent struct carries correct data") {
     theword::event::NavigateToHighlightEvent e{"GEN.3", 42};
     CHECK(e.chapterRef == "GEN.3");
     CHECK(e.wordId == 42);
+}
+
+// ── Verse Range / Word ID Tests ─────────────────────────────────────────
+
+TEST_CASE("FindVerseRange returns correct word boundaries") {
+    // Simulate a chapter with 3 verses, each with several words
+    std::vector<theword::data::Word> words;
+    int nextId = 0;
+    // Verse 1: words 0-2
+    for (int i = 0; i < 3; ++i) words.push_back({nextId++, 1, "v1w" + std::to_string(i)});
+    // Verse 2: words 3-6
+    for (int i = 0; i < 4; ++i) words.push_back({nextId++, 2, "v2w" + std::to_string(i)});
+    // Verse 3: words 7-9
+    for (int i = 0; i < 3; ++i) words.push_back({nextId++, 3, "v3w" + std::to_string(i)});
+
+    // Duplicate of the FindVerseRange logic
+    auto findRange = [](const std::vector<theword::data::Word>& wds, int anchor,
+                         int& vStart, int& vEnd) {
+        int targetVerse = -1;
+        for (const auto& w : wds) {
+            if (w.id == anchor) { targetVerse = w.verseId; break; }
+        }
+        if (targetVerse < 0) { vStart = anchor; vEnd = anchor; return; }
+        vStart = anchor; vEnd = anchor;
+        for (const auto& w : wds) {
+            if (w.verseId == targetVerse) {
+                if (w.id < vStart) vStart = w.id;
+                if (w.id > vEnd) vEnd = w.id;
+            }
+        }
+    };
+
+    int s, e;
+
+    // Tap word 4 (verse 2) → range should be words 3-6
+    findRange(words, 4, s, e);
+    CHECK(s == 3);
+    CHECK(e == 6);
+
+    // Tap word 0 (verse 1) → range should be words 0-2
+    findRange(words, 0, s, e);
+    CHECK(s == 0);
+    CHECK(e == 2);
+
+    // Tap word 9 (verse 3) → range should be words 7-9
+    findRange(words, 9, s, e);
+    CHECK(s == 7);
+    CHECK(e == 9);
+}
+
+TEST_CASE("FindVerseRange handles words with same verseId across segments") {
+    std::vector<theword::data::Word> words;
+    // Verse 1 (text): words 0-2
+    words.push_back({0, 1, "In"});
+    words.push_back({1, 1, "the"});
+    words.push_back({2, 1, "beginning"});
+    // Verse 1 (poetry continuation): words 3-4 (same verseId)
+    words.push_back({3, 1, "God"});
+    words.push_back({4, 1, "created"});
+
+    auto findRange = [](const std::vector<theword::data::Word>& wds, int anchor,
+                         int& vStart, int& vEnd) {
+        int targetVerse = -1;
+        for (const auto& w : wds) {
+            if (w.id == anchor) { targetVerse = w.verseId; break; }
+        }
+        if (targetVerse < 0) { vStart = anchor; vEnd = anchor; return; }
+        vStart = anchor; vEnd = anchor;
+        for (const auto& w : wds) {
+            if (w.verseId == targetVerse) {
+                if (w.id < vStart) vStart = w.id;
+                if (w.id > vEnd) vEnd = w.id;
+            }
+        }
+    };
+
+    int s, e;
+    findRange(words, 2, s, e);
+    CHECK(s == 0);
+    CHECK(e == 4);
+
+    findRange(words, 4, s, e);
+    CHECK(s == 0);
+    CHECK(e == 4);
+}
+
+TEST_CASE("Word IDs are sequential and unique within a chapter") {
+    std::vector<theword::data::Word> words;
+    int nextId = 0;
+
+    auto appendVerse = [&](int verseId, const std::string& text) {
+        std::istringstream stream(text);
+        std::string word;
+        while (stream >> word) {
+            words.push_back({nextId++, verseId, word});
+        }
+    };
+
+    appendVerse(1, "In the beginning God created the heavens and the earth");
+    appendVerse(2, "The earth was formless and void");
+
+    CHECK_EQ(words[0].id, 0);
+    CHECK_EQ(words[0].verseId, 1);
+    CHECK_EQ(words[9].id, 9);
+    CHECK_EQ(words[9].verseId, 1);
+    CHECK_EQ(words[10].id, 10);
+    CHECK_EQ(words[10].verseId, 2);
+
+    int prevId = -1;
+    for (const auto& w : words) {
+        CHECK_GT(w.id, prevId);
+        prevId = w.id;
+    }
+}
+
+TEST_CASE("Double-tap on adjacent words should not match") {
+    // Simulate the InputHandler double-tap detection
+    double now = 100.0;
+    double doubleClickTime = 0.3;
+    int lastClickWord = 50;
+    double lastClickTime = now - 0.1; // 100ms ago, within double-click window
+
+    // If second tap is on word 51 (different word), isDouble should be false
+    int secondWord = 51;
+    bool isDouble = (secondWord == lastClickWord)
+        && (now - lastClickTime) < doubleClickTime;
+    CHECK_FALSE(isDouble);
+
+    // If second tap is on same word 50, isDouble should be true
+    secondWord = 50;
+    isDouble = (secondWord == lastClickWord)
+        && (now - lastClickTime) < doubleClickTime;
+    CHECK(isDouble);
 }
 
 

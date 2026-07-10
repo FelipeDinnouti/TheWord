@@ -8,14 +8,19 @@ namespace theword::renderer {
 
 using namespace theword::core;
 
-RadialMenu::RadialMenu()
-    : center_{0, 0}, startWord_(-1), endWord_(-1), active_(false), hoveredIndex_(-1) {}
+static constexpr float HIT_SCALE = 1.8f;
+
+RadialMenu::RadialMenu(float dpiScale)
+    : center_{0, 0}, startWord_(-1), endWord_(-1), bookId_{}, chapterNum_(0), active_(false), dpiScale_(dpiScale), hoveredIndex_(-1) {}
 
 void RadialMenu::Show(Vector2 center, int startWord, int endWord,
+                       const std::string& bookId, int chapterNum,
                        const std::vector<theword::highlight::HighlightType>& types) {
     center_ = center;
     startWord_ = startWord;
     endWord_ = endWord;
+    bookId_ = bookId;
+    chapterNum_ = chapterNum;
     active_ = true;
     hoveredIndex_ = -1;
     LayoutButtons(types);
@@ -34,8 +39,8 @@ void RadialMenu::LayoutButtons(const std::vector<theword::highlight::HighlightTy
 
     int numColors = static_cast<int>(types.size());
     int count = numColors + 2; // colors + Copy + Delete
-    float ringRadius = 56.0f;
-    float btnRadius = 18.0f;
+    float ringRadius = 56.0f * dpiScale_;
+    float btnRadius = 18.0f * dpiScale_;
 
     float startAngle = -PI / 2.0f;
 
@@ -76,7 +81,7 @@ void RadialMenu::UpdateHover(Vector2 mousePos) {
         float dx = mousePos.x - buttons_[i].center.x;
         float dy = mousePos.y - buttons_[i].center.y;
         float dist = sqrtf(dx * dx + dy * dy);
-        if (dist <= buttons_[i].radius) {
+        if (dist <= buttons_[i].radius * HIT_SCALE) {
             hoveredIndex_ = static_cast<int>(i);
             return;
         }
@@ -122,7 +127,7 @@ std::pair<RadialMenu::Action, int> RadialMenu::HandleClick(Vector2 pos) {
         float dx = pos.x - btn.center.x;
         float dy = pos.y - btn.center.y;
         float dist = sqrtf(dx * dx + dy * dy);
-        if (dist <= btn.radius) {
+        if (dist <= btn.radius * HIT_SCALE) {
             return {btn.action, btn.colorIndex};
         }
     }

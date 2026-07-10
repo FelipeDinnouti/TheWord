@@ -3,6 +3,7 @@
 
 #include "Screen.h"
 #include "core/UIScale.h"
+#include "TapDetector.h"
 #include <string>
 #include <memory>
 #include <raylib.h>
@@ -38,13 +39,11 @@ private:
     const theword::core::UIScale& uiScale_;
 
     int selectedChapter_ = 1;
-    bool hasCurrent_ = false;
     float gridScrollY_ = 0.0f;
 
     void KeepSelectionVisible(int columns, float rowH, float visibleH);
 
-    Vector2 pressStartPos_{};
-    bool hasPendingPress_ = false;
+    TapDetector tapDetector_;
 
     std::shared_ptr<bool> aliveGuard_ = std::make_shared<bool>(true);
 };

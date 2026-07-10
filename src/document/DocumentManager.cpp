@@ -231,6 +231,8 @@ void DocumentManager::Update(float deltaTime) {
             scrollY = momentumStartY_ + momentumDistance_;
             scrollVelocity_ = 0.0f;
             momentumActive_ = false;
+            float maxScroll = std::max(0.0f, GetTotalHeight() - viewportHeight);
+            scrollY = std::clamp(scrollY, 0.0f, maxScroll);
         } else {
             float t = momentumElapsed_ / momentumDuration_;
             float decay = std::pow(1.0f - t, DECEL_RATE - 1.0f);
@@ -279,7 +281,6 @@ void DocumentManager::Update(float deltaTime) {
         auto t1 = std::chrono::steady_clock::now();
         float insertMs = std::chrono::duration<float, std::milli>(t1 - t0).count();
         UpdateLoadTime(insertMs);
-        eventBus_.Emit(theword::event::ScrollStopEvent{});
         loaded = true;
         break;
     }
@@ -298,12 +299,12 @@ void DocumentManager::Update(float deltaTime) {
 
     // Only trigger new loads if no pending just completed
     if (!loaded) {
-        if (scrollY <= autoLoadMargin_) {
+        if (scrollY <= autoLoadMargin_ && !momentumActive_) {
             TryLoadAdjacent(true);
         }
         float maxScroll = GetTotalHeight() - viewportHeight;
         if (maxScroll < 0.0f) maxScroll = 0.0f;
-        if (scrollY >= maxScroll - autoLoadMargin_) {
+        if (scrollY >= maxScroll - autoLoadMargin_ && !momentumActive_) {
             TryLoadAdjacent(false);
         }
     }
@@ -408,6 +409,27 @@ void DocumentManager::GetVisibleSpans(std::vector<std::pair<Span, float>>& docSp
     }
 }
 
+const theword::data::ChapterData* DocumentManager::GetChapterDataAtPosition(float screenY) const {
+    float docY = screenY + scrollY - contentTop;
+    for (const auto& ch : chapters) {
+        if (docY >= ch.startY && docY < ch.startY + ch.height) {
+            return &ch.data;
+        }
+    }
+    return nullptr;
+}
+
+DocumentManager::HitResult DocumentManager::HitTestWithChapter(float screenX, float screenY) const {
+    float docY = screenY + scrollY - contentTop;
+    for (const auto& ch : chapters) {
+        if (docY >= ch.startY && docY < ch.startY + ch.height) {
+            int wordId = layoutEngine.HitTestLine(ch.layout, docY - ch.startY, screenX);
+            return {wordId, &ch.data};
+        }
+    }
+    return {-1, nullptr};
+}
+
 int DocumentManager::HitTestWord(float screenX, float screenY, float scrollY) const {
     float docY = screenY + scrollY - contentTop;
     for (const auto& chapter : chapters) {
@@ -434,6 +456,15 @@ const theword::data::ChapterLayout* DocumentManager::GetCurrentLayout() const {
     for (const auto& ch : chapters) {
         if (ch.chapterId == visibleChapterId_) {
             return &ch.layout;
+        }
+    }
+    return nullptr;
+}
+
+const theword::data::ChapterData* DocumentManager::GetChapterData(const std::string& bookId, int chapterNum) const {
+    for (const auto& ch : chapters) {
+        if (ch.data.bookId == bookId && ch.data.chapterNum == chapterNum) {
+            return &ch.data;
         }
     }
     return nullptr;

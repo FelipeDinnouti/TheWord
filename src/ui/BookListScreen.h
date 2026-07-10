@@ -4,6 +4,7 @@
 #include "Screen.h"
 #include "core/UIScale.h"
 #include "core/Locale.h"
+#include "TapDetector.h"
 #include <string>
 #include <vector>
 #include <memory>
@@ -44,8 +45,7 @@ private:
 
     float scrollAccumulator_ = 0.0f;
 
-    Vector2 pressStartPos_{};
-    bool hasPendingPress_ = false;
+    TapDetector tapDetector_;
 
     std::shared_ptr<bool> aliveGuard_ = std::make_shared<bool>(true);
 };

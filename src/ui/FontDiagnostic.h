@@ -26,7 +26,6 @@ private:
     const Font& largeFont_;
     const Font& smallFont_;
     const Font& boldFont_;
-    float dpiScale_;
     NavigationStack& navStack_;
     float scrollY_ = 0.0f;
     float contentHeight_ = 0.0f;

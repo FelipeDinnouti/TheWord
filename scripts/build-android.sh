@@ -65,10 +65,10 @@ cmake -B "$BUILD_DIR" \
     -DPLATFORM=Android \
     -DANDROID_NDK="$ANDROID_NDK" \
     -DOPENGL_INCLUDE_DIR="$NDK_SYSROOT/usr/include" \
-    -G "Ninja"
+    -G "Ninja" > /tmp/cmake-android.log 2>&1 && echo "Config OK" || { echo "Config FAILED"; tail -30 /tmp/cmake-android.log; exit 1; }
 
 echo "=== Building ==="
-cmake --build "$BUILD_DIR" --parallel
+cmake --build "$BUILD_DIR" --parallel 2>&1 | grep -vE "^\[[0-9]+/[0-9]+\] Building"
 
 # ── Step 3: Java compilation (optional) ──────────────────────────────────────
 # TheWordActivity.java extends android.app.NativeActivity and calls
@@ -123,12 +123,12 @@ if [ -n "$JAVA_OBJ" ] && [ -f "$JAVA_OBJ/classes.dex" ]; then
 fi
 cp -rL assets "$APK_DIR/"
 [ -f .env ] && cp .env "$APK_DIR/assets/"
-(cd "$APK_DIR" && zip -r /tmp/theword-unsigned-$$.apk lib/ classes.dex assets/ 2>/dev/null)
+(cd "$APK_DIR" && zip -qr /tmp/theword-unsigned-$$.apk lib/ classes.dex assets/)
 
 # ── Step 6: zipalign ─────────────────────────────────────────────────────────
 # 4-byte alignment allows Android to mmap() ZIP entries directly into memory
 # without copying. Required by Google Play and Android 11+.
-$BUILD_TOOLS/zipalign -f -v 4 /tmp/theword-unsigned-$$.apk /tmp/theword-aligned-$$.apk
+$BUILD_TOOLS/zipalign -f 4 /tmp/theword-unsigned-$$.apk /tmp/theword-aligned-$$.apk 2>/dev/null
 
 mkdir -p dist
 

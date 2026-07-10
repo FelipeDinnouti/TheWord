@@ -14,7 +14,8 @@ using namespace theword::core;
 CreditsOverlay::CreditsOverlay(const Font& font, float fontSize, NavigationStack& navStack,
                                const theword::core::UIScale& uiScale)
     : font_(font), fontSize_(fontSize), navStack_(navStack), uiScale_(uiScale),
-      showTime_(GetTime()) {}
+      showTime_(GetTime()),
+      tapDetector_(uiScale_.dp(10)) {}
 
 void CreditsOverlay::Draw() {
     float screenW = static_cast<float>(GetScreenWidth());
@@ -92,17 +93,13 @@ bool CreditsOverlay::HandleInput(float /*deltaTime*/) {
         return true;
     }
 
-    if (IsMouseButtonPressed(MOUSE_LEFT_BUTTON)) {
-        pressStartPos_ = GetMousePosition();
-        hasPendingPress_ = true;
-    }
+    if (IsMouseButtonPressed(MOUSE_LEFT_BUTTON))
+        tapDetector_.OnPress(GetMousePosition());
 
-    if (hasPendingPress_ && IsMouseButtonReleased(MOUSE_LEFT_BUTTON)) {
-        hasPendingPress_ = false;
-        Vector2 mousePos = GetMousePosition();
-        float dx = mousePos.x - pressStartPos_.x;
-        float dy = mousePos.y - pressStartPos_.y;
-        if (dx * dx + dy * dy > uiScale_.dp(10) * uiScale_.dp(10)) return true;
+    Vector2 mousePos;
+    auto tr = tapDetector_.OnRelease(GetMousePosition(), mousePos);
+    if (tr == TapDetector::Result::Drag) return true;
+    if (tr == TapDetector::Result::Tap) {
 
         float screenW = static_cast<float>(GetScreenWidth());
         float screenH = static_cast<float>(GetScreenHeight());

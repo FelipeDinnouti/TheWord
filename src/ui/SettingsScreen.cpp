@@ -24,7 +24,8 @@ SettingsScreen::SettingsScreen(const Font& font, float fontSize,
     : font_(font), fontSize_(fontSize),
       navStack_(navStack), eventBus_(eventBus),
       highlighter_(highlighter), persistence_(persistence),
-      uiScale_(uiScale), currentFontSize_(currentFontSize), versionOnline_(versionOnline) {}
+      uiScale_(uiScale), currentFontSize_(currentFontSize), versionOnline_(versionOnline),
+      tapDetector_(uiScale_.dp(10)) {}
 
 void SettingsScreen::Draw() {
     float screenW = static_cast<float>(GetScreenWidth());
@@ -104,17 +105,13 @@ bool SettingsScreen::HandleInput(float /*deltaTime*/) {
         return true;
     }
 
-    if (IsMouseButtonPressed(MOUSE_LEFT_BUTTON)) {
-        pressStartPos_ = GetMousePosition();
-        hasPendingPress_ = true;
-    }
+    if (IsMouseButtonPressed(MOUSE_LEFT_BUTTON))
+        tapDetector_.OnPress(GetMousePosition());
 
-    if (hasPendingPress_ && IsMouseButtonReleased(MOUSE_LEFT_BUTTON)) {
-        hasPendingPress_ = false;
-        Vector2 mousePos = GetMousePosition();
-        float dx = mousePos.x - pressStartPos_.x;
-        float dy = mousePos.y - pressStartPos_.y;
-        if (dx * dx + dy * dy > uiScale_.dp(10) * uiScale_.dp(10)) return true;
+    Vector2 mousePos;
+    auto tr = tapDetector_.OnRelease(GetMousePosition(), mousePos);
+    if (tr == TapDetector::Result::Drag) return true;
+    if (tr == TapDetector::Result::Tap) {
 
         float headerH = uiScale_.dp(48);
         float backW = uiScale_.dp(56);

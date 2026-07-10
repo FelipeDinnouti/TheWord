@@ -4,6 +4,7 @@
 #include "Screen.h"
 #include "core/UIScale.h"
 #include "core/Locale.h"
+#include "TapDetector.h"
 #include <raylib.h>
 
 namespace theword::ui { class NavigationStack; }
@@ -30,8 +31,7 @@ private:
     bool popPending_ = false;
     static constexpr float FADE_DURATION = 0.1f;
 
-    Vector2 pressStartPos_{};
-    bool hasPendingPress_ = false;
+    TapDetector tapDetector_;
 };
 
 } // namespace theword::ui

@@ -62,6 +62,8 @@ private:
 
     float currentFontSize_ = 24.0f;
     bool versionOnline_ = false;
+    int accumStartWord_ = -1;
+    int accumEndWord_ = -1;
 };
 
 } // namespace theword::app

@@ -176,6 +176,8 @@ float LayoutEngine::LayoutWords(const Segment& seg, const ChapterData& data, flo
             vnSpan.verseId = word.verseId;
             vnSpan.startWord = -1;
             vnSpan.endWord = -1;
+            vnSpan.bookId = data.bookId;
+            vnSpan.chapterNum = data.chapterNum;
             vnSpan.type = SegmentType::VerseNumber;
 
             currentLine.spans.push_back(vnSpan);
@@ -211,6 +213,8 @@ float LayoutEngine::LayoutWords(const Segment& seg, const ChapterData& data, flo
         span.verseId = word.verseId;
         span.startWord = word.id;
         span.endWord = word.id;
+        span.bookId = data.bookId;
+        span.chapterNum = data.chapterNum;
         span.type = spanType;
 
         currentLine.spans.push_back(span);

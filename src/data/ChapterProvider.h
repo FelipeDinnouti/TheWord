@@ -40,6 +40,8 @@ struct Span {
     int verseId = 0;
     int startWord = 0;
     int endWord = 0;
+    std::string bookId;
+    int chapterNum = 0;
     SegmentType type = SegmentType::VerseText;
 };
 

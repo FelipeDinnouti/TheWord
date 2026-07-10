@@ -39,17 +39,24 @@ Key points: PascalCase classes/methods, camelCase variables, acyclic `core → d
 ## Build Commands
 
 ```bash
-# Configure (Linux)
-cmake -B build -DCMAKE_BUILD_TYPE=Release -G "Unix Makefiles"
+# Build (Linux desktop)
+./scripts/build-linux.sh                          # Release
+./scripts/build-linux.sh --debug                  # Debug
+./scripts/build-linux.sh --clean                  # Full reconfigure
+./scripts/build-linux.sh --test                   # Build + run tests
 
-# Build
-cmake --build build --parallel
+# Cross-compile for Windows (from Linux)
+./scripts/build-windows.sh
+
+# Build for Android
+./scripts/build-android.sh arm64-v8a              # Physical device
+./scripts/build-android.sh x86_64                 # Emulator
+
+# Build for WebAssembly
+./scripts/build-wasm.sh
 
 # Run
 ./build/theword
-
-# Full reconfigure (after adding .cpp files)
-rm -rf build && cmake -B build -DCMAKE_BUILD_TYPE=Release -G "Unix Makefiles"
 ```
 
 ## CMake Caveats
@@ -57,7 +64,7 @@ rm -rf build && cmake -B build -DCMAKE_BUILD_TYPE=Release -G "Unix Makefiles"
 1. `project(theword C CXX)` — must include `CXX`
 2. Use `-G "Unix Makefiles"` on Linux (no ninja)
 3. `find_package(CURL)` must come AFTER `FetchContent_MakeAvailable(raylib)` (only if using online API)
-4. Delete `build/` and reconfigure when adding new `.cpp` files
+4. Delete `build/` and reconfigure when adding new `.cpp` files (or use `./scripts/build-linux.sh --clean`)
 5. Linux links: `m pthread dl rt X11 Xcursor Xrandr Xi`
 
 ## Common Issues

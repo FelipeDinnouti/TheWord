@@ -4,6 +4,7 @@
 #include "Screen.h"
 #include "core/UIScale.h"
 #include "core/Locale.h"
+#include "TapDetector.h"
 #include <vector>
 #include <string>
 #include <memory>
@@ -54,8 +55,7 @@ private:
     mutable size_t cachedHighlightsCount_ = 0;
     mutable std::vector<ItemLayout> layouts_;
     mutable float lastTextWrapWidth_ = 0;
-    Vector2 pressStartPos_{};
-    bool hasPendingPress_ = false;
+    TapDetector tapDetector_;
 
     std::shared_ptr<bool> aliveGuard_ = std::make_shared<bool>(true);
 

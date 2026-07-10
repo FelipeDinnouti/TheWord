@@ -13,46 +13,66 @@ namespace theword::input {
 using namespace theword::core;
 
 InputHandler::InputHandler(theword::event::EventBus& eventBus,
-                           std::function<int(float, float)> hitTestFn,
+                           std::function<HitInfo(float, float)> hitTestFn,
                            std::function<bool(int)> isHighlightedFn)
     : eventBus_(eventBus),
       hitTestFn(std::move(hitTestFn)),
       isHighlightedFn(std::move(isHighlightedFn)),
       slopAccumulator(0.0f),
       pressState(PressState::Idle), pressStartTime(0.0),
-      pressStartPos{0, 0}, pressStartWord(-1), selectStartWord(-1),
-      touchActive(false), touchLastY(0.0f), lastPinchDist(0.0f) {
+      pressStartPos{0, 0}, pressStartHit{}, selectStartWord(-1),
+      touchLastY(0.0f), lastPinchDist(0.0f) {
 
     eventBus_.On<theword::event::DialogEvent>([this](const theword::event::DialogEvent& e) {
         dialogActive_ = (e.action != theword::event::DialogEvent::Action::Hide);
     });
 }
 
-void InputHandler::Poll(float deltaTime, theword::ui::NavigationStack* navStack,
-                        RadialMenuClickCallback radialClickHandler,
-                        ContextDismissHandler contextDismissHandler,
-                        RadialMenuShowCallback radialShowHandler) {
-    showRadialCallback_ = radialShowHandler;
+void InputHandler::Poll(float deltaTime, theword::ui::NavigationStack* navStack) {
+    // Capture press state at top so early-return paths update prevPressed_
+    // correctly, preventing stale-justPressed on the next frame.
+    bool isPressed = platform::HasTouchInput() ? (GetTouchPointCount() >= 1)
+                                               : IsMouseButtonDown(MOUSE_LEFT_BUTTON);
+    bool justPressed = isPressed && !prevPressed_;
+    bool justReleased = !isPressed && prevPressed_;
 
-    // Radial menu gets first chance to consume clicks and escape
-    if (IsKeyPressed(key::ESCAPE) && contextDismissHandler && contextDismissHandler()) {
+    // ── Poll execution order ───────────────────────────────────────────────
+    //  1. Escape → onDismiss (radial menu / context dismiss, consumed)
+    //  2. Active screen HandleInput (buttons / list items, consumed)
+    //  3. Escape → KeyEvent (unconsumed, fallthrough)
+    //  4. Dialog guard (G/S/A hotkeys only, resets FSM)
+    //  5. Scroll / pinch / right-click (platform-specific)
+    //  6. RunUnifiedFSM (word tap / drag / long-press)
+    //  7. HandleWindowResize (viewport change)
+    //
+    // Screens run before the FSM (stage 2 vs 6). This means screens consume
+    // button-area presses before the FSM can see them. Currently safe because
+    // screens handle UI (not text), but a screen that consumed a word-area
+    // press would starve the FSM. (P12)
+    // ────────────────────────────────────────────────────────────────────────
+
+    // Escape → onDismiss (radial menu dismiss)
+    if (IsKeyPressed(key::ESCAPE) && onDismiss && onDismiss()) {
+        prevPressed_ = isPressed;
         return;
-    }
-    if (radialClickHandler && IsMouseButtonPressed(MOUSE_LEFT_BUTTON)) {
-        if (radialClickHandler(GetMousePosition())) {
-            return;
-        }
     }
 
     // Let the active screen process input first
-    if (navStack && navStack->HandleInput(deltaTime)) return;
+    if (navStack && navStack->HandleInput(deltaTime)) {
+        prevPressed_ = isPressed;
+        return;
+    }
 
     if (IsKeyPressed(key::ESCAPE)) {
+        prevPressed_ = isPressed;
         eventBus_.Emit(theword::event::KeyEvent{key::ESCAPE});
         return;
     }
 
     if (dialogActive_) {
+        // Dialog opened mid-gesture — reset FSM to prevent stuck state (P7)
+        pressState = PressState::Idle;
+        prevPressed_ = false;
         if (IsKeyPressed(key::G)) { eventBus_.Emit(theword::event::DialogEvent{theword::event::DialogEvent::Type::GoTo, theword::event::DialogEvent::Action::Toggle}); return; }
         if (IsKeyPressed(key::S)) { eventBus_.Emit(theword::event::DialogEvent{theword::event::DialogEvent::Type::Settings, theword::event::DialogEvent::Action::Toggle}); return; }
         if (IsKeyPressed(key::A)) { eventBus_.Emit(theword::event::DialogEvent{theword::event::DialogEvent::Type::About, theword::event::DialogEvent::Action::Toggle}); return; }
@@ -62,36 +82,14 @@ void InputHandler::Poll(float deltaTime, theword::ui::NavigationStack* navStack,
     if (platform::HasTouchInput()) {
         HandlePinch();
         HandleTouchScroll();
-        HandleTouchPressFSM();
     } else {
         HandleScroll();
         HandleRightClick();
-        HandlePressFSM();
     }
 
+    RunUnifiedFSM(isPressed, justPressed, justReleased);
+    prevPressed_ = isPressed;
     HandleWindowResize();
-}
-
-void InputHandler::FinishSelection(int startWord, int endWord, Vector2 position) {
-    bool isDoubleClick = false;
-    double now = GetTime();
-
-    if (startWord == lastClickWord_ && (now - lastClickTime_) < DOUBLE_CLICK_TIME) {
-        isDoubleClick = true;
-    }
-
-    lastClickTime_ = now;
-    lastClickWord_ = startWord;
-
-    // Emit SelectionEvent for Highlighter to track visually
-    eventBus_.Emit(theword::event::SelectionEvent{
-        theword::event::SelectionEvent::Action::Start, startWord, startWord, {}, 0});
-    eventBus_.Emit(theword::event::SelectionEvent{
-        theword::event::SelectionEvent::Action::End, startWord, endWord, {}, 0});
-
-    if (showRadialCallback_) {
-        showRadialCallback_(startWord, endWord, position, isDoubleClick);
-    }
 }
 
 void InputHandler::HandleScroll() {
@@ -111,109 +109,26 @@ void InputHandler::HandleScroll() {
     }
 }
 
-void InputHandler::HandlePressFSM() {
-    switch (pressState) {
-        case PressState::Idle:
-            if (IsMouseButtonPressed(MOUSE_LEFT_BUTTON)) {
-                pressStartTime = GetTime();
-                pressStartPos = GetMousePosition();
-                if (hitTestFn) {
-                    pressStartWord = hitTestFn(pressStartPos.x, pressStartPos.y);
-                } else {
-                    pressStartWord = -1;
-                }
-                pressState = PressState::Pending;
-            }
-            break;
-
-        case PressState::Pending:
-            if (!IsMouseButtonDown(MOUSE_LEFT_BUTTON)) {
-                // Tap: select word + show radial menu
-                if (pressStartWord >= 0) {
-                    FinishSelection(pressStartWord, pressStartWord, GetMousePosition());
-                }
-                pressState = PressState::Idle;
-            } else if (GetTime() - pressStartTime > LONG_PRESS_TIME) {
-                // Long press: treat same as tap (show radial menu)
-                if (pressStartWord >= 0) {
-                    FinishSelection(pressStartWord, pressStartWord, GetMousePosition());
-                }
-                pressState = PressState::LongPress;
-            } else {
-                Vector2 m = GetMousePosition();
-                float dx = m.x - pressStartPos.x;
-                float dy = m.y - pressStartPos.y;
-                if (dx * dx + dy * dy > LONG_PRESS_MOVE_THRESHOLD * LONG_PRESS_MOVE_THRESHOLD) {
-                    pressState = PressState::Dragging;
-                    if (pressStartWord >= 0) {
-                        eventBus_.Emit(theword::event::SelectionEvent{
-                            theword::event::SelectionEvent::Action::Start, pressStartWord, pressStartWord, {}, 0});
-                    }
-                    if (hitTestFn) {
-                        int wordId = hitTestFn(m.x, m.y);
-                        if (wordId >= 0) {
-                            eventBus_.Emit(theword::event::SelectionEvent{
-                                theword::event::SelectionEvent::Action::Update, pressStartWord, wordId, {}, 0});
-                        }
-                    }
-                }
-            }
-            break;
-
-        case PressState::Dragging:
-            if (IsMouseButtonDown(MOUSE_LEFT_BUTTON)) {
-                if (hitTestFn) {
-                    Vector2 m = GetMousePosition();
-                    int wordId = hitTestFn(m.x, m.y);
-                    if (wordId >= 0) {
-                        eventBus_.Emit(theword::event::SelectionEvent{
-                            theword::event::SelectionEvent::Action::Update, pressStartWord, wordId, {}, 0});
-                    }
-                }
-            }
-            if (IsMouseButtonReleased(MOUSE_LEFT_BUTTON)) {
-                if (pressStartWord >= 0) {
-                    Vector2 m = GetMousePosition();
-                    int endWord = hitTestFn ? hitTestFn(m.x, m.y) : pressStartWord;
-                    if (endWord < 0) endWord = pressStartWord;
-                    FinishSelection(pressStartWord, endWord, m);
-                }
-                pressState = PressState::Idle;
-            }
-            break;
-
-        case PressState::LongPress:
-            if (!IsMouseButtonDown(MOUSE_LEFT_BUTTON)) {
-                pressState = PressState::Idle;
-            }
-            break;
-
-        default:
-            break;
-    }
-}
-
 void InputHandler::HandleRightClick() {
     if (IsMouseButtonPressed(MOUSE_BUTTON_RIGHT)) {
         Vector2 mousePos = GetMousePosition();
-        int wordId = hitTestFn ? hitTestFn(mousePos.x, mousePos.y) : -1;
-        if (wordId >= 0) {
-            FinishSelection(wordId, wordId, mousePos);
-        }
+        HitInfo hi = hitTestFn ? hitTestFn(mousePos.x, mousePos.y) : HitInfo{};
+        if (hi.wordId >= 0 && onTap)
+            onTap(hi, mousePos, false);
     }
 }
 
 void InputHandler::HandleTouchScroll() {
     int touchCount = GetTouchPointCount();
     if (touchCount == 1) {
-        if (pressState == PressState::Selecting) return;
-
         Vector2 pos = GetTouchPosition(0);
-        if (!touchActive) {
-            touchActive = true;
+        lastTouchPos_ = pos;
+        if (!scrollActive_) {
+            scrollActive_ = true;
             touchLastY = pos.y;
             slopAccumulator = 0.0f;
             touchLaunchVelocity_ = 0.0f;
+            didScroll_ = false;
             return;
         }
 
@@ -228,80 +143,112 @@ void InputHandler::HandleTouchScroll() {
         slopAccumulator += deltaY;
         if (std::abs(slopAccumulator) < TOUCH_SLOP) return;
 
+        // Suppress scroll while a text-selection drag is active
+        if (pressState == PressState::Dragging || pressState == PressState::LongPress)
+            return;
+
+        didScroll_ = true;
         float effectiveDelta = slopAccumulator;
         slopAccumulator = 0.0f;
 
         eventBus_.Emit(theword::event::ScrollEvent{-effectiveDelta, true});
-    } else if (touchActive) {
-        touchActive = false;
-        eventBus_.Emit(theword::event::ScrollEvent{0.0f, false, touchLaunchVelocity_});
+    } else if (scrollActive_) {
+        scrollActive_ = false;
+        // Don't emit scroll momentum after a text-selection gesture
+        if (pressState != PressState::Dragging && pressState != PressState::LongPress)
+            eventBus_.Emit(theword::event::ScrollEvent{0.0f, false, touchLaunchVelocity_});
     }
 }
 
-void InputHandler::HandleTouchPressFSM() {
-    int touchCount = GetTouchPointCount();
-    Vector2 touchPos = {};
-    if (touchCount >= 1) {
-        touchPos = GetTouchPosition(0);
-    }
+void InputHandler::RunUnifiedFSM(bool isPressed, bool justPressed, bool justReleased) {
+    Vector2 pos = platform::HasTouchInput() ? GetTouchPosition(0) : GetMousePosition();
+    if (platform::HasTouchInput() && isPressed)
+        lastTouchPos_ = pos;
+    Vector2 cbPos = platform::HasTouchInput() ? lastTouchPos_ : pos;
 
     switch (pressState) {
         case PressState::Idle:
-            if (touchCount == 1) {
+            if (justPressed) {
                 pressStartTime = GetTime();
-                pressStartPos = touchPos;
-                if (hitTestFn) {
-                    pressStartWord = hitTestFn(pressStartPos.x, pressStartPos.y);
-                } else {
-                    pressStartWord = -1;
-                }
+                pressStartPos = pos;
+                if (platform::HasTouchInput())
+                    lastTouchPos_ = pos;
+                pressStartHit = hitTestFn ? hitTestFn(pressStartPos.x, pressStartPos.y) : HitInfo{};
+                didScroll_ = false;
                 pressState = PressState::Pending;
             }
             break;
 
         case PressState::Pending:
-            if (touchCount == 0) {
-                // Tap on any word → show radial menu
-                if (pressStartWord >= 0) {
-                    FinishSelection(pressStartWord, pressStartWord, pressStartPos);
+            if (justReleased) {
+                if (pressStartHit.wordId >= 0 && !didScroll_) {
+                    float tapDist = std::sqrt(
+                        (pressStartPos.x - lastClickPos_.x) * (pressStartPos.x - lastClickPos_.x) +
+                        (pressStartPos.y - lastClickPos_.y) * (pressStartPos.y - lastClickPos_.y));
+                    bool isDouble = tapDist < DOUBLE_CLICK_DISTANCE
+                        && (GetTime() - lastClickTime_) < DOUBLE_CLICK_TIME;
+                    lastClickTime_ = GetTime();
+                    lastClickPos_ = cbPos;
+                    if (onTap) onTap(pressStartHit, cbPos, isDouble);
+                } else if (pressStartHit.wordId < 0 && !didScroll_) {
+                    if (onTapEmpty) onTapEmpty(cbPos);
                 }
                 pressState = PressState::Idle;
             } else if (GetTime() - pressStartTime > LONG_PRESS_TIME) {
-                // Long-press: start selection
-                if (pressStartWord >= 0) {
-                    selectStartWord = pressStartWord;
-                    eventBus_.Emit(theword::event::SelectionEvent{
-                        theword::event::SelectionEvent::Action::Start, pressStartWord, pressStartWord, {}, 0});
-                    pressState = PressState::Selecting;
+                if (pressStartHit.wordId >= 0) {
+                    selectStartWord = pressStartHit.wordId;
+                    if (onLongPress) onLongPress(pressStartHit.wordId, cbPos);
+                    pressState = PressState::LongPress;
                 } else {
                     pressState = PressState::Idle;
                 }
             } else {
-                float dy = touchPos.y - pressStartPos.y;
-                if (std::abs(dy) > LONG_PRESS_MOVE_THRESHOLD) {
-                    pressState = PressState::Idle;
+                float dx = pos.x - pressStartPos.x;
+                float dy = pos.y - pressStartPos.y;
+                if (dx * dx + dy * dy > LONG_PRESS_MOVE_THRESHOLD * LONG_PRESS_MOVE_THRESHOLD
+                    || (platform::HasTouchInput() && didScroll_)) {
+                    if (pressStartHit.wordId >= 0) {
+                        if (platform::HasTouchInput()) {
+                            // On touch, drag-start within the long-press window is a scroll
+                            // gesture, not a text selection. Desktop keeps the drag
+                            // immediately (mouse drag always means select).
+                            pressState = PressState::Idle;
+                        } else {
+                            if (onDragStart) onDragStart(pressStartHit.wordId, cbPos);
+                            pressState = PressState::Dragging;
+                        }
+                    } else {
+                        pressState = PressState::Idle;
+                    }
                 }
             }
             break;
 
-        case PressState::Selecting:
-            if (touchCount == 0) {
-                // Release: finalize selection + show radial menu
-                if (selectStartWord >= 0) {
-                    eventBus_.Emit(theword::event::SelectionEvent{
-                        theword::event::SelectionEvent::Action::End, selectStartWord, pressStartWord, {}, 0});
-                    FinishSelection(selectStartWord, pressStartWord, pressStartPos);
-                }
+        case PressState::Dragging:
+            if (isPressed) {
+                HitInfo hi = hitTestFn ? hitTestFn(pos.x, pos.y) : HitInfo{};
+                if (hi.wordId >= 0 && onDragUpdate)
+                    onDragUpdate(pressStartHit.wordId, hi.wordId, cbPos);
+            }
+            if (justReleased) {
+                int endWord = hitTestFn ? hitTestFn(pos.x, pos.y).wordId : pressStartHit.wordId;
+                if (endWord < 0) endWord = pressStartHit.wordId;
+                if (onDragEnd) onDragEnd(pressStartHit.wordId, endWord, cbPos);
                 pressState = PressState::Idle;
-            } else {
-                if (hitTestFn) {
-                    int wordId = hitTestFn(touchPos.x, touchPos.y);
-                    if (wordId >= 0 && wordId != pressStartWord) {
-                        pressStartWord = wordId;
-                        eventBus_.Emit(theword::event::SelectionEvent{
-                            theword::event::SelectionEvent::Action::Update, selectStartWord, wordId, {}, 0});
-                    }
+            }
+            break;
+
+        case PressState::LongPress:
+            if (isPressed && hitTestFn) {
+                HitInfo hi = hitTestFn(pos.x, pos.y);
+                if (hi.wordId >= 0 && hi.wordId != pressStartHit.wordId) {
+                    pressStartHit = hi;
+                    if (onDragUpdate) onDragUpdate(selectStartWord, hi.wordId, cbPos);
                 }
+            }
+            if (justReleased) {
+                if (onDragEnd) onDragEnd(selectStartWord, pressStartHit.wordId, cbPos);
+                pressState = PressState::Idle;
             }
             break;
 
@@ -324,7 +271,6 @@ void InputHandler::HandlePinch() {
             if (delta < -5.0f) eventBus_.Emit(theword::event::FontSizeEvent{0.0f, -config::FONT_SIZE_STEP});
         }
         lastPinchDist = dist;
-        touchActive = false;
         pressState = PressState::Idle;
     } else {
         lastPinchDist = 0.0f;

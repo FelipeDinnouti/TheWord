@@ -20,8 +20,11 @@ public:
     void OnSelection(const theword::event::SelectionEvent& e);
 
     bool IsWordHighlighted(int wordId) const;
+    bool IsWordHighlighted(int wordId, const std::string& bookId, int chapterNum) const;
     Color GetHighlightForWord(int wordId) const;
+    Color GetHighlightForWord(int wordId, const std::string& bookId, int chapterNum) const;
     const Highlight* HighlightAtWord(int wordId) const;
+    const Highlight* HighlightAtWord(int wordId, const std::string& bookId, int chapterNum) const;
 
     void RemoveHighlight(int id);
     void RecolorHighlight(int highlightId, int newTypeId);
@@ -46,13 +49,19 @@ public:
     bool IsSelecting() const { return selecting; }
     int GetSelectionStart() const { return selectionStart; }
     int GetSelectionEnd() const { return selectionEnd; }
+    const std::string& GetSelectBookId() const { return selectBookId_; }
+    int GetSelectChapterNum() const { return selectChapterNum_; }
 
     bool HasCommittedSelection() const { return committedStart_ >= 0; }
     int GetCommittedStart() const { return committedStart_; }
     int GetCommittedEnd() const { return committedEnd_; }
+    const std::string& GetCommittedBookId() const { return committedBookId_; }
+    int GetCommittedChapterNum() const { return committedChapterNum_; }
     void ClearCommittedSelection();
-    void CommitSelection(int startWord, int endWord);
-    void CreateHighlight(int startWord, int endWord, int typeId);
+    void CommitSelection(int startWord, int endWord, const std::string& bookId, int chapterNum);
+    void CreateHighlight(int startWord, int endWord, int typeId,
+                         const std::string& bookId, int chapterNum,
+                         const std::vector<theword::data::Word>* words = nullptr);
 
 private:
     theword::event::EventBus& eventBus_;
@@ -71,12 +80,17 @@ private:
     int currentChapterNum_ = 0;
     std::vector<theword::data::Word> currentWords_;
 
+    std::string selectBookId_;
+    int selectChapterNum_ = 0;
+
     int committedStart_ = -1;
     int committedEnd_ = -1;
+    std::string committedBookId_;
+    int committedChapterNum_ = 0;
 
-    void StartSelection(int wordId);
+    void StartSelection(int wordId, const std::string& bookId, int chapterNum);
     void UpdateSelection(int wordId);
-    void EndSelection();
+    void EndSelection(const std::string& bookId, int chapterNum);
 };
 
 } // namespace theword::highlight

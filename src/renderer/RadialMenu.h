@@ -14,9 +14,10 @@ class RadialMenu {
 public:
     enum class Action { None, Copy, Delete, Highlight };
 
-    RadialMenu();
+    RadialMenu(float dpiScale = 1.0f);
 
     void Show(Vector2 center, int startWord, int endWord,
+              const std::string& bookId, int chapterNum,
               const std::vector<theword::highlight::HighlightType>& types);
     void Hide();
     bool IsActive() const;
@@ -25,6 +26,8 @@ public:
 
     int GetStartWord() const { return startWord_; }
     int GetEndWord() const { return endWord_; }
+    const std::string& GetBookId() const { return bookId_; }
+    int GetChapterNum() const { return chapterNum_; }
 
 private:
     struct Button {
@@ -40,7 +43,10 @@ private:
     Vector2 center_;
     int startWord_;
     int endWord_;
+    std::string bookId_;
+    int chapterNum_ = 0;
     bool active_;
+    float dpiScale_;
     std::vector<Button> buttons_;
     int hoveredIndex_;
 

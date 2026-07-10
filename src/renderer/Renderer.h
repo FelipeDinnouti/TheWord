@@ -7,10 +7,6 @@
 #include "data/ChapterProvider.h"
 #include "core/Theme.h"
 
-namespace theword::event {
-    class EventBus;
-}
-
 namespace theword::renderer {
 
 struct HighlightRect {
@@ -23,8 +19,7 @@ struct HighlightRect {
 
 class Renderer {
 public:
-    Renderer(theword::event::EventBus& eventBus,
-             const Font& bodyFont, const Font& headingFont,
+    Renderer(const Font& bodyFont, const Font& headingFont,
              const Font& largeFont, const Font& smallFont,
              float contentTop,
              float bodySize, float headingSize,
@@ -42,9 +37,10 @@ public:
 
     float GetContentTop() const;
 
-private:
-    theword::event::EventBus& eventBus_;
+public:
     static constexpr float CULL_MARGIN = 50.0f;
+
+private:
     static constexpr float MIN_SCROLLBAR_HEIGHT = 20.0f;
 
     const Font& bodyFont;

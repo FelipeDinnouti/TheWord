@@ -22,7 +22,8 @@ BookListScreen::BookListScreen(const Font& font, float fontSize,
                                const std::string& currentChapterRef)
     : font_(font), fontSize_(fontSize),
       navStack_(navStack), eventBus_(eventBus), uiScale_(uiScale),
-      currentChapterRef_(currentChapterRef) {
+      currentChapterRef_(currentChapterRef),
+      tapDetector_(uiScale_.dp(10)) {
     if (!currentChapterRef_.empty()) {
         std::string bookCode;
         int chapter = 1;
@@ -245,17 +246,13 @@ bool BookListScreen::HandleInput(float /*deltaTime*/) {
         }
     }
 
-    if (IsMouseButtonPressed(MOUSE_LEFT_BUTTON)) {
-        pressStartPos_ = GetMousePosition();
-        hasPendingPress_ = true;
-    }
+    if (IsMouseButtonPressed(MOUSE_LEFT_BUTTON))
+        tapDetector_.OnPress(GetMousePosition());
 
-    if (hasPendingPress_ && IsMouseButtonReleased(MOUSE_LEFT_BUTTON)) {
-        hasPendingPress_ = false;
-        Vector2 mousePos = GetMousePosition();
-        float dx = mousePos.x - pressStartPos_.x;
-        float dy = mousePos.y - pressStartPos_.y;
-        if (dx * dx + dy * dy > uiScale_.dp(10) * uiScale_.dp(10)) return true;
+    Vector2 mousePos;
+    auto tr = tapDetector_.OnRelease(GetMousePosition(), mousePos);
+    if (tr == TapDetector::Result::Drag) return true;
+    if (tr == TapDetector::Result::Tap) {
 
         float backW = uiScale_.dp(56);
 

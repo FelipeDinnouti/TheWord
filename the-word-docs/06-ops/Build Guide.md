@@ -1,17 +1,17 @@
 # Build Guide
 
-> Status: Updated for all platforms | Last Updated: 2026-06-26
+> Status: Updated for all platforms | Last Updated: 2026-07-10
 
 ## Build Artifacts Overview
 
-| Platform | Build Directory | How to configure | Output Artifacts |
-|----------|----------------|------------------|------------------|
-| Linux Desktop | `build/` | `cmake --preset default` | `theword` (executable), `theword_test` (test executable) |
-| Linux Debug | `build-debug/` | `cmake --preset debug` | `theword`, `theword_test` |
-| Android (x86_64) | `build-android-x86_64/` | `cmake --preset android-x86_64` or `./scripts/build-android.sh x86_64` | `libtheword.so` → `theword-x86_64.apk` |
-| Android (arm64) | `build-android-arm64/` | `cmake --preset android-arm64` or `./scripts/build-android.sh arm64-v8a` | `libtheword.so` → `theword-arm64-v8a.apk` |
-| WebAssembly | `build-wasm/` | `cmake --preset wasm` or `./scripts/build-wasm.sh` | `theword.html`, `theword.js`, `theword.wasm`, `theword.data` |
-| Windows (cross) | `build-windows/` | `cmake --preset windows-mingw` | `theword.exe` |
+| Platform | Build Directory | How to build | Output Artifacts |
+|----------|----------------|--------------|------------------|
+| Linux Desktop | `build/` | `./scripts/build-linux.sh` | `theword` (executable), `theword_test` (test executable) |
+| Linux Debug | `build-debug/` | `./scripts/build-linux.sh --debug` | `theword`, `theword_test` |
+| Android (x86_64) | `build-android-x86_64/` | `./scripts/build-android.sh x86_64` | `libtheword.so` → `theword-x86_64.apk` |
+| Android (arm64) | `build-android-arm64/` | `./scripts/build-android.sh arm64-v8a` | `libtheword.so` → `theword-arm64-v8a.apk` |
+| WebAssembly | `build-wasm/` | `./scripts/build-wasm.sh` | `theword.html`, `theword.js`, `theword.wasm`, `theword.data` |
+| Windows (cross) | `build-windows/` | `./scripts/build-windows.sh` | `theword.exe` |
 
 Assets (`assets/` and `shaders/`) are copied into the build directory automatically during build.
 
@@ -72,46 +72,36 @@ The patch is NOT upstream in raylib 5.0. It is maintained locally and applied pe
 
 ## Build & Run
 
-### Quick Reference — CMake Presets
+### Quick Reference — Build Scripts
 
-All presets are defined in `CMakePresets.json` at the project root.
+These are the recommended entry points. Each script handles configure + build in one command.
+
+### Linux Desktop
 
 ```bash
-# List available presets
-cmake --list-presets
+# Release build
+./scripts/build-linux.sh
 
-# Configure + build with a preset
-cmake --preset <name>
-cmake --build --preset <name>
-```
+# Debug build
+./scripts/build-linux.sh --debug
 
-### Linux Desktop (default)
-```bash
-cmake --preset default
-cmake --build --preset default
+# Full reconfigure (after adding .cpp files or changing flags)
+./scripts/build-linux.sh --clean
+
+# Build and run tests
+./scripts/build-linux.sh --test
+
+# Run the built executable
 ./build/theword
 ```
 
-### Linux Desktop (debug)
-```bash
-cmake --preset debug
-cmake --build --preset debug
-./build-debug/theword
-```
+### Windows (Cross-Compile from Linux)
 
-### Linux Desktop (legacy — without presets)
-```bash
-cmake -B build -DCMAKE_BUILD_TYPE=Release -G "Unix Makefiles"
-cmake --build build --parallel
-./build/theword
-```
+Requires MinGW cross-compiler: `sudo apt install g++-x86-64-linux-gnu binutils-x86-64-linux-gnu`
 
-### Windows (MSYS2)
 ```bash
-# In MSYS2 MINGW64 terminal:
-cmake -B build -G "MinGW Makefiles"
-cmake --build build
-./build/theword.exe
+./scripts/build-windows.sh
+# Output: build-windows/theword.exe
 ```
 
 ### Android
@@ -183,8 +173,12 @@ YVP_APP_KEY=your_app_key_here
 Tests use the [doctest](https://github.com/doctest/doctest) framework (header-only, fetched by CMake).
 
 ```bash
-# Build and run (Linux)
-cmake --build build --parallel && ./build/theword_test
+# Build and run (one command)
+./scripts/build-linux.sh --test
+
+# Or step by step:
+./scripts/build-linux.sh
+./build/theword_test
 
 # Run specific test suite
 ./build/theword_test --test-case="*USFM*"
@@ -193,7 +187,7 @@ cmake --build build --parallel && ./build/theword_test
 ./build/theword_test --list-tests
 ```
 
-Current test count: **64 tests**.
+Current test count: **76 tests**.
 
 ---
 
@@ -204,7 +198,7 @@ CMake uses explicit file lists (no `GLOB_RECURSE`). After adding a new `.cpp`:
 ```bash
 # 1. Add the file to the corresponding source list in CMakeLists.txt
 # 2. Delete build cache and reconfigure:
-rm -rf build && cmake --preset default
+./scripts/build-linux.sh --clean
 ```
 
 ---
@@ -214,7 +208,7 @@ rm -rf build && cmake --preset default
 | Issue | Solution |
 |-------|----------|
 | `CMAKE_CXX_COMPILE_OBJECT not set` | Add `CXX` to project languages: `project(theword C CXX)` |
-| New .cpp not compiled | `rm -rf build && cmake --preset default` |
+| New .cpp not compiled | `./scripts/build-linux.sh --clean` |
 | libcurl not found | Install `libcurl4-openssl-dev` (Linux) or ensure MSYS2 package — the build continues without it (USFM-only mode) |
 | API returns "Access denied" | Use Bible ID 3034 (BSB), not 111 (NIV) |
 | `libraylib.so: cannot open shared` | Run `sudo ldconfig` or set `LD_LIBRARY_PATH` |
