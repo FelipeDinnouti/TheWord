@@ -108,10 +108,11 @@ bool SettingsScreen::HandleInput(float /*deltaTime*/) {
     if (IsMouseButtonPressed(MOUSE_LEFT_BUTTON))
         tapDetector_.OnPress(GetMousePosition());
 
-    Vector2 mousePos;
-    auto tr = tapDetector_.OnRelease(GetMousePosition(), mousePos);
-    if (tr == TapDetector::Result::Drag) return true;
-    if (tr == TapDetector::Result::Tap) {
+    if (IsMouseButtonReleased(MOUSE_LEFT_BUTTON)) {
+        Vector2 mousePos;
+        auto tr = tapDetector_.OnRelease(GetMousePosition(), mousePos);
+        if (tr == TapDetector::Result::Drag) { return false; }
+        if (tr == TapDetector::Result::Tap) {
 
         float headerH = uiScale_.dp(48);
         float backW = uiScale_.dp(56);
@@ -176,6 +177,7 @@ bool SettingsScreen::HandleInput(float /*deltaTime*/) {
                 return true;
             }
         }
+    }
     }
 
     return false;

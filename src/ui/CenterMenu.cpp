@@ -124,10 +124,11 @@ bool CenterMenu::HandleInput(float /*deltaTime*/) {
     if (IsMouseButtonPressed(MOUSE_LEFT_BUTTON))
         tapDetector_.OnPress(GetMousePosition());
 
-    Vector2 mousePos;
-    auto tr = tapDetector_.OnRelease(GetMousePosition(), mousePos);
-    if (tr == TapDetector::Result::Drag) return true;
-    if (tr == TapDetector::Result::Tap) {
+    if (IsMouseButtonReleased(MOUSE_LEFT_BUTTON)) {
+        Vector2 mousePos;
+        auto tr = tapDetector_.OnRelease(GetMousePosition(), mousePos);
+        if (tr == TapDetector::Result::Drag) { return false; }
+        if (tr == TapDetector::Result::Tap) {
 
         float screenW = static_cast<float>(GetScreenWidth());
         float screenH = static_cast<float>(GetScreenHeight());
@@ -156,6 +157,7 @@ bool CenterMenu::HandleInput(float /*deltaTime*/) {
             }
             itemY += itemH;
         }
+    }
     }
 
     return false;

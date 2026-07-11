@@ -8,13 +8,13 @@ if(POLICY CMP0169)
     cmake_policy(SET CMP0169 OLD)
 endif()
 
-project(theword VERSION 1.6.0 LANGUAGES C CXX)
+project(theword VERSION 1.6.1 LANGUAGES C CXX)
 
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 # Pre-release suffix (empty for release builds, e.g. "-alpha.1")
-set(THEWORD_VERSION_SUFFIX "-alpha.2")
+set(THEWORD_VERSION_SUFFIX "-alpha")
 set(APP_VERSION_FULL "${PROJECT_VERSION}${THEWORD_VERSION_SUFFIX}")
 
 # Auto-generate Version.h from template (substitutes @PROJECT_VERSION@ etc.)

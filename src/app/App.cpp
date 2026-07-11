@@ -202,6 +202,7 @@ bool App::Init(const std::string& title) {
     }
 
     auto hitTestFn = [this](float x, float y) -> theword::input::HitInfo {
+        if (!navStack_->IsOnRoot()) return {};
         auto result = docManager_->HitTestWithChapter(x, y);
         return {result.wordId,
                 result.chapterData ? result.chapterData->bookId : "",

@@ -270,10 +270,11 @@ bool HighlightBrowserScreen::HandleInput(float /*deltaTime*/) {
     if (IsMouseButtonPressed(MOUSE_LEFT_BUTTON))
         tapDetector_.OnPress(GetMousePosition());
 
-    Vector2 mousePos;
-    auto tr = tapDetector_.OnRelease(GetMousePosition(), mousePos);
-    if (tr == TapDetector::Result::Drag) return true;
-    if (tr == TapDetector::Result::Tap) {
+    if (IsMouseButtonReleased(MOUSE_LEFT_BUTTON)) {
+        Vector2 mousePos;
+        auto tr = tapDetector_.OnRelease(GetMousePosition(), mousePos);
+        if (tr == TapDetector::Result::Drag) { return false; }
+        if (tr == TapDetector::Result::Tap) {
 
         // Back button via header bar tap
         if (mousePos.y < headerH && mousePos.x < uiScale_.dp(56)) {
@@ -305,6 +306,7 @@ bool HighlightBrowserScreen::HandleInput(float /*deltaTime*/) {
                 relY += layouts_[i].height;
             }
         }
+    }
     }
 
     // Scroll wheel
