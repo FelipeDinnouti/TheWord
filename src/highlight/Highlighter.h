@@ -25,6 +25,8 @@ public:
     Color GetHighlightForWord(int wordId, const std::string& bookId, int chapterNum) const;
     const Highlight* HighlightAtWord(int wordId) const;
     const Highlight* HighlightAtWord(int wordId, const std::string& bookId, int chapterNum) const;
+    const Highlight* HighlightOverlapping(int startWord, int endWord,
+                                          const std::string& bookId, int chapterNum) const;
 
     void RemoveHighlight(int id);
     void RecolorHighlight(int highlightId, int newTypeId);

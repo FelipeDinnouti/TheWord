@@ -210,6 +210,17 @@ const Highlight* Highlighter::HighlightAtWord(int wordId, const std::string& boo
     return nullptr;
 }
 
+const Highlight* Highlighter::HighlightOverlapping(int startWord, int endWord,
+                                                    const std::string& bookId, int chapterNum) const {
+    for (const auto& h : highlights) {
+        if (h.bookId == bookId && h.chapterNum == chapterNum
+            && h.startWord <= endWord && h.endWord >= startWord) {
+            return &h;
+        }
+    }
+    return nullptr;
+}
+
 void Highlighter::RemoveHighlight(int id) {
     theword::core::Logger::Debug("Highlight deleted: id " + std::to_string(id));
     highlights.erase(

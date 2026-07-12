@@ -75,15 +75,77 @@ void RadialMenu::LayoutButtons(const std::vector<theword::highlight::HighlightTy
     }
 }
 
+int RadialMenu::GetSectorIndex(Vector2 pos) const {
+    if (!active_ || buttons_.empty()) return -1;
+
+    float dx = pos.x - center_.x;
+    float dy = pos.y - center_.y;
+    float dist = sqrtf(dx * dx + dy * dy);
+
+    float ringR = 56.0f * dpiScale_;
+    float btnR = 18.0f * dpiScale_;
+
+    if (dist > ringR + btnR * HIT_SCALE) return -1;
+    if (dist < ringR * 0.35f) return -1;
+
+    int count = static_cast<int>(buttons_.size());
+    float sectorAngle = 2.0f * PI / static_cast<float>(count);
+    float startAngle = -PI / 2.0f;
+    float tapAngle = atan2f(dy, dx);
+    float offset = tapAngle - (startAngle - sectorAngle * 0.5f);
+    offset = fmodf(offset, 2.0f * PI);
+    if (offset < 0.0f) offset += 2.0f * PI;
+
+    int idx = static_cast<int>(offset / sectorAngle);
+    return (idx >= 0 && idx < count) ? idx : -1;
+}
+
 void RadialMenu::UpdateHover(Vector2 mousePos) {
-    hoveredIndex_ = -1;
-    for (size_t i = 0; i < buttons_.size(); ++i) {
-        float dx = mousePos.x - buttons_[i].center.x;
-        float dy = mousePos.y - buttons_[i].center.y;
-        float dist = sqrtf(dx * dx + dy * dy);
-        if (dist <= buttons_[i].radius * HIT_SCALE) {
-            hoveredIndex_ = static_cast<int>(i);
-            return;
+    hoveredIndex_ = GetSectorIndex(mousePos);
+}
+
+void RadialMenu::DrawDebugSectors() {
+    if (!active_ || buttons_.empty()) return;
+
+    int count = static_cast<int>(buttons_.size());
+    float ringR = 56.0f * dpiScale_;
+    float btnR = 18.0f * dpiScale_;
+    float innerR = ringR * 0.35f;
+    float outerR = ringR + btnR * HIT_SCALE;
+    float startAngle = -PI / 2.0f;
+    float sectorAngle = 2.0f * PI / static_cast<float>(count);
+
+    Color boundaryColor = {255, 100, 100, 120};
+    Color sectorLineColor = {255, 255, 255, 80};
+
+    DrawCircleLinesV(center_, innerR, boundaryColor);
+    DrawCircleLinesV(center_, outerR, boundaryColor);
+
+    for (int i = 0; i < count; ++i) {
+        float angle = startAngle - sectorAngle * 0.5f + i * sectorAngle;
+        float sx = center_.x + cosf(angle) * innerR;
+        float sy = center_.y + sinf(angle) * innerR;
+        float ex = center_.x + cosf(angle) * outerR;
+        float ey = center_.y + sinf(angle) * outerR;
+        DrawLineEx({sx, sy}, {ex, ey}, 1.0f, sectorLineColor);
+    }
+
+    if (hoveredIndex_ >= 0) {
+        float a1 = startAngle - sectorAngle * 0.5f + hoveredIndex_ * sectorAngle;
+        float a2 = a1 + sectorAngle;
+        Color fill = {255, 255, 255, 25};
+        int segs = 12;
+        for (int s = 0; s < segs; ++s) {
+            float t1 = static_cast<float>(s) / segs;
+            float t2 = static_cast<float>(s + 1) / segs;
+            float ang1 = a1 + (a2 - a1) * t1;
+            float ang2 = a1 + (a2 - a1) * t2;
+            Vector2 p1 = {center_.x + cosf(ang1) * innerR, center_.y + sinf(ang1) * innerR};
+            Vector2 p2 = {center_.x + cosf(ang2) * innerR, center_.y + sinf(ang2) * innerR};
+            Vector2 p3 = {center_.x + cosf(ang2) * outerR, center_.y + sinf(ang2) * outerR};
+            Vector2 p4 = {center_.x + cosf(ang1) * outerR, center_.y + sinf(ang1) * outerR};
+            DrawTriangle(p1, p2, p3, fill);
+            DrawTriangle(p1, p3, p4, fill);
         }
     }
 }
@@ -94,6 +156,7 @@ void RadialMenu::Draw() {
     float mx = static_cast<float>(GetMouseX());
     float my = static_cast<float>(GetMouseY());
     UpdateHover({mx, my});
+    // DrawDebugSectors();
 
     for (size_t i = 0; i < buttons_.size(); ++i) {
         const auto& btn = buttons_[i];
@@ -123,13 +186,9 @@ void RadialMenu::Draw() {
 std::pair<RadialMenu::Action, int> RadialMenu::HandleClick(Vector2 pos) {
     if (!active_) return {Action::None, -1};
 
-    for (const auto& btn : buttons_) {
-        float dx = pos.x - btn.center.x;
-        float dy = pos.y - btn.center.y;
-        float dist = sqrtf(dx * dx + dy * dy);
-        if (dist <= btn.radius * HIT_SCALE) {
-            return {btn.action, btn.colorIndex};
-        }
+    int idx = GetSectorIndex(pos);
+    if (idx >= 0) {
+        return {buttons_[idx].action, buttons_[idx].colorIndex};
     }
 
     return {Action::None, -1};

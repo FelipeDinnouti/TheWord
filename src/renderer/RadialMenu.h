@@ -50,6 +50,8 @@ private:
     std::vector<Button> buttons_;
     int hoveredIndex_;
 
+    int GetSectorIndex(Vector2 pos) const;
+    void DrawDebugSectors();
     void UpdateHover(Vector2 mousePos);
     void LayoutButtons(const std::vector<theword::highlight::HighlightType>& types);
 };

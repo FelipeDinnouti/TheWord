@@ -36,10 +36,17 @@ public:
     bool IsRadialMenuActive() const;
     void HideRadialMenu();
 
+    void RecordDebugTap(Vector2 pos, bool wasHit = false);
+    void DrawDebugTap();
+
 private:
     std::unique_ptr<RadialMenu> radialMenu;
     theword::highlight::Highlighter& highlighter_;
     float dpiScale_;
+
+    Vector2 debugTapPos_{0, 0};
+    double debugTapTime_ = 0.0;
+    bool debugTapWasHit_ = false;
 };
 
 } // namespace theword::renderer

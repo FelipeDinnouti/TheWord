@@ -21,6 +21,7 @@ struct Info {
 Info Init(const char* title);
 std::unique_ptr<IHttpClient> CreateHttpClient();
 bool ShouldQuit();
+bool IsWindowAvailable();
 bool HasTouchInput();
 
 bool OpenURL(const char* url);

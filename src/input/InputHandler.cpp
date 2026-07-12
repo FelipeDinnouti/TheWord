@@ -28,6 +28,25 @@ InputHandler::InputHandler(theword::event::EventBus& eventBus,
     });
 }
 
+void InputHandler::ResetState() {
+    pressState = PressState::Idle;
+    pressStartTime = 0.0;
+    pressStartPos = {0, 0};
+    pressStartHit = {};
+    selectStartWord = -1;
+    lastDragWord_ = -1;
+    touchLastY = 0.0f;
+    touchLaunchVelocity_ = 0.0f;
+    lastPinchDist = 0.0f;
+    lastTouchPos_ = {0, 0};
+    scrollActive_ = false;
+    didScroll_ = false;
+    prevPressed_ = false;
+    slopAccumulator = 0.0f;
+    // Preserve double-click tracking (lastClickTime_, lastClickPos_)
+    // Preserve dialogActive_ (controlled by DialogEvent subscriber)
+}
+
 void InputHandler::Poll(float deltaTime, theword::ui::NavigationStack* navStack) {
     // Capture press state at top so early-return paths update prevPressed_
     // correctly, preventing stale-justPressed on the next frame.
@@ -174,6 +193,7 @@ void InputHandler::RunUnifiedFSM(bool isPressed, bool justPressed, bool justRele
                 if (platform::HasTouchInput())
                     lastTouchPos_ = pos;
                 pressStartHit = hitTestFn ? hitTestFn(pressStartPos.x, pressStartPos.y) : HitInfo{};
+                lastDragWord_ = pressStartHit.wordId;
                 didScroll_ = false;
                 pressState = PressState::Pending;
             }
@@ -227,12 +247,14 @@ void InputHandler::RunUnifiedFSM(bool isPressed, bool justPressed, bool justRele
         case PressState::Dragging:
             if (isPressed) {
                 HitInfo hi = hitTestFn ? hitTestFn(pos.x, pos.y) : HitInfo{};
-                if (hi.wordId >= 0 && onDragUpdate)
+                if (hi.wordId >= 0 && onDragUpdate) {
                     onDragUpdate(pressStartHit.wordId, hi.wordId, cbPos);
+                    lastDragWord_ = hi.wordId;
+                }
             }
             if (justReleased) {
-                int endWord = hitTestFn ? hitTestFn(pos.x, pos.y).wordId : pressStartHit.wordId;
-                if (endWord < 0) endWord = pressStartHit.wordId;
+                int endWord = hitTestFn ? hitTestFn(pos.x, pos.y).wordId : lastDragWord_;
+                if (endWord < 0) endWord = lastDragWord_;
                 if (onDragEnd) onDragEnd(pressStartHit.wordId, endWord, cbPos);
                 pressState = PressState::Idle;
             }

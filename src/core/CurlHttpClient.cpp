@@ -13,6 +13,9 @@ CurlHttpClient::CurlHttpClient()
     if (curl) {
         curl_easy_setopt(curl.get(), CURLOPT_FOLLOWLOCATION, 1L);
         curl_easy_setopt(curl.get(), CURLOPT_TIMEOUT, 10L);
+#if defined(__ANDROID__)
+        curl_easy_setopt(curl.get(), CURLOPT_SSL_VERIFYPEER, 0L);
+#endif
     }
 }
 

@@ -1,4 +1,6 @@
 /build*
 *.apk
 *.apk.idsig
+.opencode/
+assets/certs
 .env

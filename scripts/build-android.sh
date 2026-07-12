@@ -121,6 +121,17 @@ cp "$BUILD_DIR/libtheword.so" "$APK_DIR/lib/${LIB_DIR}/"
 if [ -n "$JAVA_OBJ" ] && [ -f "$JAVA_OBJ/classes.dex" ]; then
     cp "$JAVA_OBJ/classes.dex" "$APK_DIR/"
 fi
+# Download CA certificate bundle for HTTPS verification
+CACERT_DIR="assets/certs"
+CACERT_FILE="$CACERT_DIR/cacert.pem"
+if [ ! -f "$CACERT_FILE" ]; then
+    mkdir -p "$CACERT_DIR"
+    curl -sL --connect-timeout 10 \
+        "https://curl.se/ca/cacert.pem" -o "$CACERT_FILE" \
+        && echo "Downloaded CA cert bundle" \
+        || echo "Warning: could not download CA cert bundle"
+fi
+
 cp -rL assets "$APK_DIR/"
 [ -f .env ] && cp .env "$APK_DIR/assets/"
 (cd "$APK_DIR" && zip -qr /tmp/theword-unsigned-$$.apk lib/ classes.dex assets/)

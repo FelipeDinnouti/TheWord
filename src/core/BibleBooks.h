@@ -83,7 +83,7 @@ constexpr std::array<BookInfo, 66> BOOKS = {{
 
 constexpr const char* BOOK_NAMES_PT[] = {
     "G\u00eanesis",
-    "\u00d4xodo",
+    "\u00caxodo",
     "Lev\u00edtico",
     "N\u00fameros",
     "Deuteron\u00f4mio",

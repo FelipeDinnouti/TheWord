@@ -8,7 +8,7 @@ if(POLICY CMP0169)
     cmake_policy(SET CMP0169 OLD)
 endif()
 
-project(theword VERSION 1.6.1 LANGUAGES C CXX)
+project(theword VERSION 1.6.2 LANGUAGES C CXX)
 
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
@@ -102,6 +102,13 @@ FetchContent_Declare(
 
 FetchContent_MakeAvailable(doctest)
 
+# ── mbedTLS (Android only — lightweight TLS for curl HTTPS support) ──────
+FetchContent_Declare(
+    mbedtls
+    URL https://github.com/Mbed-TLS/mbedtls/archive/refs/tags/v2.28.9.tar.gz
+    DOWNLOAD_EXTRACT_TIMESTAMP TRUE
+)
+
 # ── libcurl (optional, for online Bible API) ──────────────────────────────
 if(EMSCRIPTEN)
     # No curl on Emscripten
@@ -127,18 +134,29 @@ elseif(MINGW)
     set(CURL_FOUND TRUE)
     set(CURL_INCLUDE_DIRS ${curl_SOURCE_DIR}/include)
 elseif(ANDROID)
-    # Build curl from source for Android NDK
+    # Build mbedTLS (lightweight TLS) for HTTPS support
+    set(UNITTEST OFF CACHE BOOL "" FORCE)
+    set(ENABLE_PROGRAMS OFF CACHE BOOL "" FORCE)
+    FetchContent_MakeAvailable(mbedtls)
+
+    # Set mbedTLS paths for curl's FindMbedTLS.cmake to pick up
+    set(MBEDTLS_INCLUDE_DIRS "${mbedtls_SOURCE_DIR}/include" CACHE PATH "" FORCE)
+    set(MBEDTLS_LIBRARY "${mbedtls_BINARY_DIR}/library/libmbedtls.a" CACHE FILEPATH "" FORCE)
+    set(MBEDCRYPTO_LIBRARY "${mbedtls_BINARY_DIR}/library/libmbedcrypto.a" CACHE FILEPATH "" FORCE)
+    set(MBEDX509_LIBRARY "${mbedtls_BINARY_DIR}/library/libmbedx509.a" CACHE FILEPATH "" FORCE)
+
+    # Build curl from source for Android NDK, with mbedTLS for HTTPS
     FetchContent_Declare(
         curl
         URL https://curl.se/download/curl-8.4.0.tar.gz
         DOWNLOAD_EXTRACT_TIMESTAMP TRUE
     )
     set(CURL_USE_OPENSSL OFF CACHE BOOL "" FORCE)
+    set(CURL_USE_MBEDTLS ON CACHE BOOL "" FORCE)
     set(CURL_DISABLE_CRYPTO_AUTH ON CACHE BOOL "" FORCE)
     set(ENABLE_ARES OFF CACHE BOOL "" FORCE)
     set(BUILD_CURL_EXE OFF CACHE BOOL "" FORCE)
     set(BUILD_TESTING OFF CACHE BOOL "" FORCE)
-    set(HTTP_ONLY ON CACHE BOOL "" FORCE)
     FetchContent_GetProperties(curl)
     if(NOT curl_POPULATED)
         FetchContent_Populate(curl)
@@ -386,6 +404,9 @@ elseif(ANDROID)
     target_link_libraries(theword PRIVATE
         raylib
         libcurl_static
+        mbedtls
+        mbedcrypto
+        mbedx509
         android
         EGL
         GLESv2

@@ -1,30 +1,52 @@
 # Roadmap
 
-> Status: MVP Complete — Release-Based Planning Active | Last Updated: 2026-07-01
+> Status: Release-Based Planning Active | Last Updated: 2026-07-12
 
 The original 13-phase MVP is complete. All future work is organized by **release** (SemVer) rather than phases.
 
-## Current Release: v1.4.2
+## Current Release: v1.6.x
 
-**Theme:** Stabilization & Phase 13 Completion
+**Theme:** Input Refactor, Radial Menu UX, Android Lifecycle
 
-Tracked in `Release Plan.md`.
+### v1.6.1-alpha — Input System Refactor + Bug Fixes (tagged)
 
-## Upcoming Releases
+| Status | Item |
+|--------|------|
+| ✅ | Unified FSM — merged `HandlePressFSM` + `HandleTouchPressFSM` |
+| ✅ | Semantic callbacks — 7 event callbacks replace 3 lifecycle lambdas |
+| ✅ | TapDetector helper — removed ~60 lines of duplication across 6 screens |
+| ✅ | Dead event removal (`RightClickEvent`, `ScrollStopEvent`) |
+| ✅ | Dialog freeze fix — FSM resets on dialog open |
+| ✅ | FSM guard for overlays — no word hits on non-ReaderScreen |
+| ✅ | Tap-on-release for all screens |
+| ✅ | Selection drag fix — decoupled chapter context in Highlighter |
+| ✅ | Radial menu hitbox — 1.8× scale |
+| ✅ | Build scripts — Linux, Windows cross-compile, Android APK |
 
-| Version | Theme | Target |
-|---------|-------|--------|
-| v1.5.0-alpha.1 | First public alpha | After v1.4.2 |
+### v1.6.2 — Radial Menu UX/UI + Android Lifecycle (next)
 
-| v1.5.0 | First stable release | After alpha feedback |
+| Status | Item |
+|--------|------|
+| 🔄 | Radial menu — larger touch targets, press feedback, show/hide animations |
+| 🔄 | Android lifecycle — surface re-creation on pause/resume, input FSM reset, save/restore state |
+
+## Past Releases
+
+| Version | Theme | Date |
+|---------|-------|------|
+| v1.5.0-alpha.2 | UI/UX Polish & Cross-Platform Verification | 2026-07-05 |
+| v1.5.0-alpha.1 | UI/UX Polish & Cross-Platform Verification | 2026-07-04 |
+| v1.4.2 | MVP Completion — Highlight Browser | 2026-06-30 |
+
+Detailed per-release scope is tracked in `Release Plan.md`.
+
 ## MVP Complete (Phases 1-13, Historical)
 
-| Status     | Phase                        | Description                                                                         |
-| ---------- | ---------------------------- | ----------------------------------------------------------------------------------- |
-| ✅ Complete | 1-10                         | MVP: build, text engine, data sources, highlights, persistence, UI, mobile          |
-| ✅ Complete | 11. Navigation System        | Bottom bar, center menu, book list, chapter grid, settings screen, navigation stack |
-| ✅ Complete | 12. Verse Number Identifiers | Layout-time verse spans, superscript rendering                                      |
-| ✅ Complete | 13. Highlight Browser        | Full screen with color filter, match list, navigation                               |
-|            |                              |                                                                                     |
+| Status | Phase | Description |
+|--------|-------|-------------|
+| ✅ Complete | 1-10 | MVP: build, text engine, data sources, highlights, persistence, UI, mobile |
+| ✅ Complete | 11. Navigation System | Bottom bar, center menu, book list, chapter grid, settings screen, navigation stack |
+| ✅ Complete | 12. Verse Number Identifiers | Layout-time verse spans, superscript rendering |
+| ✅ Complete | 13. Highlight Browser | Full screen with color filter, match list, navigation |
 
-Phase details are preserved in the git history and `Development Plan.md` for reference.
+Phase details are preserved in git history and `Development Plan.md` for reference.

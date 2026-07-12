@@ -1,14 +1,28 @@
 # Release Plan
 
-> Status: v1.6.0-alpha.1 in development | Last Updated: 2026-07-05
+> Status: v1.6.2 in development | Last Updated: 2026-07-12
 
 ## Past Releases
+
+### v1.6.1-alpha (2026-07-10)
+
+**Theme:** Input System Refactor + Bug Fixes
+
+- [x] Unified FSM — single `RunUnifiedFSM()` replaces dual desktop/touch FSMs
+- [x] Semantic callbacks — `onTap`, `onTapEmpty`, `onDragStart`, `onDragUpdate`, `onDragEnd`, `onLongPress`, `onDismiss`
+- [x] TapDetector helper — consolidated 6 screens' duplicated press→drag→release pattern
+- [x] Dead event removal (`RightClickEvent`, `ScrollStopEvent`)
+- [x] Dialog freeze fix — FSM resets to Idle when dialog opens
+- [x] FSM guard — overlay screens blocked from word-level hits
+- [x] Tap-on-release — all 6 overlay screens process taps on release, not press
+- [x] Selection drag fix — active selection carries its own chapter context
+- [x] Radial menu hitbox — 1.8× visual scale
+- [x] Build scripts — Linux, Windows cross-compile, Android APK
 
 ### v1.5.0-alpha.2 (2026-07-05)
 
 **Theme:** UI/UX Polish & Cross-Platform Verification (continued)
 
-- [x] This is the final 1.5.0 pre-release. 1.5.0-stable will not ship — development moves to 1.6.0.
 - [x] Version bump: `1.5.0-alpha.1` → `1.5.0-alpha.2`
 - [x] Android keyboard integration (backspace in search bar, soft keyboard show on tap)
 - [x] VSync on desktop and Android
@@ -33,39 +47,52 @@
 - [x] Phase 13 Highlight Browser — data model + persistence + UI complete
 - [x] Tag: `git tag -am "v1.4.2" "v1.4.2"`
 
-## Current Release: v1.6.0-alpha.1
+## Current Release: v1.6.2
 
-**Theme:** Copy Verse + Code Quality
+**Theme:** Radial Menu UX/UI + Android Lifecycle
 
-### Feature: Copy Verse
-- [ ] Right-click or long-press on any verse → copies full verse text to clipboard
-- [ ] Context menu shows "Copy Verse" button on non-highlighted text; adds "Copy" alongside existing highlight controls on highlighted text
-- [ ] Verse text formatted as "Book Chapter:Verse text" (full verse, not section)
+### Feature: Radial Menu UX/UI
 
-### Feature: Code Quality Refactor
-- [ ] `UIManager::contextMenu`: raw `new`/`delete` → `std::unique_ptr<ContextMenu>`
+- [ ] Larger touch targets — button radius to 28dp, hit to 50dp (Android's recommended minimum)
+- [ ] Press-down feedback — visual state change on finger-down (tint or scale)
+- [ ] Show/hide animation — fade + scale from center on open/close
+- [ ] Review layout for mobile — consider alternative arrangements if radial is still awkward
+
+### Feature: Android Lifecycle
+
+- [ ] Handle `APP_CMD_TERM_WINDOW` / `APP_CMD_INIT_WINDOW` — surface re-creation without quitting
+- [ ] Reset input FSM on `APP_CMD_RESUME`
+- [ ] Save/restore scroll position and current chapter on pause/resume
+- [ ] Fix bottom bar input corruption after resume
 
 ### Release Steps
-- [x] Version bump: `1.5.0-alpha.2` → `1.6.0-alpha.1`
-- [ ] Reconfigure and build
+
+- [ ] Reconfigure and build (all 3 platforms)
 - [ ] Full test suite passes (≥ 70/72)
-- [ ] Desktop build clean
-- [ ] Tag: `v1.6.0-alpha.1`
+- [ ] Manual verification on Android
+- [ ] Update `State.md`
+- [ ] Bump version, tag
 
 ## Backlog (Future Releases)
 
+### Partially Implemented
+
+- **Copy Verse** — half-implemented; right-click/long-press copy exists in radial menu but more work needed (formatting, full verse selection UX)
+
 ### Phase 10 Remaining Items (deferred)
+
 - [x] Java activity stub (`TheWordActivity.java`) for IME/splash — done
-- [x] Soft keyboard integration for go-to dialog — done (raylib patch, basic char input via `getUnicodeChar()`)
+- [x] Soft keyboard integration for go-to dialog — done
 - [ ] Complex IME composition (CJK, emoji) — would require hidden EditText + TextWatcher (future)
 - [ ] Immersive mode (hide nav bar)
-- [ ] Lifecycle save/restore (scroll position on pause/resume)
+- [ ] Lifecycle save/restore (scroll position on pause/resume) — now part of v1.6.2
 - [ ] WASM persistence via IDBFS
 - [ ] `scripts/build-wasm.sh` for one-step WASM build
 - [ ] libcurl as optional dependency
 - [ ] Platform abstraction module (`src/core/Platform.h`)
 
 ### Feature Backlog
+
 - Note System (details TBD)
 - Custom Reading Plan System (details TBD)
 - Bookmark System (expansion of highlight system, details TBD)
@@ -78,3 +105,5 @@
 - Font selection (system fonts)
 - Highlight export/import
 - Performance profiling & optimization
+- Non-contiguous verse selection
+- Code quality audit beyond input system

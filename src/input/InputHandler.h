@@ -24,6 +24,7 @@ public:
                  std::function<bool(int)> isHighlightedFn = nullptr);
 
     void Poll(float deltaTime, theword::ui::NavigationStack* navStack = nullptr);
+    void ResetState();
     bool IsDialogActive() const { return dialogActive_; }
     bool HasMomentum() const { return false; }
 
@@ -61,6 +62,7 @@ private:
     Vector2 pressStartPos;
     HitInfo pressStartHit;
     int selectStartWord;
+    int lastDragWord_;
 
     float touchLastY;
     float touchLaunchVelocity_ = 0.0f;

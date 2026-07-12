@@ -1,6 +1,6 @@
 # Progress Tracking
 
-> Status: v1.6.0-alpha.1 in development | Last Updated: 2026-07-05
+> Status: v1.6.2 in development | Last Updated: 2026-07-12
 
 ## Overall Progress
 
@@ -20,7 +20,8 @@
 | Phase 12: Verse Number Identifiers | ✅ Complete | |
 | Phase 13: Highlight Browser | ✅ Complete | |
 | v1.5.0-alpha.x (UI Polish) | ✅ Complete | Final release: v1.5.0-alpha.2 (2026-07-05). No stable 1.5.0. |
-| **v1.6.0-alpha.1** (Copy Verse) | 🔄 In Progress | Current development |
+| v1.6.1-alpha (Input Refactor) | ✅ Complete | Unified FSM, semantic callbacks, TapDetector, bug fixes |
+| **v1.6.2 (Radial UX + Lifecycle)** | 🔄 In Progress | Current development |
 
 ## Phase A — Documentation Restructure ✅
 
@@ -175,7 +176,7 @@
 - [x] Position fixes — about overlay text aligned to `SETTINGS_LABEL_X` (+15→+10); color swatches start at `COLOR_SWATCH_START` (+30→+60, clear of "Color:" label)
 - [x] 64/64 tests still passing
 
-## Phase 10 — Mobile/Android 🔄 In Progress
+## Phase 10 — Mobile/Android 📋 Backlog
 
 ### Completed
 - [x] Android NDK build — `build-android/libtheword.so` via Ninja
@@ -190,9 +191,10 @@
 - [x] Emscripten/WASM build — `build-wasm/theword.html` works in browser
 - [x] Keyboard input patch — `patches/raylib-android-keycodes.patch` translates AKEYCODE → raylib KEY
 
-### Remaining (moved to Release Plan backlog)
-- [x] Multi-ABI build: `x86_64` + `arm64-v8a` in build script (armeabi-v7a dropped — raylib NEON half-float intrinsics require ARMv8+)
-- [~] Remaining items tracked in `Release Plan.md` backlog
+### Remaining (tracked in Release Plan.md)
+- [x] Multi-ABI build: `x86_64` + `arm64-v8a` in build script (armeabi-v7a dropped)
+- [ ] Lifecycle save/restore — now part of v1.6.2
+- [ ] Remaining items tracked in `Release Plan.md` backlog
 
 ## Phase 11 — Navigation System ✅ Complete
 
@@ -219,9 +221,9 @@
 - [x] Theme constants: `DOC_VERSE_NUMBER` color, `FONT_VERSE_NUMBER` scale
 - [x] Tests: verse numbers appear at verse boundaries, correct positioning, no verse number for verse 1 of first chapter (or always show)
 
-## Phase 13 — Highlight Browser 🔄 In Progress
+## Phase 13 — Highlight Browser ✅ Complete
 
-### Steps 1-3: Data Model, Highlighter, Persistence ✅
+### Steps 1-3: Data Model, Highlighter, Persistence
 - [x] Extend `Highlight` struct with bookId, chapterNum, verseStart, verseEnd, verseText
 - [x] Add `NavigateToHighlightEvent` to `src/event/Events.h`
 - [x] Update `Highlighter::EndSelection()` to populate reference fields from `SetChapterContext()`
@@ -231,7 +233,7 @@
 - [x] Wire `SetChapterContext()` in App.cpp on initial load and NavigateEvent
 - [x] 65/65 tests passing (no regressions)
 
-### Steps 4-7: UI & Navigation ✅ Complete
+### Steps 4-7: UI & Navigation
 - [x] HighlightBrowserScreen: color swatch filter at top, scrollable match list below
 - [x] Match list items: reference title + verse text body
 - [x] Tap match → navigate to verse in Reader (load chapter + scroll to word position)
@@ -239,21 +241,36 @@
 - [x] Empty state: "No highlights of this color" message
 - [x] Tests: filter by color, reference field population, navigation from tap
 
-## v1.6.0-alpha.1 — Copy Verse + Code Quality
+## v1.6.1-alpha — Input System Refactor + Bug Fixes ✅
 
-> Current development. See `memory/ROADMAP.md` for detailed checklist.
+- [x] Unified FSM — single `RunUnifiedFSM()` replaces dual desktop/touch FSMs
+- [x] Semantic callbacks — `onTap`, `onTapEmpty`, `onDragStart`, `onDragUpdate`, `onDragEnd`, `onLongPress`, `onDismiss`
+- [x] TapDetector helper — consolidated 6 screens' duplicated press→drag→release pattern
+- [x] Dead event removal (`RightClickEvent`, `ScrollStopEvent`)
+- [x] Dialog freeze fix — FSM resets to Idle when dialog opens
+- [x] FSM guard — overlay screens blocked from word-level hits
+- [x] Tap-on-release — all 6 overlay screens process taps on release, not press
+- [x] Selection drag fix — active selection carries its own chapter context
+- [x] Radial menu hitbox — 1.8× visual scale
+- [x] Build scripts — Linux, Windows cross-compile, Android APK
 
-### Feature: Code Quality Refactor
-- [ ] `UIManager::contextMenu`: raw `new`/`delete` → `std::unique_ptr<ContextMenu>`
+## v1.6.2 — Radial Menu UX/UI + Android Lifecycle 🔄
 
-### Feature: Copy Verse
-- [ ] Right-click/long-press on verse → copy full verse text to clipboard
-- [ ] Context menu integration (copy button alongside highlight controls)
-- [ ] Desktop + mobile support
+### Feature: Radial Menu UX/UI
+- [ ] Larger touch targets — button radius to 28dp, hit to 50dp
+- [ ] Press-down feedback — visual state change on finger-down (tint or scale)
+- [ ] Show/hide animation — fade + scale from center on open/close
+- [ ] Review radial layout for mobile — consider alternative arrangements if awkward
+
+### Feature: Android Lifecycle
+- [ ] Handle `APP_CMD_TERM_WINDOW` / `APP_CMD_INIT_WINDOW` — surface re-creation without quitting
+- [ ] Reset input FSM on `APP_CMD_RESUME`
+- [ ] Save/restore scroll position and current chapter on pause/resume
+- [ ] Fix bottom bar input corruption after resume
 
 ## Post-MVP: Release-Based Planning
 
-All future work is now organized by release (SemVer) rather than phases.
+All future work is organized by release (SemVer) rather than phases.
 See `Release Plan.md` for current and upcoming releases.
 
 **Remaining MVP-phase items** (Phase 10 Mobile/Android polish) are tracked

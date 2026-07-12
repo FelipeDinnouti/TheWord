@@ -15,21 +15,30 @@ cmake --build build --parallel
 | Task | Read First |
 |------|------------|
 | Any task | `the-word-docs/00-INDEX.md` |
-| Project state | `memory/STATE.md` |
-| Current roadmap | `memory/ROADMAP.md` |
-| Agent workflow | `memory/` → `the-word-docs/07-ai-collaboration/Agent Workflow.md` |
+| Project state | `memory/State.md` |
+| High-level roadmap | `the-word-docs/04-planning/Roadmap.md` |
+| Current release scope | `the-word-docs/04-planning/Release Plan.md` |
+| Active implementation checklist | `memory/Active.md` |
+| Agent workflow | `the-word-docs/07-ai-collaboration/Agent Workflow.md` |
 | Architecture questions | `the-word-docs/02-architecture/` |
 | Data source design | `the-word-docs/02-architecture/Data Source Architecture.md` |
 | Module details | `the-word-docs/03-modules/<Module>.md` |
-| Current release | `the-word-docs/04-planning/Release Plan.md` |
-| Current status | `the-word-docs/04-planning/Progress Tracking.md` |
 | Coding conventions | `the-word-docs/07-ai-collaboration/Convention Reference.md` |
 | Font rendering | `the-word-docs/05-reference/Raylib Notes.md#crisp-font-rendering--directives` |
+
+### Doc Hierarchy
+
+```
+the-word-docs/04-planning/Roadmap.md    ← High-level version timeline (stable)
+the-word-docs/04-planning/Release Plan.md ← Feature scope for current minor (stable)
+memory/Active.md                         ← Granular implementation checklist (ephemeral)
+memory/State.md                          ← Current project snapshot (per-session)
+```
 
 ## Agent Workflow
 
 See `the-word-docs/07-ai-collaboration/Agent Workflow.md` for the canonical workflow.
-Implementation checklists live in `memory/ROADMAP.md` — update as tasks progress.
+Implementation checklists live in `memory/Active.md` — update as tasks progress.
 
 ## Coding Conventions
 
@@ -150,6 +159,7 @@ TEST_MONITOR_BINARY=build_monitor/tools/test_monitor/test_monitor \
 ## See Also
 
 - `the-word-docs/04-planning/Release Plan.md` — Current release scope and backlog
+- `the-word-docs/04-planning/Roadmap.md` — High-level version timeline
 - `the-word-docs/06-ops/Build Guide.md` — Full build instructions
 - `the-word-docs/02-architecture/Data Source Architecture.md` — Dual-source design
 - `the-word-docs/05-reference/YouVersion API.md` — API details

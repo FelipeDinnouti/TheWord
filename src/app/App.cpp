@@ -230,6 +230,13 @@ bool App::Init(const std::string& title) {
         ParseChapterRef(startChapter, book, chapter);
         highlighter_->SetChapterContext(book, chapter,
             chapterData ? &chapterData->words : nullptr);
+
+        // Restore scroll position from pre-pause save (OS kill recovery)
+        std::string savedScroll = persistence_->GetPreference("lifecycle_scroll", "");
+        if (!savedScroll.empty()) {
+            docManager_->ScrollTo(std::stof(savedScroll));
+            persistence_->SetPreference("lifecycle_scroll", "");
+        }
     }
 
     WireEvents();
@@ -388,7 +395,7 @@ void App::Run() {
                 } else if (result.isHighlight) {
                     const auto& types = highlighter_->GetTypes();
                     if (result.colorIndex >= 0 && result.colorIndex < static_cast<int>(types.size())) {
-                        const auto* existing = highlighter_->HighlightAtWord(result.startWord, result.bookId, result.chapterNum);
+                        const auto* existing = highlighter_->HighlightOverlapping(result.startWord, result.endWord, result.bookId, result.chapterNum);
                         if (existing) {
                             highlighter_->RecolorHighlight(existing->id, types[result.colorIndex].id);
                         } else {
@@ -453,8 +460,44 @@ void App::Run() {
         // else: unhighlighted single word — nothing
     };
 
-    auto onTapEmpty = [this](Vector2 /*pos*/) {
+    auto onTapEmpty = [this](Vector2 pos) {
         if (uiManager_->IsRadialMenuActive()) {
+            RadialMenuActionResult result = uiManager_->HandleRadialMenuClick(pos);
+            if (result.consumed) {
+                accumStartWord_ = -1;
+                accumEndWord_ = -1;
+                if (result.isCopy) {
+                    auto* cd = docManager_->GetCurrentChapterData();
+                    if (cd) {
+                        std::string text = AssembleSelectedText(*cd, result.startWord, result.endWord);
+                        if (!text.empty()) platform::SetClipboard(text);
+                    }
+                } else if (result.isDelete) {
+                    int s = (std::min)(result.startWord, result.endWord);
+                    int e = (std::max)(result.startWord, result.endWord);
+                    for (const auto& h : highlighter_->GetHighlights()) {
+                        if (h.bookId == result.bookId && h.chapterNum == result.chapterNum
+                            && h.startWord <= e && h.endWord >= s) {
+                            highlighter_->RemoveHighlight(h.id);
+                        }
+                    }
+                } else if (result.isHighlight) {
+                    const auto& types = highlighter_->GetTypes();
+                    if (result.colorIndex >= 0 && result.colorIndex < static_cast<int>(types.size())) {
+                        const auto* existing = highlighter_->HighlightOverlapping(result.startWord, result.endWord,
+                            result.bookId, result.chapterNum);
+                        if (existing) {
+                            highlighter_->RecolorHighlight(existing->id, types[result.colorIndex].id);
+                        } else {
+                            auto* hcd = docManager_->GetChapterData(result.bookId, result.chapterNum);
+                            highlighter_->CreateHighlight(result.startWord, result.endWord, types[result.colorIndex].id,
+                                result.bookId, result.chapterNum, hcd ? &hcd->words : nullptr);
+                        }
+                    }
+                    uiManager_->HideRadialMenu();
+                }
+                return;
+            }
             uiManager_->HideRadialMenu();
             accumStartWord_ = -1;
             accumEndWord_ = -1;
@@ -516,8 +559,39 @@ void App::Run() {
     inputHandler_->onLongPress = onLongPress;
     inputHandler_->onDismiss = onDismiss;
 
+#if defined(__ANDROID__)
+    bool wasWindowGone = false;
+#endif
+
     while (!WindowShouldClose()) {
+#if defined(__ANDROID__)
+        // Poll lifecycle events only during window-gap (surface gone),
+        // otherwise let BeginDrawing() handle it once per frame as normal.
+        if (!platform::IsWindowAvailable()) {
+            PollInputEvents();
+        }
+#endif
+
         if (platform::ShouldQuit()) break;
+
+#if defined(__ANDROID__)
+        if (!platform::IsWindowAvailable()) {
+            // Surface is temporarily gone (tab-out). Save state once on
+            // the transition and yield until APP_CMD_INIT_WINDOW restores it.
+            if (!wasWindowGone) {
+                wasWindowGone = true;
+                persistence_->SetPreference("lifecycle_scroll",
+                    std::to_string(docManager_->GetScrollY()));
+            }
+            WaitTime(0.016);
+            continue;
+        }
+        if (wasWindowGone) {
+            // Window just came back — reset input FSM to clear stale state
+            wasWindowGone = false;
+            inputHandler_->ResetState();
+        }
+#endif
 
         double currentTime = GetTime();
         float deltaTime = (float)(currentTime - lastTime);

@@ -108,9 +108,18 @@ std::unique_ptr<IHttpClient> CreateHttpClient() {
 bool ShouldQuit() {
 #if defined(__ANDROID__)
     android_app* app = GetAndroidApp();
-    return !app || !app->window;
+    return !app || app->destroyRequested != 0;
 #else
     return false;
+#endif
+}
+
+bool IsWindowAvailable() {
+#if defined(__ANDROID__)
+    android_app* app = GetAndroidApp();
+    return app && app->window;
+#else
+    return true;
 #endif
 }
 

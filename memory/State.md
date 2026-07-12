@@ -1,34 +1,41 @@
 # Project State
 
-> Last updated: 2026-07-09
+> Last updated: 2026-07-12
 
 ## Version
 
-- **Base**: `1.6.0-alpha.1` (built + tested on desktop and Android)
-- **Latest tag**: `v1.5.0-alpha.2` (not yet updated)
+- **Base**: `1.6.1-alpha`
+- **Latest tag**: `v1.6.1-alpha`
 
 ## Build Status
 
 | Platform | Status | Notes |
 |----------|--------|-------|
 | Linux (desktop) | ✅ Builds + runs | GCC/C++17, raylib 5.0, 0 warnings |
-| Android (APK) | ⏳ Not verified | Builds with `build-android.sh` |
+| Android (APK) | ✅ Builds + verified | `dist/theword-arm64-v8a-v1.6.1-alpha.apk` |
+| Windows (cross) | ✅ Builds | `dist/theword-1.6.1-alpha-windows-x86_64.zip` |
 | WASM | ⏳ Not verified | Previously built |
-| Windows (cross) | ⏳ Not verified | Previously built |
 
 ## Tests
 
-- **Total**: 72 test cases, 233 assertions
-- **Passing**: 70/72 (229/233 assertions)
+- **Total**: 76 test cases, 267 assertions
+- **Passing**: 74/76 (263/267 assertions)
 - **Failing**: 2 (both locale-related — system runs pt_BR, tests expect English)
 - **Run**: `./build/theword_test`
 
 ## Current Focus
 
-**Input System Refactor** — complete. All 8 steps implemented.
-Ready for `v1.6.0` tagging.
+**Radial Menu UX/UI + Android Lifecycle** — v1.6.2.
 
-### What Changed
+### What's Next
+
+| Workstream | Status |
+|------------|--------|
+| Input System Refactor + Bug Fixes | ✅ Complete (v1.6.1-alpha) |
+| Radial Menu UX/UI | 🔄 Touch targets, press feedback, animations |
+| Android Lifecycle | 🔄 Surface re-creation, input reset, save/restore |
+
+### What Changed (v1.6.1-alpha)
 
 | File | Change |
 |------|--------|
@@ -37,12 +44,10 @@ Ready for `v1.6.0` tagging.
 | `Events.h` | Removed dead events (`RightClickEvent`, `ScrollStopEvent`) |
 | `DocumentManager.h/cpp` | Removed orphan `ScrollStopEvent` forward decl + emit |
 | `TapDetector.h` | **New** — reusable press→drag→release utility |
-| `CenterMenu.h/cpp` | Migrated to TapDetector (-2 fields) |
-| `BookListScreen.h/cpp` | Migrated to TapDetector (-2 fields) |
-| `HighlightBrowserScreen.h/cpp` | Migrated to TapDetector (-2 fields) |
-| `SettingsScreen.h/cpp` | Migrated to TapDetector (-2 fields) |
-| `CreditsOverlay.h/cpp` | Migrated to TapDetector (-2 fields) |
-| `ChapterGridScreen.h/cpp` | Migrated to TapDetector (-2 fields) |
+| 6 screen files (CenterMenu, BookList, ChapterGrid, Highlights, Settings, Credits) | Migrated to TapDetector (-2 fields each) |
+| `RadialMenu.cpp` | Hitbox scaled to 1.8× visual radius |
+| `Highlighter.h/cpp` | Selection carries its own bookId/chapterNum (drag fix) |
+| `App.cpp` | FSM guard — overlays blocked from word hits |
 
 ### Problems Solved
 
@@ -63,6 +68,8 @@ Ready for `v1.6.0` tagging.
 
 ## Known Issues
 
+- **Android lifecycle crash** — tabbing out kills the app (being fixed in v1.6.2)
+- **Android bottom bar input corruption** — can get stuck after resume (being fixed in v1.6.2)
 - Locale-dependent test failures (pt_BR locale) — low priority
 - Complex IME composition (CJK, emoji) — deferred to backlog
 
@@ -75,3 +82,4 @@ Ready for `v1.6.0` tagging.
 | Semantic event callbacks replace lifecycle callbacks | Removes touch-down vs touch-up race (P1) |
 | App.cpp becomes single decision-maker | Consolidates accumulator + radial lifecycle (P4) |
 | Callbacks over EventBus for gesture transport | Simple, sufficient; EventBus can wrap later |
+| Dual roadmap system: `docs/` (high-level) + `memory/` (active) | Separates stable reference from sprint ephemera |
