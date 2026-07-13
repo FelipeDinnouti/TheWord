@@ -354,7 +354,7 @@ void App::WireEvents() {
 
 void App::Run() {
     double lastTime = GetTime();
-    int drawCountdown = config::IDLE_DRAIN_FRAMES;
+    int drawCountdown = config::IDLE_COOLDOWN_FRAMES;
 
     bool longPressHandled = false;
 
@@ -564,18 +564,12 @@ void App::Run() {
 #endif
 
     while (!WindowShouldClose()) {
-#if defined(__ANDROID__)
-        // Poll lifecycle events only during window-gap (surface gone),
-        // otherwise let BeginDrawing() handle it once per frame as normal.
-        if (!platform::IsWindowAvailable()) {
-            PollInputEvents();
-        }
-#endif
-
         if (platform::ShouldQuit()) break;
 
 #if defined(__ANDROID__)
         if (!platform::IsWindowAvailable()) {
+            PollInputEvents();  // process lifecycle events while surface gone
+            if (platform::ShouldQuit()) break;
             // Surface is temporarily gone (tab-out). Save state once on
             // the transition and yield until APP_CMD_INIT_WINDOW restores it.
             if (!wasWindowGone) {
@@ -629,23 +623,23 @@ void App::Run() {
         bool hasUiOverlay = inputHandler_->IsDialogActive()
                          || uiManager_->IsRadialMenuActive()
                          || !navStack_->IsOnRoot();
+        bool hasActiveInput = GetTouchPointCount() > 0;
 
-        static int idleFrameCount = 0;
-        if (isAnimating || hasUiOverlay) {
-            drawCountdown = config::IDLE_DRAIN_FRAMES;
-            idleFrameCount = 0;
+        static double lastIdleDrawTime = 0.0;
+
+        if (isAnimating || hasUiOverlay || hasActiveInput) {
+            drawCountdown = config::IDLE_COOLDOWN_FRAMES;
         } else if (drawCountdown > 0) {
             drawCountdown--;
+            if (drawCountdown == 0) lastIdleDrawTime = 0.0; // force first idle draw
         }
 
         bool doDraw = false;
         if (drawCountdown > 0) {
             doDraw = true;
         } else {
-            if (++idleFrameCount >= config::IDLE_DRAIN_INTERVAL) {
-                idleFrameCount = 0;
-                doDraw = true;
-            }
+            doDraw = (currentTime - lastIdleDrawTime) >= config::IDLE_DRAW_INTERVAL;
+            if (doDraw) lastIdleDrawTime = currentTime;
         }
 
         if (doDraw) {
@@ -655,11 +649,11 @@ void App::Run() {
             navStack_->DrawActive();
 
             uiManager_->DrawRadialMenu();
-#ifndef NDEBUG
-            renderer_->DrawFpsCounter(10, GetScreenHeight() - 30);
-#endif
+            renderer_->DrawFpsCounter(GetScreenWidth() / 2, GetScreenHeight() - 30);
 
             EndDrawing();
+        } else {
+            PollInputEvents();  // EndDrawing skipped — poll manually
         }
     }
 }

@@ -4,6 +4,7 @@
 #include "Config.h"
 #include "EnvLoader.h"
 #include "FileAssetProvider.h"
+#include "Logger.h"
 #include <cstdlib>
 
 #if defined(__ANDROID__)
@@ -35,7 +36,16 @@ Info Init(const char* title) {
     if (info.dpiScale > 4.0f) info.dpiScale = 4.0f;
     SetConfigFlags(FLAG_VSYNC_HINT);
     InitWindow(0, 0, title);
-    eglSwapInterval(eglGetCurrentDisplay(), 1);
+
+    {
+        EGLDisplay dpy = eglGetCurrentDisplay();
+        EGLBoolean vsyncOk = eglSwapInterval(dpy, 1);
+        EGLint eglErr = eglGetError();
+        (void)vsyncOk; (void)eglErr;
+        Logger::Info("VSYNC: display=" + std::string(dpy != EGL_NO_DISPLAY ? "valid" : "INVALID")
+            + " eglSwapInterval(1)=" + std::string(vsyncOk == EGL_TRUE ? "OK" : "FAILED")
+            + " eglGetError()=0x" + std::to_string(eglErr));
+    }
 
     {
         JNIEnv* env = nullptr;
@@ -73,6 +83,8 @@ Info Init(const char* title) {
     info.dpiScale = std::max(dpi.x, dpi.y);
     if (info.dpiScale < 1.0f) info.dpiScale = 1.0f;
 #endif
+
+    Logger::Info("VSYNC: Monitor refresh rate: " + std::to_string(GetMonitorRefreshRate(GetCurrentMonitor())) + " Hz");
 
 #if defined(__ANDROID__)
     android_app* appState = GetAndroidApp();

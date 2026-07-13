@@ -1,95 +1,73 @@
 # Active
 
-> Current version: v1.6.x — Input Refactor ✅, Android Lifecycle ✅, Radial Menu Sector Hit Targets 🔄
+> Current version: v1.6.x -- VSYNC Investigation 🔄
 >
-> See `docs/04-planning/Roadmap.md` for high-level timeline and `docs/04-planning/Release Plan.md` for feature scope.
+> Archive: `memory/archive/2026-07-12_radial-menu-input-refactor.md`
 
-## Completed — Archived
+## Workstream: Android VSYNC Verification & Fix
 
-### Input System Refactor (v1.6.1-alpha ✅)
-- Unified FSM, semantic callbacks (onTap/onDragStart/etc.), TapDetector helper
-- Dead event removal (RightClickEvent, ScrollStopEvent)
-- FSM guard for overlays, selection drag fix, radial hitbox 1.8× scale
+**Context**: `raylib 5.0` has `eglSwapInterval()` **commented out** in `rcore_android.c:715`. TheWord compensates with a direct `eglSwapInterval(eglGetCurrentDisplay(), 1)` call in `Platform.cpp:38`, but the display handle may be invalid at that point, causing the call to silently fail. Visible screen tearing on Android.
 
-### Android Lifecycle (v1.6.2 ✅)
-- Stop quitting on surface loss — `ShouldQuit()` checks `destroyRequested`, not window
-- Survive window-gap — skip draw when window null, keep PollInputEvents running
-- Reset FSM on resume — `InputHandler::ResetState()` on window-restored transition
-- Save/restore scroll position across OS kills
+### Part 1 -- Platform.cpp: Logging (verify VSYNC is actually being set)
 
-## Workstream 3: Radial Menu UX/UI 🔄
+Add logging after the existing `eglSwapInterval` call at `Platform.cpp:38` to capture:
+- `eglGetCurrentDisplay()` return value
+- `eglSwapInterval()` result (EGL_TRUE/EGL_FALSE)
+- `eglGetError()` error code
+- `GetMonitorRefreshRate()` for reference
 
-### Phase A: Sector-based Hit Detection (eliminate dead zones)
+### Part 2 -- Extend existing raylib patch: `rcore_android.c`
 
-**Problem**: Circular hitboxes leave dead zones between buttons. With 2 buttons (Copy + Delete, opposite sides), the gap between hit circles is **47px** — tapping between them dismisses the menu.
+Add two new hunks to `cmake/patches/raylib-5.0-android-char-input.patch`:
 
-**Solution**: Replace per-button distance checks with angular sectors. Each button owns a contiguous pie-slice of the ring. Every tap within the menu boundary hits exactly one button — no dead zones.
-
-**Geometry (`GetSectorIndex(Vector2 pos)`)**:
+**Hunk A** -- Uncomment `eglSwapInterval` in `InitGraphicsDevice()` at line 715:
 ```
-1. Compute dist from center_ to pos
-2. Outer cull:  dist > ringRadius + btnRadius × HIT_SCALE  → return -1 (too far)
-3. Inner cull:  dist < ringRadius × 0.35f                  → return -1 (center dead zone)
-4. tapAngle = atan2f(dy, dx)
-5. offset = tapAngle − (startAngle − sectorAngle/2), normalized to [0, 2π)
-6. idx = floor(offset / sectorAngle)                        → return idx
+-    //eglSwapInterval(platform.device, 1);
++    eglSwapInterval(platform.device, 1);
 ```
 
-**What changes**:
-- `RadialMenu.h` — add `int GetSectorIndex(Vector2 pos) const;` private declaration
-- `RadialMenu.cpp` — implement helper, rewrite `UpdateHover` and `HandleClick` to use it
+**Hunk B** -- Add `eglSwapInterval` in `contextRebindRequired` path (after `eglMakeCurrent` at line 777):
+```
++    eglSwapInterval(platform.device, 1);
+```
 
-**What stays identical**:
-- Visual layout (same ringRadius 56dp, btnRadius 18dp, same angles, same Draw)
-- `LayoutButtons()`, `Show()`, `Hide()`, `Draw()` — unchanged
-- All public headers and UIManager — unchanged
-- Interface contract: `HandleClick(Vector2) → pair<Action, int>`
+This ensures vsync is re-enabled when the EGL context is re-created after resume from background.
+
+### Part 3 -- Build, deploy, and observe logs
+
+1. Delete `build/` and rebuild Android to apply the updated patch
+2. Deploy to device
+3. Read logs via `adb logcat -s "TheWord"` to verify VSYNC log lines
+
+### Decision Tree (based on log results)
+
+| Log result | Next step |
+|---|---|
+| `eglSwapInterval` returns EGL_TRUE | VSYNC is configured -- tear is downstream (SurfaceFlinger/triple-buffer). Move to ANativeWindow buffer count clamping. |
+| `eglSwapInterval` returns EGL_FALSE | Direct call failing. Try `eglGetDisplay(EGL_DEFAULT_DISPLAY)` instead of `eglGetCurrentDisplay()`. |
+| Display handle is 0/null | Timing issue -- move call later in init sequence. |
 
 ### Checklist
 
-- [x] Add `GetSectorIndex()` to RadialMenu.h
-- [x] Implement `GetSectorIndex()` with 3-zone logic (inner exclusion / sector hit / outer cull)
-- [x] Rewrite `UpdateHover()` to call `GetSectorIndex()`
-- [x] Rewrite `HandleClick()` — remove per-button distance loop, use sector index
-- [x] Build desktop + run tests (74/76 pass expected)
-- [x] Build Android APK
-
-### Bug Fix: Highlight recolor creating duplicates
-
-**Root cause**: `App.cpp:398` used `HighlightAtWord(result.startWord, ...)` to find an existing highlight for recoloring. A single-point lookup misses highlights whose start word is after `result.startWord`. Double-tap commits the **verse range** (e.g., words 1-10) while an existing highlight might start at word 5 → `1 >= 5` is false → highlight not found → duplicate created instead of recolor.
-
-**Fix**: Added `HighlightOverlapping(startWord, endWord, bookId, chapterNum)` that checks `h.startWord <= endWord && h.endWord >= startWord` — any intersection. Changed App.cpp recolor lookup to use it.
-
-- [x] Add `HighlightOverlapping()` to Highlighter.h/.cpp
-- [x] Change recolor lookup in App.cpp from `HighlightAtWord(result.startWord)` → `HighlightOverlapping(result.startWord, result.endWord)`
-- [x] Build desktop + test
-- [x] Build Android APK
-
-### Debug tool: Red dot overlay
-
-- [x] `UIManager::RecordDebugTap(Vector2 pos)` — stores position + timestamp
-- [x] `DrawDebugTap()` — red dot at last tap, fades over 1 second
-- [x] Recorded from ShowRadialMenu, HandleRadialMenuClick, and all dismiss paths
-
-### Future Phases (after Phase A)
-
-- **Phase B**: Press-down feedback (tint/scale on finger-down)
-- **Phase C**: Show/hide animation (fade + scale from center)
-
-### Reference files
-- `src/renderer/RadialMenu.h`
-- `src/renderer/RadialMenu.cpp`
+- [x] Part 1: Add logging to Platform.cpp
+- [x] Part 2: Extend raylib patch (Hunk A + Hunk B)
+- [ ] Part 3: Clean build + deploy + `logcat` analysis
+- [ ] If needed: ANativeWindow buffer count clamp (double-buffer force)
+- [ ] If needed: fallback `eglGetDisplay(EGL_DEFAULT_DISPLAY)`
+- [ ] Update State.md on completion
 
 ## Release Checklist
 
 - [ ] Build: desktop + Android clean
-- [ ] Test: ≥ 70/76 pass (same locale failures)
+- [ ] Test: >= 70/76 pass (same locale failures)
 - [ ] Manual: APK verification on device
 - [ ] Update `State.md`
 - [ ] Tag release
 
 ## Deferred / Backlog
 
+- Radial Menu Phase B: Press-down feedback
+- Radial Menu Phase C: Show/hide animation
 - Non-contiguous verse selection
 - Code quality audit beyond input system
-- Copy Verse (half-implemented — more polish needed)
+- Copy Verse (half-implemented -- more polish needed)

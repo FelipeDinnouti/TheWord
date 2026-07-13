@@ -8,7 +8,7 @@ if(POLICY CMP0169)
     cmake_policy(SET CMP0169 OLD)
 endif()
 
-project(theword VERSION 1.6.2 LANGUAGES C CXX)
+project(theword VERSION 1.6.3 LANGUAGES C CXX)
 
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
@@ -56,14 +56,18 @@ FetchContent_Declare(
 set(BUILD_GAMES OFF)
 set(BUILD_EXAMPLES OFF)
 
-# ── Android: apply patch for GetCharPressed support ────────────────────────
-# raylib 5.0's rcore_android.c has two unfixed issues:
+# ── Android: apply patch for GetCharPressed + VSYNC ──────────────────────
+# raylib 5.0's rcore_android.c has several unfixed issues:
 #   1. Gamepad source flag collision (#5387) — keyboard events with
 #      AINPUT_SOURCE_GAMEPAD bit set get swallowed by the gamepad handler.
 #   2. charPressedQueue is never populated — GetCharPressed() returns 0
 #      because there is no character callback like GLFW's CharCallback.
+#   3. eglSwapInterval() is commented out in InitGraphicsDevice() — VSYNC
+#      never enabled on Android even with FLAG_VSYNC_HINT set.
+#   4. eglSwapInterval() missing from the contextRebind path — VSYNC lost
+#      on activity resume after surface re-creation.
 #
-# The patch fixes both and adds JNI-based Unicode character capture.
+# The patch fixes all four and adds JNI-based Unicode character capture.
 # See cmake/patches/raylib-5.0-android-char-input.patch for details.
 if(ANDROID)
     FetchContent_GetProperties(raylib)

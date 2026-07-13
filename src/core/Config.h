@@ -5,9 +5,13 @@ namespace theword::core { namespace config {
 
 constexpr int WINDOW_WIDTH = 450;
 constexpr int WINDOW_HEIGHT = 800;
+#ifdef __ANDROID__
+constexpr int TARGET_FPS = 0;  // uncapped — diagnostic; vsync alone should cap to refresh rate
+#else
 constexpr int TARGET_FPS = 60;
-constexpr int IDLE_DRAIN_FRAMES = 30;
-constexpr int IDLE_DRAIN_INTERVAL = 12; // ~5fps minimum idle draw rate (at 60fps, every 12th frame)
+#endif
+constexpr int IDLE_COOLDOWN_FRAMES = 30;    // draw every frame for N frames after animation stops
+constexpr float IDLE_DRAW_INTERVAL = 0.2f;  // ~5fps minimum idle draw rate (200ms between draws)
 constexpr float CONTENT_PADDING = 40.0f;
 constexpr float TOP_BAR_HEIGHT = 60.0f;
 
