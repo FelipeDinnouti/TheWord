@@ -24,7 +24,7 @@ public:
                theword::highlight::Highlighter& highlighter,
                theword::persistence::PersistenceManager& persistence,
                const theword::core::UIScale& uiScale,
-               float& currentFontSize, bool& versionOnline,
+               float& currentFontSize, bool& versionOnline, bool& immersiveMode,
                const std::string& currentChapterRef = "");
     void Draw() override;
     bool HandleInput(float deltaTime) override;
@@ -41,6 +41,7 @@ private:
     const theword::core::UIScale& uiScale_;
     float& currentFontSize_;
     bool& versionOnline_;
+    bool& immersiveMode_;
 
     void HandleAction(int action);
     static const char* ItemLabel(int idx);

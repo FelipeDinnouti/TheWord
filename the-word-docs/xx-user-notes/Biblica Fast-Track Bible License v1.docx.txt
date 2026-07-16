@@ -1,0 +1,299 @@
+﻿BIBLICA, INC.
+CONTENT LICENSE AGREEMENT
+
+
+PLEASE READ THROUGH THESE TERMS AND CONDITIONS CAREFULLY. BY CLICKING THE BOX BELOW, YOU ACKNOWLEDGE THAT YOU ARE ENTERING INTO A BINDING CONTRACTUAL AGREEMENT ON BEHALF OF THE ORGANIZATION YOU ARE REGISTERING HEREUNDER (“ORGANIZATION”) WITH BIBLICA, INC., A COLORADO NON-PROFIT CORPORATION WITH ITS PRINCIPAL PLACE OF BUSINESS AT 300 GENERAL PALMER DRIVE #4, PALMER LAKE, COLORADO 80133-1870, USA, ITS SUCCESSORS AND ASSIGNS (HEREINAFTER REFERRED TO AS “LICENSOR”), AND YOU REPRESENT AND WARRANT THAT YOU HAVE THE AUTHORITY TO BIND SUCH ORGANIZATION AS A PARTY TO THIS AGREEMENT WITH LICENSOR (“AGREEMENT”). IF YOU DO NOT HAVE SUCH AUTHORITY, DO NOT ACCEPT THIS AGREEMENT ON BEHALF OF SUCH ORGANIZATION.
+
+
+WHEREAS, by way of separate agreement (“YouVersion SDK License”), ORGANIZATION will in-license from YouVersion, Inc. a software development kit (“SDK”) designed to enable the display of certain content and functionality as part of certain secure websites and/or mobile software applications of ORGANIZATION (each a “WORK”); 
+
+
+WHEREAS, LICENSOR owns all rights, or is the holder of certain exclusive rights in and to, certain of such content available through the SDK, including certain Bible translations (hereinafter collectively referred to as the “TRANSLATIONS”, each a “TRANSLATION”) and corresponding non-dramatized audio recordings ((hereinafter collectively referred to as the “RECORDINGS”, each a “RECORDING”), and the TRANSLATIONS and RECORDINGS hereinafter collectively referred to as the “CONTENT”), or LICENSOR is the holder of certain exclusive rights in and to one or more CONTENT components, including the right to enter into this Agreement; and
+
+
+WHEREAS, as a condition precedent to LICENSOR permitting such CONTENT be made available via the SDK for display as part of the WORK, LICENSOR desires to set forth certain terms and conditions governing ORGANIZATION’S use of such CONTENT by way of this Agreement, and ORGANIZATION agrees to be bound by such terms and conditions in connection therewith;
+
+
+NOW THEREFORE, in consideration of the promises and for other good and valuable consideration, receipt and sufficiency of which is hereby acknowledged, it is agreed as follows:
+
+
+1. DEFINITIONS: 
+
+
+As used in this Agreement, the following terms shall have the following meanings:
+
+
+“Electronic Rights” shall mean the right to create, reproduce, and distribute electronic online (non-downloadable for websites, downloadable for mobile software applications) text display- and audio streaming (non-downloadable) presentations of the CONTENT as part of the WORK in whole or in part, delivered in non-physical formats and media (i.e., websites and mobile device software applications) in electronic text and audio formats, solely under the name, branding, and imprint of the ORGANIZATION.  Electronic Rights do not include the right to use or deliver the CONTENT in any audio or video presentations of the CONTENT, or in combination with audio and/or visual recordings, or other types of digital media and formats, now known or hereafter invented.  For the sake of clarity, Electronic Rights do not include the transfer or download of any media files of the CONTENT or any portion thereof, to any end user or third party.
+
+
+“Broadcast Rights” shall mean the right to broadcast or transmit the RECORDINGS, in whole or in part, by means of electronic audio streaming (i.e. Internet radio) technology, to one or more remote users simultaneously via computers and electronic mobile devices linked by phone lines, satellite links and the like, including transmissions via the Internet (worldwide web).  For the sake of clarity, Broadcast Rights do not include the transfer or download of any media files of the RECORDINGS or the WORK or any portion thereof, to any end user or third party.
+
+
+“Non-Commercial Rights” shall mean the right to distribute the WORK, in whole or in part, free of charge,  advertising content, subscriptions, access or viewing fees or any other commercial exchange, benefit or exploitation of the WORK, or related user information, to individual end-users, and not for sale or resale in commercial channels or use as a gift or premium offered in connection with the solicitation of contributions from such individuals or organizations. “Non-Commercial” used in this Agreement by itself shall mean the type of distribution described in this paragraph.
+
+
+2. WARRANTIES AND REPRESENTATIONS:
+
+
+   1. BY LICENSOR:  LICENSOR hereby makes the following representations and warranties:
+
+
+      1. LICENSOR has full power and authority to enter into this Agreement and to grant the rights and license herein contained, without violating the rights of any third parties.
+
+
+      2. The person signing this Agreement on behalf of LICENSOR is authorized and empowered by LICENSOR to enter into this Agreement by and on behalf of LICENSOR.
+
+
+      3. The CONTENT is licensed to ORGANIZATION “AS IS”, without warranties or representations of any kind, whether express, implied or statutory, including without limitation representations, guarantees or warranties of fitness for a particular purpose or accuracy.
+
+
+   2. BY ORGANIZATION:  ORGANIZATION hereby makes the following representations and warranties:
+
+
+      4. ORGANIZATION has full power and authority to enter into this Agreement and to perform all of its obligations and duties hereunder.
+
+
+      5. ORGANIZATION is a reputable distributor of products similar to the WORK and has the requisite technical expertise and experience to maximize the use and distribution of the same.
+
+
+      6. The person entering into this Agreement on behalf of ORGANIZATION is authorized and empowered by ORGANIZATION to enter into this Agreement by and on behalf of ORGANIZATION.
+
+
+3. RIGHTS GRANTED:
+
+
+   3. During the Term, and subject to ORGANIZATION’S compliance with all terms and conditions contained herein, LICENSOR hereby grants to ORGANIZATION a non-exclusive, non-transferable, limited license to exploit the Electronic Rights, Broadcast Rights, and Non-Commercial Rights in the WORK only in the original language of each CONTENT component, worldwide (the “Territory”).
+
+
+   4. Rights granted to ORGANIZATION under this Agreement do not include use of the CONTENT to produce personalized content through artificial intelligence and machine learning technology as part of the WORK.
+
+
+   5. Other than the specific rights granted in Section III.A, no other rights in the CONTENT are granted to ORGANIZATION and LICENSOR retains all rights in and to the CONTENT not expressly granted to ORGANIZATION hereunder.  Any additional rights to the CONTENT may be granted to ORGANIZATION by LICENSOR at LICENSOR’S sole discretion; however, such rights may be granted only in a separate written addendum to this Agreement or a new agreement. 
+
+
+4. TERM
+
+
+This Agreement shall have a term of two (2) years beginning on the Effective Date of this Agreement which shall automatically renew for successive two (2) year terms until either party terminates this Agreement. Upon termination, no rights or privileges will extend beyond the term of this Agreement except as stated in Section XIII of this Agreement.
+
+
+5. DUTIES AND OBLIGATIONS:
+
+
+   6. ORGANIZATION agrees that it shall bear all costs of typesetting, producing, publishing, manufacturing, packaging, advertising, promoting, and distributing the WORK.
+
+
+   7. ORGANIZATION agrees that it is solely responsible for acquiring, maintaining, and complying with licenses for any and all material owned by third parties and included in the WORK.
+
+
+   8. ORGANIZATION shall access the CONTENT primarily through the SDK, which interfaces with the YouVersion Platform API (“YVP API”). Direct YVP API access may also be used where applicable. Use of such CONTENT is subject to the terms of the SDK License and other applicable YouVersion Platform terms and solely for the purpose stated in this Agreement.
+
+
+   9. The CONTENT shall be used in the form and format provided via SDKs or direct API calls, and ORGANIZATION shall make no alterations to the CONTENT prior to publication of the WORK. All footnotes to the TRANSLATIONS text must be included along with the TRANSLATIONS text and accessible to the end-user. 
+
+
+   10. ORGANIZATION shall use appropriate and effective industry standard encryption measures to prevent the unauthorized supply, onward-supply, or reproduction of all editions of the WORK incorporating the CONTENT produced in accordance with the rights licensed under this Agreement. For more information about what such measures entail please visit https://www.biblica.com/digital-ip-protection-requirements/.
+
+
+   11. ORGANIZATION shall be limited to the number of verses from each text or audio which comprises the CONTENT which may be displayed or streamed per user at any given time to no more than two (2) chapters or twenty-five (25) verses, whichever is greater.
+
+
+   12. ORGANIZATION agrees to offer access to the CONTENT free of charge to all end users. Access to the CONTENT may not be used by ORGANIZATION to gather personal information from users (i.e. email address, etc.) either for commercial use or exploitation or for distribution by ORGANIZATION to any third-party organization.  Notwithstanding the foregoing, ORGANIZATION may gather personal information from end-users provided that (i) each end-user has consented to ORGANIZATION’S gathering such information and chosen to “opt-in” to providing such information, (ii) such information is not distributed to any third party, either individuals or organizations, other than to YouVersion as permitted in the YouVersion SDK License, (iii) end-user information shall be kept secure and confidential, and (iv) the collection, storage, and use of such information by ORGANIZATION shall in no way violate any state or federal law.
+
+
+   13. ORGANIZATION shall comply with all personal data protection laws applicable to the data it collects, uses, stores, or transfers in connection with the exercise of its rights or performance of its obligations under this Agreement.
+
+
+   14. LICENSOR will have the reasonable right to disapprove of any additional content presented with the CONTENT in the WORK. If it is determined by LICENSOR to be inappropriate to the nature of the CONTENT, to the extent that it would bring shame, embarrassment, or disrepute to the CONTENT and/or LICENSOR, or if it is determined to be seriously and demonstrably anti-Christian.  ORGANIZATION will, upon LICENSOR’S written request, remove such inappropriate content within forty-eight (48) hours of receipt of notice by LICENSOR, failing which, LICENSOR may terminate this Agreement with immediate effect.
+
+
+   15. LICENSOR will have the right to disapprove of any distributor of the WORK who as a primary business promotes or distributes products that are in opposition to biblical ethics and principles promoted by LICENSOR to the extent that it would be inappropriate to the nature of the CONTENT, and it would bring shame, embarrassment, or disrepute to the CONTENT and LICENSOR, and if it is determined to be seriously, demonstrably and persistently anti-Christian.  Should the business activities or product list of an approved distributor change during the term of distribution so that the distributor becomes unacceptable to LICENSOR in accordance with the foregoing criteria, ORGANIZATION will, upon LICENSOR’S written request, terminate the distributor’s rights to the WORK; to secure LICENSOR’S rights in this regard, the ORGANIZATION will enter into written arrangements with distributors giving LICENSOR the right to terminate such arrangements in the foregoing circumstances without penalty or liability.
+
+
+   16. Before any new, revised or enhanced product or edition of the WORK may be produced, ORGANIZATION shall submit to LICENSOR a reasonably accurate prospectus describing each new, revised or enhanced edition of the WORK for LICENSOR’S consideration and prior written approval. For purposes of this Agreement, “enhancement” and “enhanced” shall mean or refer to any addition or modification to any edition of the WORK which allows it to (i) perform significantly new or different functions, or (ii) to be delivered in or via a new channel, form, platform or media, or (iii) to be combined with other content or media.
+
+
+   17. ORGANIZATION shall use commercially reasonable efforts to promote, market, and distribute the WORK to the fullest extent possible within the Territory.
+
+
+6. REVISIONS:
+
+
+   1. In general. At any time during the term of this Agreement, or any renewal thereof, ORGANIZATION shall make all updates and revisions to any portion or portions of the CONTENT which is included in any current edition of the WORK, as may be requested by LICENSOR and as made available via the SDK.
+
+
+   2. Copyright and trademark notice updates. ORGANIZATION shall make all updates and revisions to the copyright and trademark notices included in any then-current edition of the WORK as may be reasonably requested by LICENSOR and as made available via the SDK. 
+
+
+7. CONSIDERATION; ROYALTIES; REPORTS:
+
+
+   1. Subject to ORGANIZATION compliance with all terms and conditions contained in this Agreement, Rights granted to ORGANIZATION under this Agreement will be royalty-free for the duration of the Term of this Agreement.
+
+
+   2. LICENSOR provides no warranties re access or usage fees for any third-party platforms utilized in the execution and maintenance of the rights and obligations under this Agreement.
+
+
+   3. In lieu of royalties:
+
+
+      1. ORGANIZATION shall display at all times, a direct one-step link to LICENSOR’S website (currently www.Biblica.com) and which shall include the word “Biblica” somewhere in the text of the link, every time the TRANSLATIONS are displayed, or the RECORDINGS are streamed in the WORK.  Such links may be from the copyright notice required to be displayed with any use of the CONTENT under this Agreement; and
+      2. ORGANIZATION permits LICENSOR and its affiliates and subcontractors to obtain accurate and complete user statistics reports from the API for the CONTENT in the WORK.  
+
+
+   4. If ORGANIZATION in any way prevents LICENSOR from having access to such reports, or fails to provide any of the required promotional opportunities, other information or consideration hereunder, LICENSOR may terminate this Agreement as provided under Section XIII.C. In such event, all rights granted to ORGANIZATION hereunder revert automatically to LICENSOR without further action (including further notice) by either ORGANIZATION or LICENSOR.
+
+
+8. PROPERTY RIGHTS:
+
+
+   1. All copyrights and ownership rights to the CONTENT in all versions of the WORK, whether produced by LICENSOR or ORGANIZATION, are and shall remain the exclusive property of LICENSOR, or the original CONTENT component copyright holder.  
+
+
+   2. ORGANIZATION shall cause to be displayed with any use of the CONTENT a notice in alignment with the (i) copyright and (ii) trademark information as defined in the most recent update to the CONTENT metatext via the API, and according to the template below, or other such notice as LICENSOR may from time to time designate, in the English language as prescribed by law and as made available via the SDK:
+
+
+[Insert three-line sound recording copyright notice]
+
+
+[Insert three-line text copyright notice]
+
+
+[Insert trademark notice]
+
+
+   3. ORGANIZATION acknowledges that it has no interest in or ownership rights to any of the CONTENT used in the WORK, and shall not, at any time, acquire any right(s) to the CONTENT by virtue of any use it may make of the CONTENT or the WORK.
+
+
+   4. Rights granted herein do not allow ORGANIZATION to alter or otherwise modify the CONTENT, or to produce works derivative to the CONTENT except as provided in Section III of this Agreement.
+
+
+   5. During the term and subject to the terms of this Agreement, LICENSOR grants to ORGANIZATION a non-exclusive, non-transferable license to use, perform and display, the trademarks, trade names and logos (collectively, the “Marks”) of LICENSOR only as necessary for ORGANIZATION to market and distribute the WORK pursuant to the terms of this Agreement.  ORGANIZATION shall use the Marks in accordance with LICENSOR’S trademark guidelines and quality standards listed below, and any use of the Marks shall be delivered to LICENSOR for prior approval.  LICENSOR may suspend or terminate the foregoing license upon notice to ORGANIZATION if, in its sole discretion, it determines that ORGANIZATION’S use of the Marks dilutes the quality or the associated goodwill of the Marks or, if ORGANIZATION’S use of such Marks does not conform to LICENSOR’S guidelines and standards listed below for use provided to ORGANIZATION from time to time during the term hereof.  ORGANIZATION will inform LICENSOR of any unauthorized use of the Marks and will not use or register any mark, name or logo which is similar to or may be confused with the Marks.  ORGANIZATION acknowledges that it has no interest in or ownership rights to any of the Marks and that all goodwill associated with the Marks shall inure to the benefit of LICENSOR. 
+
+
+      1. ORGANIZATION shall display the applicable trademark notice directly below the applicable copyright notice specified above, on all copies of the WORK in the English language, as defined in the most recent update to the CONTENT metatext via the API, and as prescribed by law.
+
+
+      2. ORGANIZATION shall print or display in all copies of the WORK the pending or registered trademark symbol of “TM” or “®” as directed by LICENSOR, behind each use of the Marks.
+
+
+      3. If the title or acronym of a CONTENT component, or any other Marks of LICENSOR are displayed or featured prominently with a work, such as on the cover or packaging, or the advertising of a product, a prototype of the cover or packaging, or the advertising material, shall be emailed, mailed, or faxed to LICENSOR for review.
+
+
+9. NO ASSIGNMENT: 
+
+
+This Agreement may not be assigned, nor duties hereunder delegated by ORGANIZATION without the prior written consent of LICENSOR and any assignment or delegation by ORGANIZATION without LICENSOR’S consent shall be of no legal effect, null and void. 
+
+
+10. INDEMNIFICATION:
+
+
+Each of ORGANIZATION and LICENSOR (as “Indemnitor”) agrees for itself to defend, indemnify and hold harmless the other party to this Agreement (as “Indemnitee”) against any and all damages, fines, penalties, costs, liabilities or losses, including sums paid in settlement of claims and attorneys’ and other fees (all being referred to herein as “Damages”) incurred by Indemnitee in connection with any and all third-party suits, claims, demands or allegations of every name or nature (each a “Claim”) against Indemnitee, to the extent resulting from either (a) any breach by Indemnitor of any provision of this Agreement or (b) any action or inaction of Indemnitor with respect to the matters within the scope of Indemnitor’s responsibilities under this Agreement.  In addition, ORGANIZATION agrees to defend, indemnify, and hold harmless LICENSOR against any and all Damages incurred by LICENSOR in connection with any and all Claims (other than Claims of infringement) against LICENSOR to the extent resulting from ORGANIZATION’S distribution of the WORK under this Agreement.
+
+
+11. DISPUTE RESOLUTION/BINDING ARBITRATION:
+
+
+   1. Meeting of the Parties. In the event a controversy or disagreement arises out of the interpretation, enforceability, or breach of this Agreement, or any of its terms, the parties agree first to meet together in Colorado Springs, Colorado to endeavor to resolve such controversies or disagreements.  
+
+
+   2. Mediation. In the event such meeting of the parties is not successful in resolving such controversies or disagreements, the parties agree then to participate in a mediation session in Colorado Springs, Colorado to endeavor to resolve such controversies or disagreements.
+
+
+   3. Binding Arbitration. In the event such mediation is not successful in resolving such controversies or disagreements, the parties agree then to participate in binding arbitration in accordance with the Commercial Arbitration Rules of the American Arbitration Association.  Any arbitration judgment or award may be entered in the highest court of the forum, state or federal, having jurisdiction of the matter. Arbitration shall be held in the State of Colorado, United States of America unless otherwise agreed by the parties.  
+
+
+   4. Equitable Relief. Only in the event that equitable relief (for example, in the form of restraining orders or injunctions for copyright, trademark, or other intellectual property infringement) is required to prevent continuing damage or harm to a party or its interests may a party then seek such relief or other appropriate remedy in a court of competent jurisdiction in Colorado Springs, Colorado.
+ 
+12. GOVERNING LAW:
+
+
+This Agreement shall be governed by and interpreted in accordance with the laws of the State of Colorado, United States of America.
+
+
+13. TERMINATION: 
+
+
+   1. Mission of LICENSOR.  The purpose and passion of Biblica, Inc., is to provide the Bible in accurate, contemporary translations and formats so that more people around the world will have the opportunity to be transformed by Jesus Christ.  In accordance with LICENSOR’S mission statement, LICENSOR reserves the right to terminate this Agreement if ORGANIZATION produces or manufactures works that are seriously and demonstrably anti-Christian or produces material that does not glorify Jesus Christ and promote biblical principles in LICENSOR’S sole determination.
+
+
+   2. Change in Control.  In the event of a Change of Control (as defined below) of ORGANIZATION, ORGANIZATION shall within thirty (30) days thereafter give notice in writing to LICENSOR, whereupon LICENSOR may terminate this Agreement by giving notice in writing to ORGANIZATION within thirty (30) days after receiving notice of such Change in Control, or if such notice is not given, within thirty (30) days after LICENSOR becomes aware of such Change in Control. A Change in Control, for purposes of this paragraph, shall have occurred if:
+
+
+      1. ORGANIZATION sells, transfers, liquidates, or disposes of all or substantially all of its assets.
+
+
+      2. ORGANIZATION is a party to a merger, reorganization, or consolidation.
+
+
+   3. Default by ORGANIZATION. LICENSOR may terminate this Agreement at any time upon default by ORGANIZATION if the default is not corrected within seven (7) days after receipt of written notice specifying the nature of such default.  Termination under this paragraph shall be without prejudice to any other rights and remedies of the parties.  
+
+
+      1. Default shall consist of, but not be limited to: (a) ORGANIZATION’S failure to agree to LICENSOR’S access to digital usage reports, or provide any of the required promotional opportunities, other information or consideration hereunder when due; or (b) breach or failure to perform any obligation in this Agreement; or (c) false or misleading warranties.
+
+
+   4. This Agreement will automatically terminate upon the termination of the external YouVersion SDK License.
+
+
+   5. Failure to Perform. LICENSOR may terminate this Agreement immediately if ORGANIZATION fails to complete the development of and commence deployment of the CONTENT within the WORK within twelve (12) months of this Agreement.
+
+
+   6. In the event of termination of this Agreement in terms of subsections C and D above, LICENSOR may in its sole discretion elect to prohibit ORGANIZATION from requesting a subsequent express license.
+
+
+   7. Bankruptcy of a Party.  If either party to this Agreement is adjudged bankrupt, makes a general assignment for the benefit of creditors, files a petition in bankruptcy or for the appointment of a receiver, or seeks reorganization under any provisions of the bankruptcy laws or any insolvency acts or any proceeding for bankruptcy or insolvency, LICENSOR may elect to cancel or terminate this Agreement without prejudice to any rights or claims it may have under this Agreement by written notice.
+
+
+   8. Effect of Expiration/Termination. Upon the expiration or termination of this Agreement:
+
+
+      3. ORGANIZATION shall be obligated and agrees to destroy all production materials and database files of the WORK containing the CONTENT within seventy-two (72) hours of termination or expiration, ORGANIZATION will notify LICENSOR in writing, signed by an officer of ORGANIZATION that all said production materials and files have been destroyed.
+
+
+      4. ORGANIZATION shall remove all non-physical editions of the WORK incorporating the CONTENT from public access and display / distribution within seventy-two (72) hours and will notify LICENSOR in writing, signed by an officer of ORGANIZATION that all editions of the WORK have been removed from public access and display / distribution.
+
+
+14. INSPECTION OF RECORDS/AUDIT:
+
+
+LICENSOR shall have the right at any reasonable time, but not more than once in any consecutive twelve-month period, during ORGANIZATION’S regular business hours and upon at least thirty (30) days’ notice, to inspect ORGANIZATION’S books and records and all other documents and material in the possession of or under the control of ORGANIZATION with respect to the subject matter of this Agreement at the place or places where such records are normally retained by ORGANIZATION.  
+
+
+15. NO IMPLIED GRANT, NO PARTNERSHIP:
+
+
+   1. ORGANIZATION shall have no right, by implication or otherwise, other than is set forth herein unless LICENSOR shall hereafter specifically grant any other right to ORGANIZATION in writing.
+
+
+   2. Nothing in this Agreement is to be construed in a manner that would create an employer-employee relationship, a principal agent relationship, a joint venture or partnership relationship between LICENSOR and ORGANIZATION.
+
+
+16. SUPERSEDURE OF PRIOR EXECUTED AGREEMENTS; MODIFICATION AND WAIVER:
+
+
+This Agreement embodies the entire and sole agreement between the parties with respect to the subject matter and supersedes all prior representations, agreements, and understandings, oral or written, with respect thereto.  Neither party is bound by any warranty or representation except to the extent specifically provided in this Agreement.  Neither this Agreement, nor any provision thereof may be modified, waived, discharged, or terminated orally, but only by an agreement, in writing, signed by the party or parties against whom any waiver, change, amendment, modification, or discharge may be sought to be enforced.  A waiver of any provision shall be valid only in the instance for which it was given and shall not be deemed continuing or a waiver of any other provision.
+
+
+17. SEVERABILITY:
+
+
+If any provision of this Agreement is held to be unenforceable or invalid, the remainder of this Agreement shall not be affected thereby.
+
+
+18. FORCE MAJEURE:
+
+
+ORGANIZATION shall not be responsible to delay or failure in performance caused by war, riot, terrorist acts, strikes, fire, flood, acts of God, governmental restrictions, governmental action, shortage or interruption of materials or facilities, or other circumstances beyond ORGANIZATION’S control.
+
+
+19. CONFIDENTIALITY:
+
+
+ORGANIZATION agrees that this Agreement and its terms will be kept strictly confidential and agrees not to disclose the Agreement or its terms to any third party either during the term of this Agreement or any time thereafter without the express written approval of LICENSOR.
+
+
+20. NOTICE. 
+
+
+Notice under this Agreement shall be deemed given when placed in writing and mailed by certified letter in the United States in a postage-paid envelope, return-receipt requested, properly addressed to the party for whom the notice is intended.  Notice to LICENSOR shall be provided to the Vice President, Translation, Publishing & Digital Innovation.  Notice to ORGANIZATION shall be provided to the Chief Executive Officer, General Secretary, Managing Director, or similar officer of ORGANIZATION. Addresses to be used are those first given above, unless changed by written notice.

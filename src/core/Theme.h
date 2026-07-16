@@ -11,6 +11,10 @@ constexpr Color DOC_BOOK_TITLE = BLACK;
 constexpr Color DOC_CHAPTER_LABEL = {80, 80, 80, 255};
 constexpr Color DOC_POETRY = DARKGRAY;
 constexpr Color DOC_VERSE_NUMBER = {160, 160, 160, 255};
+constexpr Color DOC_FOOTNOTE_CALLER = {100, 100, 180, 255};
+constexpr Color DOC_FOOTNOTE_POPUP_BG = {255, 250, 240, 255};
+constexpr Color DOC_FOOTNOTE_POPUP_BORDER = {200, 180, 150, 255};
+constexpr Color DOC_FOOTNOTE_POPUP_TEXT = {40, 35, 30, 255};
 
 constexpr Color UI_TEXT = DARKGRAY;
 constexpr Color UI_TITLE = BLACK;

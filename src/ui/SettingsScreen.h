@@ -22,7 +22,7 @@ public:
                    theword::highlight::Highlighter& highlighter,
                    theword::persistence::PersistenceManager& persistence,
                    const theword::core::UIScale& uiScale,
-                   float& currentFontSize, bool& versionOnline);
+                    float& currentFontSize, bool& versionOnline, bool& immersiveMode);
     void Draw() override;
     bool HandleInput(float deltaTime) override;
     const char* GetTitle() const override { return theword::core::Locale::Get("Settings"); }
@@ -37,6 +37,7 @@ private:
     const theword::core::UIScale& uiScale_;
     float& currentFontSize_;
     bool& versionOnline_;
+    bool& immersiveMode_;
 
     void ChangeFontSize(float delta);
     void SwitchSource(bool online);

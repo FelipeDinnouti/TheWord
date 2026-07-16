@@ -54,14 +54,29 @@ App::~App() {
 static std::string AssembleSelectedText(const ChapterData& data, int startWord, int endWord) {
     int s = (std::min)(startWord, endWord);
     int e = (std::max)(startWord, endWord);
-    std::ostringstream oss;
+    if (s < 0 || e >= static_cast<int>(data.words.size())) return {};
+
+    // Determine verse range
+    int firstVerse = data.words[s].verseId;
+    int lastVerse = data.words[e].verseId;
+
+    // Build citation prefix
+    int idx = FindBookIndex(data.bookId);
+    std::string bookName = (idx >= 0) ? BOOK_NAMES_PT[idx] : data.bookId;
+    std::ostringstream citation;
+    citation << bookName << " " << data.chapterNum << ":" << firstVerse;
+    if (lastVerse > firstVerse) citation << "-" << lastVerse;
+    citation << "\n\n";
+
+    // Build body text
+    std::ostringstream body;
     for (const auto& w : data.words) {
         if (w.id >= s && w.id <= e) {
-            if (oss.tellp() > 0) oss << " ";
-            oss << w.text;
+            if (body.tellp() > 0) body << " ";
+            body << w.text;
         }
     }
-    return oss.str();
+    return citation.str() + body.str();
 }
 
 static void FindVerseRange(const std::vector<Word>& words, int anchorWord, int& verseStart, int& verseEnd) {
@@ -168,7 +183,7 @@ bool App::Init(const std::string& title) {
         apiClient_ = platform::CreateHttpClient();
         if (apiClient_) {
             apiClient_->SetAppKey(apiKey);
-            bibleClient_ = std::make_unique<BibleClient>(*apiClient_, 129);
+            bibleClient_ = std::make_unique<BibleClient>(*apiClient_, 3034);
             compositeProv_ = std::make_unique<CompositeProvider>(*bibleClient_, *usfmParser_);
             onlineProv_ = bibleClient_.get();
             activeProv_ = compositeProv_.get();
@@ -194,7 +209,12 @@ bool App::Init(const std::string& title) {
 
     highlighter_->SetProvider(versionOnline_ ? "BibleClient" : "USFMParser");
 
-    uiManager_ = std::make_unique<UIManager>(*highlighter_, scale_);
+    uiManager_ = std::make_unique<UIManager>(*highlighter_, smallFont_, scale_);
+
+    {
+        std::string im = persistence_->GetPreference("immersive_mode", "0");
+        immersiveMode_ = (im == "1");
+    }
 
     std::string savedColor = persistence_->GetPreference("active_color", "");
     if (!savedColor.empty()) {
@@ -211,13 +231,26 @@ bool App::Init(const std::string& title) {
     auto isHighlightedFn = [this](int wordId) {
         return highlighter_->IsWordHighlighted(wordId);
     };
-    inputHandler_ = std::make_unique<InputHandler>(*eventBus_, hitTestFn, isHighlightedFn);
+    auto hitTestFootnoteFn = [this, contentTop](float x, float y) -> int {
+        std::vector<std::pair<theword::data::Span, float>> spans;
+        docManager_->GetVisibleSpans(spans);
+        for (const auto& [span, docY] : spans) {
+            if (span.type != SegmentType::FootnoteMarker || span.footnoteIndex < 0) continue;
+            float screenY = docY - docManager_->GetScrollY() + contentTop;
+            if (y >= screenY && y <= screenY + span.height &&
+                x >= span.x && x <= span.x + span.width) {
+                return span.footnoteIndex;
+            }
+        }
+        return -1;
+    };
+    inputHandler_ = std::make_unique<InputHandler>(*eventBus_, hitTestFn, isHighlightedFn, hitTestFootnoteFn);
 
     navStack_ = std::make_unique<theword::ui::NavigationStack>();
     navStack_->Push(std::make_unique<theword::ui::ReaderScreen>(
         *eventBus_, *docManager_, *renderer_, *highlighter_, *persistence_,
         headingFont_, headingSize_, contentTop,
-        *navStack_, uiScale_, currentFontSize_, versionOnline_
+        *navStack_, uiScale_, currentFontSize_, versionOnline_, immersiveMode_
     ));
 
     {
@@ -236,6 +269,12 @@ bool App::Init(const std::string& title) {
         if (!savedScroll.empty()) {
             docManager_->ScrollTo(std::stof(savedScroll));
             persistence_->SetPreference("lifecycle_scroll", "");
+        }
+
+        // Load last known scroll for deferred restore on first MainLoop frame
+        std::string lastScroll = persistence_->GetPreference("last_scroll", "");
+        if (!lastScroll.empty()) {
+            pendingScrollY_ = std::stof(lastScroll);
         }
     }
 
@@ -331,6 +370,8 @@ void App::WireEvents() {
     });
 
     eventBus_->On<theword::event::NavigateEvent>([this](const auto& e) {
+        persistence_->SetPreference("last_scroll",
+            std::to_string(docManager_->GetScrollY()));
         docManager_->LoadInitialChapter(e.chapterRef);
         persistence_->SetPreference("last_chapter", e.chapterRef);
     });
@@ -352,236 +393,105 @@ void App::WireEvents() {
     });
 }
 
-void App::Run() {
+void App::WireInputCallbacks() {
+    inputHandler_->onTap = [this](theword::input::HitInfo hit, Vector2 pos, bool isDouble) {
+        OnTap(hit, pos, isDouble);
+    };
+    inputHandler_->onTapEmpty = [this](Vector2 pos) {
+        OnTapEmpty(pos);
+    };
+    inputHandler_->onDragStart = [this](int startWord, Vector2 pos) {
+        OnDragStart(startWord, pos);
+    };
+    inputHandler_->onDragUpdate = [this](int startWord, int currentWord, Vector2 pos) {
+        OnDragUpdate(startWord, currentWord, pos);
+    };
+    inputHandler_->onDragEnd = [this](int startWord, int endWord, Vector2 pos) {
+        OnDragEnd(startWord, endWord, pos);
+    };
+    inputHandler_->onLongPress = [this](int wordId, Vector2 pos) {
+        OnLongPress(wordId, pos);
+    };
+    inputHandler_->onFootnoteTap = [this](int fi) {
+        auto* cd = docManager_->GetCurrentChapterData();
+        if (cd && fi >= 0 && fi < static_cast<int>(cd->footnotes.size())) {
+            const auto& fn = cd->footnotes[fi];
+            std::string text = fn.callerRef.empty() ? fn.text : fn.callerRef + " " + fn.text;
+            uiManager_->ShowFootnotePopup(text, GetMousePosition());
+        }
+    };
+    inputHandler_->onDismiss = [this]() -> bool {
+        return OnDismiss();
+    };
+}
+
+void App::HandleShortcuts() {
+    if (!navStack_->IsOnRoot()) return;
+
+    if (IsKeyPressed(key::S)) {
+        navStack_->Push(std::make_unique<theword::ui::SettingsScreen>(
+            headingFont_, headingSize_, *navStack_, *eventBus_,
+            *highlighter_, *persistence_,
+            uiScale_, currentFontSize_, versionOnline_, immersiveMode_
+        ));
+    }
+    if (IsKeyPressed(key::A)) {
+        navStack_->Push(std::make_unique<theword::ui::CreditsOverlay>(
+            headingFont_, headingSize_, *navStack_, uiScale_
+        ));
+    }
+    if (IsKeyPressed(key::I)) {
+        immersiveMode_ = !immersiveMode_;
+        persistence_->SetPreference("immersive_mode", immersiveMode_ ? "1" : "0");
+    }
+    if (IsKeyPressed(KEY_D)) {
+        navStack_->Push(std::make_unique<theword::ui::FontDiagnostic>(
+            bodyFont_, headingFont_, largeFont_, smallFont_, boldFont_,
+            scale_, *navStack_
+        ));
+    }
+    if (IsKeyDown(KEY_LEFT_CONTROL) && IsKeyPressed(KEY_C) && accumStartWord_ >= 0) {
+        auto* cd = docManager_->GetCurrentChapterData();
+        if (cd) CopySelection(*cd, accumStartWord_, accumEndWord_);
+    }
+}
+
+void App::MainLoop() {
     double lastTime = GetTime();
     int drawCountdown = config::IDLE_COOLDOWN_FRAMES;
-
-    bool longPressHandled = false;
-
-    auto onTap = [this](theword::input::HitInfo hit, Vector2 pos, bool isDouble) {
-        int wordId = hit.wordId;
-        auto* cd = docManager_->GetChapterData(hit.bookId, hit.chapterNum);
-        if (!cd) cd = docManager_->GetCurrentChapterData();
-        Logger::Debug("onTap: wordId=" + std::to_string(hit.wordId)
-            + " hitChapter=" + hit.bookId + "." + std::to_string(hit.chapterNum)
-            + " visibleChapter=" + docManager_->GetCurrentChapterId()
-            + " cd=" + (cd ? cd->bookId + "." + std::to_string(cd->chapterNum) : "null"));
-
-        if (uiManager_->IsRadialMenuActive()) {
-            RadialMenuActionResult result = uiManager_->HandleRadialMenuClick(pos);
-            if (result.consumed) {
-                accumStartWord_ = -1;
-                accumEndWord_ = -1;
-                if (result.isCopy) {
-                    if (cd) {
-                        std::string text = AssembleSelectedText(*cd, result.startWord, result.endWord);
-                        if (!text.empty()) {
-                            platform::SetClipboard(text);
-                            Logger::Debug("Copied to clipboard: " + text);
-                        }
-                    }
-                } else if (result.isDelete) {
-                    if (cd) {
-                        int s = (std::min)(result.startWord, result.endWord);
-                        int e = (std::max)(result.startWord, result.endWord);
-                        for (const auto& h : highlighter_->GetHighlights()) {
-                            if (h.bookId == cd->bookId &&
-                                h.chapterNum == cd->chapterNum &&
-                                h.startWord <= e && h.endWord >= s) {
-                                highlighter_->RemoveHighlight(h.id);
-                            }
-                        }
-                    }
-                } else if (result.isHighlight) {
-                    const auto& types = highlighter_->GetTypes();
-                    if (result.colorIndex >= 0 && result.colorIndex < static_cast<int>(types.size())) {
-                        const auto* existing = highlighter_->HighlightOverlapping(result.startWord, result.endWord, result.bookId, result.chapterNum);
-                        if (existing) {
-                            highlighter_->RecolorHighlight(existing->id, types[result.colorIndex].id);
-                        } else {
-                            auto* hcd = docManager_->GetChapterData(result.bookId, result.chapterNum);
-                            highlighter_->CreateHighlight(result.startWord, result.endWord, types[result.colorIndex].id,
-                                result.bookId, result.chapterNum, hcd ? &hcd->words : nullptr);
-                        }
-                    }
-                    uiManager_->HideRadialMenu();
-                }
-                return;
-            }
-            // Missed buttons: expansion or dismiss
-            if (wordId >= 0 && accumStartWord_ >= 0 && cd) {
-                int vStart, vEnd;
-                FindVerseRange(cd->words, wordId, vStart, vEnd);
-                accumStartWord_ = (std::min)(accumStartWord_, vStart);
-                accumEndWord_ = (std::max)(accumEndWord_, vEnd);
-                highlighter_->CommitSelection(accumStartWord_, accumEndWord_, cd->bookId, cd->chapterNum);
-                uiManager_->ShowRadialMenu(pos, accumStartWord_, accumEndWord_, cd->bookId, cd->chapterNum);
-                return;
-            }
-            if (wordId >= 0) {
-                const auto* h = highlighter_->HighlightAtWord(wordId, hit.bookId, hit.chapterNum);
-                if (h) {
-                    accumStartWord_ = -1;
-                    accumEndWord_ = -1;
-                    highlighter_->CommitSelection(h->startWord, h->endWord, h->bookId, h->chapterNum);
-                    uiManager_->ShowRadialMenu(pos, h->startWord, h->endWord, h->bookId, h->chapterNum);
-                } else {
-                    uiManager_->HideRadialMenu();
-                    accumStartWord_ = -1;
-                    accumEndWord_ = -1;
-                }
-                return;
-            }
-            // Empty space — dismiss
-            uiManager_->HideRadialMenu();
-            accumStartWord_ = -1;
-            accumEndWord_ = -1;
-            return;
-        }
-
-        // No menu active
-        if (!cd || wordId < 0) return;
-
-        if (isDouble) {
-            int vStart, vEnd;
-            FindVerseRange(cd->words, wordId, vStart, vEnd);
-            accumStartWord_ = accumStartWord_ >= 0
-                ? (std::min)(accumStartWord_, vStart) : vStart;
-            accumEndWord_ = accumEndWord_ >= 0
-                ? (std::max)(accumEndWord_, vEnd) : vEnd;
-            highlighter_->CommitSelection(accumStartWord_, accumEndWord_, hit.bookId, hit.chapterNum);
-            uiManager_->ShowRadialMenu(pos, accumStartWord_, accumEndWord_, hit.bookId, hit.chapterNum);
-        } else if (auto* h = highlighter_->HighlightAtWord(wordId, hit.bookId, hit.chapterNum)) {
-            accumStartWord_ = -1;
-            accumEndWord_ = -1;
-            highlighter_->CommitSelection(h->startWord, h->endWord, h->bookId, h->chapterNum);
-            uiManager_->ShowRadialMenu(pos, h->startWord, h->endWord, h->bookId, h->chapterNum);
-        }
-        // else: unhighlighted single word — nothing
-    };
-
-    auto onTapEmpty = [this](Vector2 pos) {
-        if (uiManager_->IsRadialMenuActive()) {
-            RadialMenuActionResult result = uiManager_->HandleRadialMenuClick(pos);
-            if (result.consumed) {
-                accumStartWord_ = -1;
-                accumEndWord_ = -1;
-                if (result.isCopy) {
-                    auto* cd = docManager_->GetCurrentChapterData();
-                    if (cd) {
-                        std::string text = AssembleSelectedText(*cd, result.startWord, result.endWord);
-                        if (!text.empty()) platform::SetClipboard(text);
-                    }
-                } else if (result.isDelete) {
-                    int s = (std::min)(result.startWord, result.endWord);
-                    int e = (std::max)(result.startWord, result.endWord);
-                    for (const auto& h : highlighter_->GetHighlights()) {
-                        if (h.bookId == result.bookId && h.chapterNum == result.chapterNum
-                            && h.startWord <= e && h.endWord >= s) {
-                            highlighter_->RemoveHighlight(h.id);
-                        }
-                    }
-                } else if (result.isHighlight) {
-                    const auto& types = highlighter_->GetTypes();
-                    if (result.colorIndex >= 0 && result.colorIndex < static_cast<int>(types.size())) {
-                        const auto* existing = highlighter_->HighlightOverlapping(result.startWord, result.endWord,
-                            result.bookId, result.chapterNum);
-                        if (existing) {
-                            highlighter_->RecolorHighlight(existing->id, types[result.colorIndex].id);
-                        } else {
-                            auto* hcd = docManager_->GetChapterData(result.bookId, result.chapterNum);
-                            highlighter_->CreateHighlight(result.startWord, result.endWord, types[result.colorIndex].id,
-                                result.bookId, result.chapterNum, hcd ? &hcd->words : nullptr);
-                        }
-                    }
-                    uiManager_->HideRadialMenu();
-                }
-                return;
-            }
-            uiManager_->HideRadialMenu();
-            accumStartWord_ = -1;
-            accumEndWord_ = -1;
-        }
-    };
-
-    auto onDragStart = [this](int startWord, Vector2 /*pos*/) {
-        auto& ph = inputHandler_->GetPressStartHit();
-        eventBus_->Emit(theword::event::SelectionEvent{
-            theword::event::SelectionEvent::Action::Start, startWord, startWord, ph.bookId, ph.chapterNum});
-    };
-
-    auto onDragUpdate = [this](int startWord, int currentWord, Vector2 /*pos*/) {
-        auto& ph = inputHandler_->GetPressStartHit();
-        eventBus_->Emit(theword::event::SelectionEvent{
-            theword::event::SelectionEvent::Action::Update, startWord, currentWord, ph.bookId, ph.chapterNum});
-    };
-
-    auto onDragEnd = [this, &longPressHandled](int startWord, int endWord, Vector2 pos) {
-        if (longPressHandled) {
-            longPressHandled = false;
-            return;
-        }
-        auto& ph = inputHandler_->GetPressStartHit();
-        eventBus_->Emit(theword::event::SelectionEvent{
-            theword::event::SelectionEvent::Action::End, startWord, endWord, ph.bookId, ph.chapterNum});
-        uiManager_->ShowRadialMenu(pos, startWord, endWord, ph.bookId, ph.chapterNum);
-    };
-
-    auto onLongPress = [this, &longPressHandled](int wordId, Vector2 pos) {
-        auto& ph = inputHandler_->GetPressStartHit();
-        eventBus_->Emit(theword::event::SelectionEvent{
-            theword::event::SelectionEvent::Action::Start, wordId, wordId, ph.bookId, ph.chapterNum});
-        if (!platform::HasTouchInput() && highlighter_->IsWordHighlighted(wordId, ph.bookId, ph.chapterNum)) {
-            eventBus_->Emit(theword::event::SelectionEvent{
-                theword::event::SelectionEvent::Action::End, wordId, wordId, ph.bookId, ph.chapterNum});
-            uiManager_->ShowRadialMenu(pos, wordId, wordId, ph.bookId, ph.chapterNum);
-            longPressHandled = true;
-        } else {
-            longPressHandled = false;
-        }
-    };
-
-    auto onDismiss = [this]() -> bool {
-        if (uiManager_->IsRadialMenuActive()) {
-            uiManager_->HideRadialMenu();
-            accumStartWord_ = -1;
-            accumEndWord_ = -1;
-            return true;
-        }
-        return false;
-    };
-
-    inputHandler_->onTap = onTap;
-    inputHandler_->onTapEmpty = onTapEmpty;
-    inputHandler_->onDragStart = onDragStart;
-    inputHandler_->onDragUpdate = onDragUpdate;
-    inputHandler_->onDragEnd = onDragEnd;
-    inputHandler_->onLongPress = onLongPress;
-    inputHandler_->onDismiss = onDismiss;
 
 #if defined(__ANDROID__)
     bool wasWindowGone = false;
 #endif
 
     while (!WindowShouldClose()) {
-        if (platform::ShouldQuit()) break;
+        if (pendingScrollY_ >= 0.0f) {
+            docManager_->ScrollTo(pendingScrollY_);
+            pendingScrollY_ = -1.0f;
+        }
+
+        if (platform::ShouldQuit()) {
+            if (navStack_->IsOnRoot()) {
+                persistence_->SetPreference("last_scroll",
+                    std::to_string(docManager_->GetScrollY()));
+            }
+            break;
+        }
 
 #if defined(__ANDROID__)
         if (!platform::IsWindowAvailable()) {
-            PollInputEvents();  // process lifecycle events while surface gone
+            PollInputEvents();
             if (platform::ShouldQuit()) break;
-            // Surface is temporarily gone (tab-out). Save state once on
-            // the transition and yield until APP_CMD_INIT_WINDOW restores it.
             if (!wasWindowGone) {
                 wasWindowGone = true;
-                persistence_->SetPreference("lifecycle_scroll",
-                    std::to_string(docManager_->GetScrollY()));
+                float sy = docManager_->GetScrollY();
+                persistence_->SetPreference("lifecycle_scroll", std::to_string(sy));
+                persistence_->SetPreference("last_scroll", std::to_string(sy));
             }
             WaitTime(0.016);
             continue;
         }
         if (wasWindowGone) {
-            // Window just came back — reset input FSM to clear stale state
             wasWindowGone = false;
             inputHandler_->ResetState();
         }
@@ -594,29 +504,8 @@ void App::Run() {
         inputHandler_->Poll(deltaTime, navStack_.get());
         docManager_->Update(deltaTime);
 
-        // Keyboard shortcuts that push screens (only when on root Reader)
-        if (navStack_->IsOnRoot()) {
-            if (IsKeyPressed(key::S)) {
-                navStack_->Push(std::make_unique<theword::ui::SettingsScreen>(
-                    headingFont_, headingSize_, *navStack_, *eventBus_,
-                    *highlighter_, *persistence_,
-                    uiScale_, currentFontSize_, versionOnline_
-                ));
-            }
-            if (IsKeyPressed(key::A)) {
-                navStack_->Push(std::make_unique<theword::ui::CreditsOverlay>(
-                    headingFont_, headingSize_, *navStack_, uiScale_
-                ));
-            }
-            if (IsKeyPressed(KEY_D)) {
-                navStack_->Push(std::make_unique<theword::ui::FontDiagnostic>(
-                    bodyFont_, headingFont_, largeFont_, smallFont_, boldFont_,
-                    scale_, *navStack_
-                ));
-            }
-        }
+        HandleShortcuts();
 
-        // Skip GPU draws when the view is fully static
         bool isAnimating = inputHandler_->HasMomentum()
                         || docManager_->HasMomentum()
                         || docManager_->HasPendingLoads();
@@ -631,7 +520,7 @@ void App::Run() {
             drawCountdown = config::IDLE_COOLDOWN_FRAMES;
         } else if (drawCountdown > 0) {
             drawCountdown--;
-            if (drawCountdown == 0) lastIdleDrawTime = 0.0; // force first idle draw
+            if (drawCountdown == 0) lastIdleDrawTime = 0.0;
         }
 
         bool doDraw = false;
@@ -649,13 +538,221 @@ void App::Run() {
             navStack_->DrawActive();
 
             uiManager_->DrawRadialMenu();
+            uiManager_->DrawToast();
+            uiManager_->DrawFootnotePopup();
             renderer_->DrawFpsCounter(GetScreenWidth() / 2, GetScreenHeight() - 30);
 
             EndDrawing();
         } else {
-            PollInputEvents();  // EndDrawing skipped — poll manually
+            PollInputEvents();
         }
     }
+}
+
+void App::OnTap(theword::input::HitInfo hit, Vector2 pos, bool isDouble) {
+    if (uiManager_->IsFootnotePopupActive()) {
+        uiManager_->HideFootnotePopup();
+        return;
+    }
+    int wordId = hit.wordId;
+    auto* cd = docManager_->GetChapterData(hit.bookId, hit.chapterNum);
+    if (!cd) cd = docManager_->GetCurrentChapterData();
+    Logger::Debug("onTap: wordId=" + std::to_string(hit.wordId)
+        + " hitChapter=" + hit.bookId + "." + std::to_string(hit.chapterNum)
+        + " visibleChapter=" + docManager_->GetCurrentChapterId()
+        + " cd=" + (cd ? cd->bookId + "." + std::to_string(cd->chapterNum) : "null"));
+
+    if (uiManager_->IsRadialMenuActive()) {
+        RadialMenuActionResult result = uiManager_->HandleRadialMenuClick(pos);
+        if (result.consumed) {
+            accumStartWord_ = -1;
+            accumEndWord_ = -1;
+            if (result.isCopy) {
+                if (cd) CopySelection(*cd, result.startWord, result.endWord);
+            } else if (result.isDelete) {
+                if (cd) {
+                    int s = (std::min)(result.startWord, result.endWord);
+                    int e = (std::max)(result.startWord, result.endWord);
+                    for (const auto& h : highlighter_->GetHighlights()) {
+                        if (h.bookId == cd->bookId &&
+                            h.chapterNum == cd->chapterNum &&
+                            h.startWord <= e && h.endWord >= s) {
+                            highlighter_->RemoveHighlight(h.id);
+                        }
+                    }
+                }
+            } else if (result.isHighlight) {
+                const auto& types = highlighter_->GetTypes();
+                if (result.colorIndex >= 0 && result.colorIndex < static_cast<int>(types.size())) {
+                    const auto* existing = highlighter_->HighlightOverlapping(result.startWord, result.endWord, result.bookId, result.chapterNum);
+                    if (existing) {
+                        highlighter_->RecolorHighlight(existing->id, types[result.colorIndex].id);
+                    } else {
+                        auto* hcd = docManager_->GetChapterData(result.bookId, result.chapterNum);
+                        highlighter_->CreateHighlight(result.startWord, result.endWord, types[result.colorIndex].id,
+                            result.bookId, result.chapterNum, hcd ? &hcd->words : nullptr);
+                    }
+                }
+                uiManager_->HideRadialMenu();
+            }
+            return;
+        }
+        if (wordId >= 0 && accumStartWord_ >= 0 && cd) {
+            int vStart, vEnd;
+            FindVerseRange(cd->words, wordId, vStart, vEnd);
+            accumStartWord_ = (std::min)(accumStartWord_, vStart);
+            accumEndWord_ = (std::max)(accumEndWord_, vEnd);
+            highlighter_->CommitSelection(accumStartWord_, accumEndWord_, cd->bookId, cd->chapterNum);
+            uiManager_->ShowRadialMenu(pos, accumStartWord_, accumEndWord_, cd->bookId, cd->chapterNum);
+            return;
+        }
+        if (wordId >= 0) {
+            const auto* h = highlighter_->HighlightAtWord(wordId, hit.bookId, hit.chapterNum);
+            if (h) {
+                accumStartWord_ = -1;
+                accumEndWord_ = -1;
+                highlighter_->CommitSelection(h->startWord, h->endWord, h->bookId, h->chapterNum);
+                uiManager_->ShowRadialMenu(pos, h->startWord, h->endWord, h->bookId, h->chapterNum);
+            } else {
+                uiManager_->HideRadialMenu();
+                accumStartWord_ = -1;
+                accumEndWord_ = -1;
+            }
+            return;
+        }
+        uiManager_->HideRadialMenu();
+        accumStartWord_ = -1;
+        accumEndWord_ = -1;
+        return;
+    }
+
+    if (!cd || wordId < 0) return;
+
+    if (isDouble) {
+        int vStart, vEnd;
+        FindVerseRange(cd->words, wordId, vStart, vEnd);
+        accumStartWord_ = accumStartWord_ >= 0
+            ? (std::min)(accumStartWord_, vStart) : vStart;
+        accumEndWord_ = accumEndWord_ >= 0
+            ? (std::max)(accumEndWord_, vEnd) : vEnd;
+        highlighter_->CommitSelection(accumStartWord_, accumEndWord_, hit.bookId, hit.chapterNum);
+        uiManager_->ShowRadialMenu(pos, accumStartWord_, accumEndWord_, hit.bookId, hit.chapterNum);
+    } else if (auto* h = highlighter_->HighlightAtWord(wordId, hit.bookId, hit.chapterNum)) {
+        accumStartWord_ = -1;
+        accumEndWord_ = -1;
+        highlighter_->CommitSelection(h->startWord, h->endWord, h->bookId, h->chapterNum);
+        uiManager_->ShowRadialMenu(pos, h->startWord, h->endWord, h->bookId, h->chapterNum);
+    }
+}
+
+void App::OnTapEmpty(Vector2 pos) {
+    if (uiManager_->IsFootnotePopupActive()) {
+        uiManager_->HideFootnotePopup();
+        return;
+    }
+    if (uiManager_->IsRadialMenuActive()) {
+        RadialMenuActionResult result = uiManager_->HandleRadialMenuClick(pos);
+        if (result.consumed) {
+            accumStartWord_ = -1;
+            accumEndWord_ = -1;
+            if (result.isCopy) {
+                auto* cd = docManager_->GetCurrentChapterData();
+                if (cd) CopySelection(*cd, result.startWord, result.endWord);
+            } else if (result.isDelete) {
+                int s = (std::min)(result.startWord, result.endWord);
+                int e = (std::max)(result.startWord, result.endWord);
+                for (const auto& h : highlighter_->GetHighlights()) {
+                    if (h.bookId == result.bookId && h.chapterNum == result.chapterNum
+                        && h.startWord <= e && h.endWord >= s) {
+                        highlighter_->RemoveHighlight(h.id);
+                    }
+                }
+            } else if (result.isHighlight) {
+                const auto& types = highlighter_->GetTypes();
+                if (result.colorIndex >= 0 && result.colorIndex < static_cast<int>(types.size())) {
+                    const auto* existing = highlighter_->HighlightOverlapping(result.startWord, result.endWord,
+                        result.bookId, result.chapterNum);
+                    if (existing) {
+                        highlighter_->RecolorHighlight(existing->id, types[result.colorIndex].id);
+                    } else {
+                        auto* hcd = docManager_->GetChapterData(result.bookId, result.chapterNum);
+                        highlighter_->CreateHighlight(result.startWord, result.endWord, types[result.colorIndex].id,
+                            result.bookId, result.chapterNum, hcd ? &hcd->words : nullptr);
+                    }
+                }
+                uiManager_->HideRadialMenu();
+            }
+            return;
+        }
+        uiManager_->HideRadialMenu();
+        accumStartWord_ = -1;
+        accumEndWord_ = -1;
+    }
+}
+
+void App::OnDragStart(int startWord, Vector2 /*pos*/) {
+    auto& ph = inputHandler_->GetPressStartHit();
+    eventBus_->Emit(theword::event::SelectionEvent{
+        theword::event::SelectionEvent::Action::Start, startWord, startWord, ph.bookId, ph.chapterNum});
+}
+
+void App::OnDragUpdate(int startWord, int currentWord, Vector2 /*pos*/) {
+    auto& ph = inputHandler_->GetPressStartHit();
+    eventBus_->Emit(theword::event::SelectionEvent{
+        theword::event::SelectionEvent::Action::Update, startWord, currentWord, ph.bookId, ph.chapterNum});
+}
+
+void App::OnDragEnd(int startWord, int endWord, Vector2 pos) {
+    if (longPressHandled_) {
+        longPressHandled_ = false;
+        return;
+    }
+    auto& ph = inputHandler_->GetPressStartHit();
+    eventBus_->Emit(theword::event::SelectionEvent{
+        theword::event::SelectionEvent::Action::End, startWord, endWord, ph.bookId, ph.chapterNum});
+    uiManager_->ShowRadialMenu(pos, startWord, endWord, ph.bookId, ph.chapterNum);
+}
+
+void App::OnLongPress(int wordId, Vector2 pos) {
+    auto& ph = inputHandler_->GetPressStartHit();
+    eventBus_->Emit(theword::event::SelectionEvent{
+        theword::event::SelectionEvent::Action::Start, wordId, wordId, ph.bookId, ph.chapterNum});
+    if (!platform::HasTouchInput() && highlighter_->IsWordHighlighted(wordId, ph.bookId, ph.chapterNum)) {
+        eventBus_->Emit(theword::event::SelectionEvent{
+            theword::event::SelectionEvent::Action::End, wordId, wordId, ph.bookId, ph.chapterNum});
+        uiManager_->ShowRadialMenu(pos, wordId, wordId, ph.bookId, ph.chapterNum);
+        longPressHandled_ = true;
+    } else {
+        longPressHandled_ = false;
+    }
+}
+
+bool App::OnDismiss() {
+    if (uiManager_->IsFootnotePopupActive()) {
+        uiManager_->HideFootnotePopup();
+        return true;
+    }
+    if (uiManager_->IsRadialMenuActive()) {
+        uiManager_->HideRadialMenu();
+        accumStartWord_ = -1;
+        accumEndWord_ = -1;
+        return true;
+    }
+    return false;
+}
+
+void App::CopySelection(const ChapterData& data, int startWord, int endWord) {
+    std::string text = AssembleSelectedText(data, startWord, endWord);
+    if (!text.empty()) {
+        platform::SetClipboard(text);
+        Logger::Debug("Copied to clipboard: " + text);
+        if (uiManager_) uiManager_->ShowToast("Copiado!");
+    }
+}
+
+void App::Run() {
+    WireInputCallbacks();
+    MainLoop();
 }
 
 } // namespace theword::app

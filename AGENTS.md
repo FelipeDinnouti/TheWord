@@ -84,7 +84,7 @@ Key points: PascalCase classes/methods, camelCase variables, acyclic `core → d
 | New .cpp not compiled | `rm -rf build && cmake -B build ...` |
 | libcurl not found | Install `libcurl4-openssl-dev` (optional, only for online API) |
 | No USFM files | Download Bíblia Livre from ebible.org and place in `assets/usfm/` |
-| API "Access denied" | Use Bible ID 3034 (BSB), not 111 (NIV) |
+| API "Access denied" | Use Bible ID 3034 (BSB), not 129 or 111 (NIV) |
 
 ## Versioning
 

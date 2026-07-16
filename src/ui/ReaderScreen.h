@@ -27,8 +27,8 @@ public:
                  theword::persistence::PersistenceManager& persistence,
                  const Font& uiFont, float uiFontSize,
                  float contentTop,
-                  NavigationStack& navStack,
-                  const theword::core::UIScale& uiScale, float& currentFontSize, bool& versionOnline);
+                   NavigationStack& navStack,
+                   const theword::core::UIScale& uiScale, float& currentFontSize, bool& versionOnline, bool& immersiveMode);
     ~ReaderScreen() override;
     void Draw() override;
     bool HandleInput(float deltaTime) override;
@@ -47,6 +47,7 @@ private:
     const theword::core::UIScale& uiScale_;
     float& currentFontSize_;
     bool& versionOnline_;
+    bool& immersiveMode_;
 
     // Bottom bar
     float bottomBarHeight_;

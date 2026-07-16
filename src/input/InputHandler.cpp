@@ -14,10 +14,12 @@ using namespace theword::core;
 
 InputHandler::InputHandler(theword::event::EventBus& eventBus,
                            std::function<HitInfo(float, float)> hitTestFn,
-                           std::function<bool(int)> isHighlightedFn)
+                           std::function<bool(int)> isHighlightedFn,
+                           std::function<int(float, float)> hitTestFootnoteFn)
     : eventBus_(eventBus),
       hitTestFn(std::move(hitTestFn)),
       isHighlightedFn(std::move(isHighlightedFn)),
+      hitTestFootnoteFn(std::move(hitTestFootnoteFn)),
       slopAccumulator(0.0f),
       pressState(PressState::Idle), pressStartTime(0.0),
       pressStartPos{0, 0}, pressStartHit{}, selectStartWord(-1),
@@ -201,6 +203,15 @@ void InputHandler::RunUnifiedFSM(bool isPressed, bool justPressed, bool justRele
 
         case PressState::Pending:
             if (justReleased) {
+                // Check footnote hit first (higher z-order)
+                if (!didScroll_ && hitTestFootnoteFn) {
+                    int fi = hitTestFootnoteFn(pressStartPos.x, pressStartPos.y);
+                    if (fi >= 0 && onFootnoteTap) {
+                        onFootnoteTap(fi);
+                        pressState = PressState::Idle;
+                        return;
+                    }
+                }
                 if (pressStartHit.wordId >= 0 && !didScroll_) {
                     float tapDist = std::sqrt(
                         (pressStartPos.x - lastClickPos_.x) * (pressStartPos.x - lastClickPos_.x) +

@@ -20,11 +20,11 @@ SettingsScreen::SettingsScreen(const Font& font, float fontSize,
                                theword::highlight::Highlighter& highlighter,
                                theword::persistence::PersistenceManager& persistence,
                                const theword::core::UIScale& uiScale,
-                               float& currentFontSize, bool& versionOnline)
+                                float& currentFontSize, bool& versionOnline, bool& immersiveMode)
     : font_(font), fontSize_(fontSize),
       navStack_(navStack), eventBus_(eventBus),
       highlighter_(highlighter), persistence_(persistence),
-      uiScale_(uiScale), currentFontSize_(currentFontSize), versionOnline_(versionOnline),
+      uiScale_(uiScale), currentFontSize_(currentFontSize), versionOnline_(versionOnline), immersiveMode_(immersiveMode),
       tapDetector_(uiScale_.dp(10)) {}
 
 void SettingsScreen::Draw() {
@@ -91,6 +91,20 @@ void SettingsScreen::Draw() {
         Color c = {types[i].color.r, types[i].color.g, types[i].color.b, 255};
         DrawColorSwatch({swatchX, rowY, swatchSize, swatchSize}, c, types[i].id == activeId);
     }
+
+    // Immersive mode row
+    rowY += rowGap;
+    DrawTextEx(font_, "Modo Limpo:", {labelX, rowY}, labelSize, 1, theme::UI_TEXT);
+
+    float imBtnW = uiScale_.dp(80);
+    float imBtnH = uiScale_.dp(30);
+    float imOnX = uiScale_.dp(140);
+    float imOffX = uiScale_.dp(230);
+
+    DrawButton({imOnX, rowY, imBtnW, imBtnH}, "ON", font_, controlSize,
+               true, theme::UI_TEXT, immersiveMode_ ? theme::SWITCH_ON : theme::SWITCH_OFF);
+    DrawButton({imOffX, rowY, imBtnW, imBtnH}, "OFF", font_, controlSize,
+               true, theme::UI_TEXT, immersiveMode_ ? theme::SWITCH_OFF : theme::SWITCH_ON);
 
     Vector2 mouse = GetMousePosition();
     float hitW = uiScale_.dp(56);
@@ -176,6 +190,25 @@ bool SettingsScreen::HandleInput(float /*deltaTime*/) {
                 persistence_.SetPreference("active_color", std::to_string(types[i].id));
                 return true;
             }
+        }
+
+        // Immersive mode row
+        rowY += rowGap;
+        float imBtnW = uiScale_.dp(80);
+        float imBtnH = uiScale_.dp(30);
+        float imOnX = uiScale_.dp(140);
+        float imOffX = uiScale_.dp(230);
+        Rectangle imOnRect = {imOnX, rowY, imBtnW, imBtnH};
+        Rectangle imOffRect = {imOffX, rowY, imBtnW, imBtnH};
+        if (CheckCollisionPointRec(mousePos, imOnRect)) {
+            immersiveMode_ = true;
+            persistence_.SetPreference("immersive_mode", "1");
+            return true;
+        }
+        if (CheckCollisionPointRec(mousePos, imOffRect)) {
+            immersiveMode_ = false;
+            persistence_.SetPreference("immersive_mode", "0");
+            return true;
         }
     }
     }

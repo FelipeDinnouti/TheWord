@@ -38,6 +38,7 @@ constexpr int KEY_DOWN_ANDROID = 20;       // AKEYCODE_DPAD_DOWN
 constexpr int KEY_ENTER_ANDROID = 66;      // AKEYCODE_ENTER
 constexpr int KEY_TAB_ANDROID = 61;        // AKEYCODE_TAB
 constexpr int KEY_BACKSPACE_ANDROID = 67;  // AKEYCODE_DEL
+constexpr int KEY_I_ANDROID = 37;          // AKEYCODE_I
 constexpr int KEY_LEFT_ANDROID = 21;       // AKEYCODE_DPAD_LEFT
 constexpr int KEY_RIGHT_ANDROID = 22;      // AKEYCODE_DPAD_RIGHT
 #else
@@ -69,6 +70,7 @@ namespace theword::core { namespace key {
     constexpr int BACKSPACE = config::KEY_BACKSPACE_ANDROID;
     constexpr int LEFT = config::KEY_LEFT_ANDROID;
     constexpr int RIGHT = config::KEY_RIGHT_ANDROID;
+    constexpr int I = config::KEY_I_ANDROID;
 #else
     constexpr int ESCAPE = KEY_ESCAPE;
     constexpr int G = KEY_G;
@@ -78,6 +80,7 @@ namespace theword::core { namespace key {
     constexpr int DOWN = KEY_DOWN;
     constexpr int LEFT = KEY_LEFT;
     constexpr int RIGHT = KEY_RIGHT;
+    constexpr int I = KEY_I;
     constexpr int ENTER = KEY_ENTER;
     constexpr int TAB = KEY_TAB;
     constexpr int BACKSPACE = KEY_BACKSPACE;

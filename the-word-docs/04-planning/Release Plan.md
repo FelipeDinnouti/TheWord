@@ -1,8 +1,30 @@
 # Release Plan
 
-> Status: v1.6.2 in development | Last Updated: 2026-07-12
+> Status: v1.6.x complete | Last Updated: 2026-07-14
 
 ## Past Releases
+
+### v1.6.3-alpha (2026-07-13)
+
+**Theme:** Android VSYNC Fix + Idle Drain
+
+- [x] EGL VSYNC logging — verify `eglSwapInterval()` actually working
+- [x] Raylib patch — uncommented `eglSwapInterval` in `InitGraphicsDevice()`, added after `eglMakeCurrent` in rebind path
+- [x] Time-based idle drain — cap draw rate at ~5fps when nothing changes
+- [x] Build, deploy, logcat-verified VSYNC working on device
+- [x] Tag: `git tag -am "v1.6.3-alpha — Android VSYNC fix, time-based idle drain, uncapped FPS on high-refresh" "v1.6.3"`
+
+### v1.6.2-alpha (2026-07-12)
+
+**Theme:** Sector-Based Radial Menu + Android Lifecycle Fix
+
+- [x] Sector-based radial hit detection — eliminates dead zones between buttons
+- [x] Highlight recolor fix — `HighlightOverlapping()` prevents duplicate highlights on recolor
+- [x] Android lifecycle fix — stop quitting on surface loss (`DestroyRequested()`), skip draw when window null
+- [x] Reset input FSM on `APP_CMD_RESUME`
+- [x] Save/restore scroll position across OS kills
+- [x] Debug tap overlay (red dot, fades over 1s)
+- [x] Tag: `git tag -am "v1.6.2-alpha" "v1.6.2-alpha"`
 
 ### v1.6.1-alpha (2026-07-10)
 
@@ -47,45 +69,57 @@
 - [x] Phase 13 Highlight Browser — data model + persistence + UI complete
 - [x] Tag: `git tag -am "v1.4.2" "v1.4.2"`
 
-## Current Release: v1.6.2
+## Current Release: v1.7.0-alpha
 
-**Theme:** Radial Menu UX/UI + Android Lifecycle
+**Theme:** Reading Experience — Copy Verse, Footnotes, Open Where You Left Off, Immersive Mode
 
-### Feature: Radial Menu UX/UI
+### Feature: Copy Verse Polish
 
-- [ ] Larger touch targets — button radius to 28dp, hit to 50dp (Android's recommended minimum)
-- [ ] Press-down feedback — visual state change on finger-down (tint or scale)
-- [ ] Show/hide animation — fade + scale from center on open/close
-- [ ] Review layout for mobile — consider alternative arrangements if radial is still awkward
+- [x] Citation format: `Book Chapter:Verse\n\n<text>` with two line breaks
+- [x] Ctrl+C keyboard shortcut on desktop
+- [x] Toast/popup feedback ("Copied!") after copy
+- [x] Refactor `AssembleSelectedText()` for citation prefix
 
-### Feature: Android Lifecycle
+### Feature: Footnote Display
 
-- [ ] Handle `APP_CMD_TERM_WINDOW` / `APP_CMD_INIT_WINDOW` — surface re-creation without quitting
-- [ ] Reset input FSM on `APP_CMD_RESUME`
-- [ ] Save/restore scroll position and current chapter on pause/resume
-- [ ] Fix bottom bar input corruption after resume
+- [x] Data layer — `Footnote` struct, `SegmentType::FootnoteMarker`, `ChapterData::footnotes`
+- [x] USFM parser — extract footnotes instead of stripping (`\f ... \f*`)
+- [x] BibleClient — extract footnotes from HTML instead of stripping (`<span class="yv-n">`)
+- [x] LayoutEngine — insert `[n]` superscript marker spans
+- [x] Renderer — draw markers with superscript style
+- [x] Interaction — tap marker → popup, tap-away → dismiss (integrate with UnifiedFSM)
+- [x] FootnotePopup component (UIManager)
+- [x] Cross-reference (`\rq`) promotion to footnotes
+
+### Feature: Open Where You Left Off
+
+- [x] Save `last_scroll` on app pause/close (desktop + Android)
+- [x] Restore scroll position after chapter load on startup
+- [x] Reuse/extend existing `lifecycle_scroll` pattern
+
+### Feature: Immersive / Clean Mode
+
+- [x] Hide verse numbers, chapter labels, section headings
+- [x] Toggle via 'I' hotkey + SettingsScreen switch
+- [x] Persist setting in preferences
 
 ### Release Steps
 
-- [ ] Reconfigure and build (all 3 platforms)
-- [ ] Full test suite passes (≥ 70/72)
-- [ ] Manual verification on Android
-- [ ] Update `State.md`
-- [ ] Bump version, tag
+- [x] Update `State.md`
+- [x] Bump version in `CMakeLists.txt` (1.6.3 → 1.7.0), reconfigure, build
+- [x] Full test suite passes (75/77)
+- [x] Manual verification on Android
+- [ ] Tag release `v1.7.0-alpha`
 
 ## Backlog (Future Releases)
-
-### Partially Implemented
-
-- **Copy Verse** — half-implemented; right-click/long-press copy exists in radial menu but more work needed (formatting, full verse selection UX)
 
 ### Phase 10 Remaining Items (deferred)
 
 - [x] Java activity stub (`TheWordActivity.java`) for IME/splash — done
 - [x] Soft keyboard integration for go-to dialog — done
 - [ ] Complex IME composition (CJK, emoji) — would require hidden EditText + TextWatcher (future)
-- [ ] Immersive mode (hide nav bar)
-- [ ] Lifecycle save/restore (scroll position on pause/resume) — now part of v1.6.2
+- [ ] Android immersive mode (hide system nav bar) — distinct from in-app Clean Mode
+- [x] Lifecycle save/restore (scroll position on pause/resume) — done in v1.6.2-alpha
 - [ ] WASM persistence via IDBFS
 - [ ] `scripts/build-wasm.sh` for one-step WASM build
 - [ ] libcurl as optional dependency
@@ -96,7 +130,6 @@
 - Note System (details TBD)
 - Custom Reading Plan System (details TBD)
 - Bookmark System (expansion of highlight system, details TBD)
-- Footnote display in reader
 - **Bible Version Switcher** — dropdown/selector in SettingsScreen to choose from enabled YouVersion IDs; persist choice; re-init `BibleClient` + `CompositeProvider` on change
 - Search across books/chapters
 - Dark / sepia theme

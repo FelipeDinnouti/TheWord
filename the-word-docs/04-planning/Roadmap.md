@@ -1,12 +1,26 @@
 # Roadmap
 
-> Status: Release-Based Planning Active | Last Updated: 2026-07-12
+> Status: Release-Based Planning Active | Last Updated: 2026-07-16
 
 The original 13-phase MVP is complete. All future work is organized by **release** (SemVer) rather than phases.
 
-## Current Release: v1.6.x
+## Current: v1.7.0-alpha
 
-**Theme:** Input Refactor, Radial Menu UX, Android Lifecycle
+**Theme:** Reading Experience — Copy Verse, Footnotes, Open Where You Left Off, Immersive Mode
+
+| Status | Item |
+|--------|------|
+| ✅ | App.cpp refactor — Run() extraction |
+| ✅ | Copy Verse Polish — citation format, Ctrl+C, toast feedback |
+| ✅ | Footnote Display — data layer, USFM/HTML parsing, markers, popup, cross-refs |
+| ✅ | Open Where You Left Off — scroll save/restore |
+| ✅ | Immersive / Clean Mode — hide verse numbers, section headings |
+
+Detailed per-release scope tracked in `Release Plan.md`.
+
+## Completed: v1.6.x
+
+**Theme:** Input Refactor, Radial Menu, Android Lifecycle, VSYNC
 
 ### v1.6.1-alpha — Input System Refactor + Bug Fixes (tagged)
 
@@ -23,12 +37,24 @@ The original 13-phase MVP is complete. All future work is organized by **release
 | ✅ | Radial menu hitbox — 1.8× scale |
 | ✅ | Build scripts — Linux, Windows cross-compile, Android APK |
 
-### v1.6.2 — Radial Menu UX/UI + Android Lifecycle (next)
+### v1.6.2-alpha — Radial Menu + Android Lifecycle (tagged)
 
 | Status | Item |
 |--------|------|
-| 🔄 | Radial menu — larger touch targets, press feedback, show/hide animations |
-| 🔄 | Android lifecycle — surface re-creation on pause/resume, input FSM reset, save/restore state |
+| ✅ | Sector-based radial hit detection — eliminates dead zones |
+| ✅ | Highlight recolor fix — `HighlightOverlapping()` |
+| ✅ | Android lifecycle — surface loss survival, FSM reset on resume |
+| ✅ | Save/restore scroll position across OS kills |
+| ✅ | Debug tap overlay |
+
+### v1.6.3-alpha — Android VSYNC + Idle Drain (tagged)
+
+| Status | Item |
+|--------|------|
+| ✅ | EGL VSYNC logging + raylib patch (uncommented `eglSwapInterval`) |
+| ✅ | VSYNC re-enabled after context rebind (surface re-creation path) |
+| ✅ | Time-based idle drain — ~5fps cap when idle |
+| ✅ | Build, deploy, logcat-verified |
 
 ## Past Releases
 

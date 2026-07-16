@@ -7,6 +7,12 @@
 
 namespace theword::data {
 
+struct Footnote {
+    int verseId;
+    std::string callerRef;
+    std::string text;
+};
+
 struct Word {
     int id;
     int verseId;
@@ -20,7 +26,8 @@ enum class SegmentType {
     PoetryLine,
     ChapterLabel,
     BookTitle,
-    VerseNumber
+    VerseNumber,
+    FootnoteMarker
 };
 
 struct Segment {
@@ -42,6 +49,7 @@ struct Span {
     int endWord = 0;
     std::string bookId;
     int chapterNum = 0;
+    int footnoteIndex = -1;
     SegmentType type = SegmentType::VerseText;
 };
 
@@ -63,6 +71,7 @@ struct ChapterData {
     int chapterNum;
     std::vector<Word> words;
     std::vector<Segment> segments;
+    std::vector<Footnote> footnotes;
 };
 
 class ChapterProvider {

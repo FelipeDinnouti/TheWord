@@ -304,6 +304,47 @@ TEST_CASE("USFMParser caches book data") {
     CHECK(second->chapterNum == 2);
 }
 
+TEST_CASE("USFMParser extracts footnotes from real file") {
+    USFMParser parser(config::USFM_DIR);
+    auto result = parser.LoadChapter("MAT", 1);
+    REQUIRE(result.has_value());
+    CHECK_FALSE(result->footnotes.empty());
+    // Footnotes should have text, no footnote content should appear in words
+    for (const auto& fn : result->footnotes) {
+        CHECK_FALSE(fn.text.empty());
+        CHECK(fn.verseId > 0);
+    }
+    bool wordHasFootnote = false;
+    for (const auto& w : result->words) {
+        for (const auto& fn : result->footnotes) {
+            if (fn.text.length() > 3 && w.text.find(fn.text) != std::string::npos) {
+                wordHasFootnote = true;
+            }
+        }
+    }
+    CHECK_FALSE(wordHasFootnote);
+    // \rq cross-references should be stripped (MAT 1:23, 2:6, etc.)
+    bool hasRq = false;
+    for (const auto& w : result->words) {
+        if (w.text.find("Isaías") != std::string::npos ||
+            w.text.find("Miqueias") != std::string::npos ||
+            w.text.find("Jeremias") != std::string::npos) {
+            hasRq = true;
+        }
+    }
+    CHECK_FALSE(hasRq);
+    // Cross-references should now appear as footnotes
+    bool rqInFootnotes = false;
+    for (const auto& fn : result->footnotes) {
+        if (fn.text.find("Isaías") != std::string::npos ||
+            fn.text.find("Miqueias") != std::string::npos ||
+            fn.text.find("Jeremias") != std::string::npos) {
+            rqInFootnotes = true;
+        }
+    }
+    CHECK(rqInFootnotes);
+}
+
 // ── BibleClient HTML Parser Tests ──────────────────────────────────────
 
 TEST_CASE("BibleClient parses section heading from HTML") {
@@ -350,7 +391,7 @@ TEST_CASE("BibleClient parses paragraph with verse content") {
     CHECK(result->words[0].verseId == 1);
 }
 
-TEST_CASE("BibleClient strips footnotes from HTML") {
+TEST_CASE("BibleClient extracts footnotes from HTML") {
     MockHttpClient api;
     BibleClient client(api, 3034);
     std::string html = "<div class=\"p\">"
@@ -362,11 +403,18 @@ TEST_CASE("BibleClient strips footnotes from HTML") {
         "</div>";
     auto result = BibleClientTest::Parse(client, html, "GEN", 1);
     REQUIRE(result.has_value());
+
+    // Words should not contain footnote text
     bool hasFootnote = false;
     for (const auto& w : result->words) {
         if (w.text.find("footnote") != std::string::npos) hasFootnote = true;
     }
     CHECK_FALSE(hasFootnote);
+
+    // Footnotes should be extracted
+    CHECK(result->footnotes.size() == 1);
+    CHECK(result->footnotes[0].text == "footnote");
+    CHECK(result->footnotes[0].verseId == 1);
 }
 
 TEST_CASE("BibleClient parses poetry lines q1 and q2") {

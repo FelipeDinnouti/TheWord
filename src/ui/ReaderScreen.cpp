@@ -12,6 +12,7 @@
 #include "event/EventBus.h"
 #include "event/Events.h"
 #include <cmath>
+#include <algorithm>
 
 namespace theword::ui {
 
@@ -28,8 +29,8 @@ ReaderScreen::ReaderScreen(theword::event::EventBus& eventBus,
                            const Font& uiFont, float uiFontSize,
                            float contentTop,
                            NavigationStack& navStack,
-                           const theword::core::UIScale& uiScale,
-                           float& currentFontSize, bool& versionOnline)
+                            const theword::core::UIScale& uiScale,
+                            float& currentFontSize, bool& versionOnline, bool& immersiveMode)
     : eventBus_(eventBus)
     , docManager_(docManager)
     , renderer_(renderer)
@@ -42,6 +43,7 @@ ReaderScreen::ReaderScreen(theword::event::EventBus& eventBus,
     , uiScale_(uiScale)
     , currentFontSize_(currentFontSize)
     , versionOnline_(versionOnline)
+    , immersiveMode_(immersiveMode)
     , bottomBarHeight_(std::max(uiScale_.dp(48), uiFontSize * 0.7f + uiScale_.dp(16)))
     , bottomMargin_(uiScale_.bottomInset) {
 
@@ -85,6 +87,16 @@ void ReaderScreen::Draw() {
 
     std::vector<std::pair<Span, float>> docSpans;
     docManager_.GetVisibleSpans(docSpans);
+
+    if (immersiveMode_) {
+        docSpans.erase(std::remove_if(docSpans.begin(), docSpans.end(),
+            [](const auto& pair) {
+                auto t = pair.first.type;
+                return t == SegmentType::VerseNumber
+                    || t == SegmentType::ChapterLabel
+                    || t == SegmentType::SectionHeading;
+            }), docSpans.end());
+    }
 
     std::vector<HighlightRect> hlRects;
     for (const auto& [span, docY] : docSpans) {
@@ -245,7 +257,7 @@ void ReaderScreen::OpenCenterMenu() {
     navStack_.Push(std::make_unique<CenterMenu>(
         uiFont_, uiFontSize_, navStack_, eventBus_,
         highlighter_, persistence_,
-        uiScale_, currentFontSize_, versionOnline_,
+        uiScale_, currentFontSize_, versionOnline_, immersiveMode_,
         docManager_.GetCurrentChapterId()
     ));
 }

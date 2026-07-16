@@ -83,12 +83,17 @@ void Renderer::DrawSpan(const Span& span, float screenY) {
             drawSize = smallSize_;
             useFont = smallFont;
             break;
+        case SegmentType::FootnoteMarker:
+            color = theme::DOC_FOOTNOTE_CALLER;
+            drawSize = smallSize_;
+            useFont = smallFont;
+            break;
         default:
             break;
     }
 
     Vector2 pos = {span.x, screenY};
-    if (span.type == SegmentType::VerseNumber) {
+    if (span.type == SegmentType::VerseNumber || span.type == SegmentType::FootnoteMarker) {
         pos.y = screenY - drawSize * 0.25f;
     }
     DrawTextEx(useFont, span.text.c_str(), pos, drawSize, 1, color);

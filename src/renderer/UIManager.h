@@ -25,7 +25,7 @@ struct RadialMenuActionResult {
 
 class UIManager {
 public:
-    UIManager(theword::highlight::Highlighter& highlighter, float dpiScale = 1.0f);
+    UIManager(theword::highlight::Highlighter& highlighter, const Font& uiFont, float dpiScale = 1.0f);
 
     ~UIManager();
 
@@ -36,13 +36,30 @@ public:
     bool IsRadialMenuActive() const;
     void HideRadialMenu();
 
+    void ShowToast(const std::string& text);
+    void DrawToast();
+
+    void ShowFootnotePopup(const std::string& text, Vector2 position);
+    void DrawFootnotePopup();
+    void HideFootnotePopup();
+    bool IsFootnotePopupActive() const;
+
     void RecordDebugTap(Vector2 pos, bool wasHit = false);
     void DrawDebugTap();
 
 private:
     std::unique_ptr<RadialMenu> radialMenu;
     theword::highlight::Highlighter& highlighter_;
+    const Font& uiFont_;
     float dpiScale_;
+
+    std::string toastText_;
+    double toastStartTime_ = 0.0;
+    static constexpr double TOAST_DURATION = 1.5;
+
+    std::string footnoteText_;
+    Vector2 footnotePos_{0, 0};
+    bool footnotePopupActive_ = false;
 
     Vector2 debugTapPos_{0, 0};
     double debugTapTime_ = 0.0;

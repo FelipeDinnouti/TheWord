@@ -11,10 +11,10 @@ namespace theword::event { class EventBus; }
 namespace theword::text { class LayoutEngine; }
 namespace theword::document { class DocumentManager; }
 namespace theword::renderer { class Renderer; class UIManager; }
-namespace theword::input { class InputHandler; }
+namespace theword::input { struct HitInfo; class InputHandler; }
 namespace theword::highlight { class Highlighter; }
 namespace theword::core { class IHttpClient; }
-namespace theword::data { class USFMParser; class BibleClient; class CompositeProvider; class ChapterProvider; }
+namespace theword::data { struct ChapterData; class USFMParser; class BibleClient; class CompositeProvider; class ChapterProvider; }
 namespace theword::persistence { class PersistenceManager; }
 namespace theword::ui { class NavigationStack; }
 
@@ -29,6 +29,17 @@ public:
 
 private:
     void WireEvents();
+    void WireInputCallbacks();
+    void MainLoop();
+    void HandleShortcuts();
+    void OnTap(theword::input::HitInfo hit, Vector2 pos, bool isDouble);
+    void OnTapEmpty(Vector2 pos);
+    void OnDragStart(int startWord, Vector2 pos);
+    void OnDragUpdate(int startWord, int currentWord, Vector2 pos);
+    void OnDragEnd(int startWord, int endWord, Vector2 pos);
+    void OnLongPress(int wordId, Vector2 pos);
+    bool OnDismiss();
+    void CopySelection(const theword::data::ChapterData& data, int startWord, int endWord);
     void ReloadFonts(float newFontSize, std::vector<int>& codepoints);
 
     float scale_ = 1.0f;
@@ -62,8 +73,11 @@ private:
 
     float currentFontSize_ = 24.0f;
     bool versionOnline_ = false;
+    bool immersiveMode_ = false;
+    float pendingScrollY_ = -1.0f;
     int accumStartWord_ = -1;
     int accumEndWord_ = -1;
+    bool longPressHandled_ = false;
 };
 
 } // namespace theword::app

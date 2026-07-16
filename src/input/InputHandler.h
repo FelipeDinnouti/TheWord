@@ -21,7 +21,8 @@ class InputHandler {
 public:
     InputHandler(theword::event::EventBus& eventBus,
                  std::function<HitInfo(float, float)> hitTestFn = nullptr,
-                 std::function<bool(int)> isHighlightedFn = nullptr);
+                 std::function<bool(int)> isHighlightedFn = nullptr,
+                 std::function<int(float, float)> hitTestFootnoteFn = nullptr);
 
     void Poll(float deltaTime, theword::ui::NavigationStack* navStack = nullptr);
     void ResetState();
@@ -35,6 +36,7 @@ public:
     std::function<void(int startWord, int currentWord, Vector2 pos)> onDragUpdate;
     std::function<void(int startWord, int endWord, Vector2 pos)> onDragEnd;
     std::function<void(int wordId, Vector2 pos)> onLongPress;
+    std::function<void(int footnoteIndex)> onFootnoteTap;
     std::function<bool()> onDismiss;
 
     const HitInfo& GetPressStartHit() const { return pressStartHit; }
@@ -46,6 +48,7 @@ private:
 
     std::function<HitInfo(float, float)> hitTestFn;
     std::function<bool(int)> isHighlightedFn;
+    std::function<int(float, float)> hitTestFootnoteFn;
     bool dialogActive_ = false;
 
     float slopAccumulator = 0.0f;

@@ -86,28 +86,84 @@ std::string StripHtmlImpl(const std::string& html) {
     return DecodeHtmlEntities(result);
 }
 
-std::string StripFootnotes(const std::string& html) {
+int ParseVerseNumber(const std::string& tag); // forward decl — defined below
+
+std::string ExtractFootnotes(const std::string& html, ChapterData& data, int startVerse) {
     std::string result;
     size_t pos = 0;
-    int depth = 0;
+    int currentVerse = startVerse;
+    // Track footnote block extraction
+    bool extractingFootnote = false;
+    std::string fnHtml;
+    int fnDepth = 0;
+
     while (pos < html.size()) {
         if (html[pos] == '<') {
             size_t tagEnd = html.find('>', pos);
             if (tagEnd == std::string::npos) break;
             std::string tag = html.substr(pos + 1, tagEnd - pos - 1);
 
-            if (tag.find("yv-n") != std::string::npos && depth == 0) {
-                depth = 1;
+            // Track verse numbers even inside yv-n blocks
+            if (tag.find("yv-v") != std::string::npos) {
+                int v = ParseVerseNumber(tag);
+                if (v > 0) currentVerse = v;
+            }
+
+            if (tag.find("yv-n") != std::string::npos && !extractingFootnote) {
+                extractingFootnote = true;
+                fnDepth = 1;
+                fnHtml.clear();
                 pos = tagEnd + 1;
                 continue;
             }
 
-            if (depth > 0) {
+            if (extractingFootnote) {
                 if (tag[0] == '/' && tag.find("span") != std::string::npos) {
-                    depth--;
+                    fnDepth--;
+                    if (fnDepth == 0) {
+                        // End of footnote — extract it
+                        extractingFootnote = false;
+
+                        // Parse fr and ft spans from the captured inner HTML
+                        std::string callerRef;
+                        std::string fnText;
+
+                        size_t frStart = fnHtml.find("<span class=\"fr\">");
+                        if (frStart != std::string::npos) {
+                            frStart += 17; // len of "<span class=\"fr\">" = 17
+                            size_t frEnd = fnHtml.find("</span>", frStart);
+                            if (frEnd != std::string::npos) {
+                                callerRef = StripHtmlImpl(fnHtml.substr(frStart, frEnd - frStart));
+                            }
+                        }
+
+                        size_t ftStart = fnHtml.find("<span class=\"ft\">");
+                        if (ftStart != std::string::npos) {
+                            ftStart += 17; // len of "<span class=\"ft\">" = 17
+                            size_t ftEnd = fnHtml.find("</span>", ftStart);
+                            if (ftEnd != std::string::npos) {
+                                fnText = StripHtmlImpl(fnHtml.substr(ftStart, ftEnd - ftStart));
+                            }
+                        }
+
+                        if (fnText.empty()) {
+                            // No explicit ft — use all content as text
+                            fnText = StripHtmlImpl(fnHtml);
+                        }
+
+                        Footnote footnote;
+                        footnote.verseId = currentVerse;
+                        footnote.callerRef = callerRef;
+                        footnote.text = fnText;
+                        data.footnotes.push_back(footnote);
+
+                        pos = tagEnd + 1;
+                        continue;
+                    }
                 } else if (tag.find("span") != std::string::npos && tag[0] != '/') {
-                    depth++;
+                    fnDepth++;
                 }
+                fnHtml += html.substr(pos, tagEnd - pos + 1);
                 pos = tagEnd + 1;
                 continue;
             }
@@ -115,8 +171,11 @@ std::string StripFootnotes(const std::string& html) {
             result += html.substr(pos, tagEnd - pos + 1);
             pos = tagEnd + 1;
         } else {
-            if (depth == 0) {
+            if (!extractingFootnote) {
                 result += html[pos];
+            }
+            if (extractingFootnote) {
+                fnHtml += html[pos];
             }
             pos++;
         }
@@ -166,7 +225,7 @@ void ParseParagraphContent(const std::string& html, ChapterData& data) {
     pb.level = 0;
     data.segments.push_back(pb);
 
-    std::string cleaned = StripFootnotes(html);
+    std::string cleaned = ExtractFootnotes(html, data, 1);
     size_t pos = 0;
     int currentVerse = 1;
     std::vector<Word> currentWords;
@@ -244,7 +303,7 @@ void ParseSectionHeading(const std::string& innerHtml, int segLevel, ChapterData
 }
 
 void ParsePoetryLine(const std::string& innerHtml, int segLevel, ChapterData& data) {
-    std::string cleaned = StripFootnotes(innerHtml);
+    std::string cleaned = ExtractFootnotes(innerHtml, data, 1);
     std::string text;
     size_t pos = 0;
     int verse = 1;

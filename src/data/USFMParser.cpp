@@ -35,35 +35,142 @@ std::string USFMParser::LoadFile(const std::string& filepath) const {
     return buffer.str();
 }
 
-std::string USFMParser::StripFootnotes(const std::string& text) const {
+std::string USFMParser::ExtractFootnotes(
+    const std::string& text,
+    std::vector<std::pair<int, Footnote>>& outFootnotes) const {
+
     std::string result;
     size_t pos = 0;
     bool inFootnote = false;
+    bool inRq = false;
+    int currentChapter = 0;
+    int currentVerse = 0;
+    std::string fnContent;
+    std::string fnCallerRef;
+    std::string rqContent;
 
     while (pos < text.size()) {
-        if (!inFootnote) {
+        if (!inFootnote && !inRq) {
+            // Track \c N (chapter) and \v M (verse) in raw text
+            if (pos + 2 < text.size() && text[pos] == '\\' && text[pos + 1] == 'c' &&
+                (text[pos + 2] == ' ' || text[pos + 2] == '\t')) {
+                size_t numStart = pos + 2;
+                while (numStart < text.size() && (text[numStart] == ' ' || text[numStart] == '\t'))
+                    numStart++;
+                size_t numEnd = numStart;
+                while (numEnd < text.size() && std::isdigit(static_cast<unsigned char>(text[numEnd])))
+                    numEnd++;
+                if (numEnd > numStart) {
+                    currentChapter = std::stoi(text.substr(numStart, numEnd - numStart));
+                    currentVerse = 0;
+                }
+            }
+            if (pos + 2 < text.size() && text[pos] == '\\' && text[pos + 1] == 'v' &&
+                (text[pos + 2] == ' ' || text[pos + 2] == '\t')) {
+                size_t numStart = pos + 2;
+                while (numStart < text.size() && (text[numStart] == ' ' || text[numStart] == '\t'))
+                    numStart++;
+                size_t numEnd = numStart;
+                while (numEnd < text.size() && std::isdigit(static_cast<unsigned char>(text[numEnd])))
+                    numEnd++;
+                if (numEnd > numStart)
+                    currentVerse = std::stoi(text.substr(numStart, numEnd - numStart));
+            }
+
             if (pos + 1 < text.size() && text[pos] == '\\' && text[pos + 1] == 'f' &&
                 (pos + 2 >= text.size() || text[pos + 2] == ' ' || text[pos + 2] == '+' ||
                  text[pos + 2] == '*' || text[pos + 2] == '\\' || text[pos + 2] == '\r' || text[pos + 2] == '\n')) {
                 if (pos + 2 < text.size() && (text[pos + 2] == ' ' || text[pos + 2] == '+' ||
                      text[pos + 2] == '\r' || text[pos + 2] == '\n')) {
                     inFootnote = true;
+                    fnContent.clear();
+                    fnCallerRef.clear();
                     pos += 2;
                     continue;
                 }
             }
+
+            if (pos + 3 < text.size() && text.substr(pos, 4) == "\\rq ") {
+                inRq = true;
+                rqContent.clear();
+                pos += 4;
+                continue;
+            }
+
             result += text[pos];
             pos++;
-        } else {
+        } else if (inFootnote) {
             if (pos + 2 < text.size() && text[pos] == '\\' && text[pos + 1] == 'f' && text[pos + 2] == '*') {
                 inFootnote = false;
                 pos += 3;
+
+                // Process extracted footnote content
+                std::string fnText = StripInlineMarkers(fnContent);
+
+                // Parse \fr and \ft within the footnote
+                size_t frPos = fnText.find("\\fr ");
+                size_t ftPos = fnText.find("\\ft ");
+                if (frPos != std::string::npos) {
+                    size_t frEnd = (ftPos != std::string::npos && ftPos > frPos)
+                        ? ftPos : fnText.size();
+                    fnCallerRef = fnText.substr(frPos + 4, frEnd - frPos - 4);
+                    while (!fnCallerRef.empty() && fnCallerRef.back() == ' ')
+                        fnCallerRef.pop_back();
+                }
+                std::string bodyText;
+                if (ftPos != std::string::npos) {
+                    bodyText = fnText.substr(ftPos + 4);
+                } else if (frPos != std::string::npos) {
+                    bodyText = fnText.substr(frPos + 4);
+                } else {
+                    bodyText = fnText;
+                }
+
+                if (currentChapter > 0) {
+                    Footnote fn;
+                    fn.verseId = currentVerse;
+                    fn.callerRef = fnCallerRef;
+                    fn.text = bodyText;
+                    outFootnotes.emplace_back(currentChapter, fn);
+                }
+
                 continue;
             }
+
+            if (pos + 1 < text.size() && text[pos] == '\\' && text[pos + 1] == 'f' &&
+                pos + 2 < text.size() && text[pos + 2] == '+') {
+                pos += 3;
+                continue;
+            }
+            fnContent += text[pos];
+            pos++;
+        } else { // inRq
+            if (pos + 3 < text.size() && text.substr(pos, 4) == "\\rq*") {
+                inRq = false;
+                pos += 4;
+
+                // Trim whitespace from captured content
+                while (!rqContent.empty() && (rqContent.back() == ' ' || rqContent.back() == '\t'))
+                    rqContent.pop_back();
+                while (!rqContent.empty() && (rqContent.front() == ' ' || rqContent.front() == '\t'))
+                    rqContent.erase(0, 1);
+
+                if (currentChapter > 0 && !rqContent.empty()) {
+                    Footnote fn;
+                    fn.verseId = currentVerse;
+                    fn.callerRef = "";
+                    fn.text = rqContent;
+                    outFootnotes.emplace_back(currentChapter, fn);
+                }
+
+                continue;
+            }
+            rqContent += text[pos];
             pos++;
         }
     }
 
+    // Post-process: collapse whitespace
     std::string cleaned;
     for (size_t i = 0; i < result.size(); ++i) {
         if (result[i] == ' ' && i + 1 < result.size() && result[i + 1] == ' ') continue;
@@ -141,6 +248,35 @@ std::string USFMParser::StripInlineMarkers(const std::string& text) const {
                     continue;
                 }
                 temp += result[pos];
+                pos++;
+            }
+        }
+        result = temp;
+    }
+
+    {
+        std::string temp;
+        size_t pos = 0;
+        bool inRq = false;
+        while (pos < result.size()) {
+            if (!inRq) {
+                if (pos + 3 < result.size() && result.substr(pos, 4) == "\\rq ") {
+                    inRq = true;
+                    pos += 4;
+                    continue;
+                }
+                if (pos + 3 < result.size() && result.substr(pos, 4) == "\\rq*") {
+                    pos += 4;
+                    continue;
+                }
+                temp += result[pos];
+                pos++;
+            } else {
+                if (pos + 3 < result.size() && result.substr(pos, 4) == "\\rq*") {
+                    inRq = false;
+                    pos += 4;
+                    continue;
+                }
                 pos++;
             }
         }
@@ -341,7 +477,8 @@ std::vector<ChapterData> USFMParser::ParseBook(const std::string& bookId) const 
         return {};
     }
 
-    content = StripFootnotes(content);
+    std::vector<std::pair<int, Footnote>> footnoteBuf;
+    content = ExtractFootnotes(content, footnoteBuf);
     content = StripInlineMarkers(content);
 
     std::vector<ChapterData> chapters;
@@ -401,6 +538,15 @@ std::vector<ChapterData> USFMParser::ParseBook(const std::string& bookId) const 
     FlushSegment(st);
     if (st.chapter.chapterNum > 0) {
         chapters.push_back(std::move(st.chapter));
+    }
+
+    // Distribute footnotes to chapters
+    for (auto& ch : chapters) {
+        for (auto& [chNum, fn] : footnoteBuf) {
+            if (chNum == ch.chapterNum) {
+                ch.footnotes.push_back(std::move(fn));
+            }
+        }
     }
 
     bookCache[bookId] = chapters;

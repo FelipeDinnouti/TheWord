@@ -34,12 +34,12 @@ CenterMenu::CenterMenu(const Font& font, float fontSize,
                        theword::highlight::Highlighter& highlighter,
                        theword::persistence::PersistenceManager& persistence,
                        const theword::core::UIScale& uiScale,
-                       float& currentFontSize, bool& versionOnline,
+                       float& currentFontSize, bool& versionOnline, bool& immersiveMode,
                        const std::string& currentChapterRef)
     : font_(font), fontSize_(fontSize),
       navStack_(navStack), eventBus_(eventBus),
       highlighter_(highlighter), persistence_(persistence),
-      uiScale_(uiScale), currentFontSize_(currentFontSize), versionOnline_(versionOnline),
+      uiScale_(uiScale), currentFontSize_(currentFontSize), versionOnline_(versionOnline), immersiveMode_(immersiveMode),
       showTime_(GetTime()), currentChapterRef_(currentChapterRef),
       tapDetector_(uiScale_.dp(10)) {}
 
@@ -174,7 +174,7 @@ void CenterMenu::HandleAction(int action) {
             navStack_.Push(std::make_unique<SettingsScreen>(
                 font_, fontSize_, navStack_, eventBus_,
                 highlighter_, persistence_,
-                uiScale_, currentFontSize_, versionOnline_
+                uiScale_, currentFontSize_, versionOnline_, immersiveMode_
             ));
             return;
         case 2: // Highlights

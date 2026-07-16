@@ -88,34 +88,59 @@ ChapterLayout LayoutEngine::LayoutChapter(const std::string& chapterId, const Ch
 
     float currentY = 0.0f;
 
+    size_t vtStartIdx = 0;
+    size_t vtWordCount = 0;
+    bool inVt = false;
+
+    auto flushVt = [&]() {
+        if (!inVt) return;
+        Segment merged;
+        merged.type = SegmentType::VerseText;
+        merged.startWordIndex = vtStartIdx;
+        merged.wordCount = vtWordCount;
+        currentY += LayoutWords(merged, data, currentY, layout.lines, 0.0f, SegmentType::VerseText);
+        inVt = false;
+    };
+
     for (const auto& seg : data.segments) {
         switch (seg.type) {
             case SegmentType::ParagraphBreak:
+                flushVt();
                 currentY += paragraphGap;
                 break;
 
             case SegmentType::SectionHeading:
+                flushVt();
                 currentY += LayoutHeading(seg, currentY, layout.lines, headingFont_, headingSize_);
                 break;
 
             case SegmentType::VerseText:
-                currentY += LayoutWords(seg, data, currentY, layout.lines, 0.0f, SegmentType::VerseText);
+                if (!inVt) {
+                    inVt = true;
+                    vtStartIdx = seg.startWordIndex;
+                    vtWordCount = 0;
+                }
+                vtWordCount += seg.wordCount;
                 break;
 
             case SegmentType::PoetryLine:
+                flushVt();
                 currentY += LayoutWords(seg, data, currentY, layout.lines,
                                         seg.level * poetryIndent, SegmentType::PoetryLine);
                 break;
 
             case SegmentType::ChapterLabel:
             case SegmentType::BookTitle:
+                flushVt();
                 currentY += LayoutHeading(seg, currentY, layout.lines, largeFont_, largeSize_);
                 break;
 
             case SegmentType::VerseNumber:
+            case SegmentType::FootnoteMarker:
                 break;
         }
     }
+    flushVt();
 
     layout.totalHeight = currentY;
 
@@ -182,6 +207,38 @@ float LayoutEngine::LayoutWords(const Segment& seg, const ChapterData& data, flo
 
             currentLine.spans.push_back(vnSpan);
             x += vnWidth;
+
+            // Insert footnote markers for this verse
+            bool hasFnForVerse = false;
+            for (size_t fi = 0; fi < data.footnotes.size(); ++fi) {
+                if (data.footnotes[fi].verseId == currentVerse) {
+                    hasFnForVerse = true;
+                    break;
+                }
+            }
+            if (hasFnForVerse) {
+                x += spaceWidth * 0.3f;
+            }
+            for (size_t fi = 0; fi < data.footnotes.size(); ++fi) {
+                if (data.footnotes[fi].verseId == currentVerse) {
+                    Span fnSpan;
+                    fnSpan.text = "[" + std::to_string(fi + 1) + "]";
+                    fnSpan.type = SegmentType::FootnoteMarker;
+                    fnSpan.footnoteIndex = static_cast<int>(fi);
+                    fnSpan.verseId = currentVerse;
+                    fnSpan.bookId = data.bookId;
+                    fnSpan.chapterNum = data.chapterNum;
+                    fnSpan.startWord = -1;
+                    fnSpan.endWord = -1;
+                    float fnWidth = MeasureTextEx(smallFont_, fnSpan.text.c_str(), smallSize_, 1).x;
+                    fnSpan.x = x;
+                    fnSpan.y = y;
+                    fnSpan.width = fnWidth;
+                    fnSpan.height = smallSize_;
+                    currentLine.spans.push_back(fnSpan);
+                    x += fnWidth;
+                }
+            }
         }
 
         float wordWidth = MeasureTextEx(bodyFont_, word.text.c_str(), bodySize_, 1).x;

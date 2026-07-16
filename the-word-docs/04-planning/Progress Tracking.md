@@ -1,6 +1,6 @@
 # Progress Tracking
 
-> Status: v1.6.2 in development | Last Updated: 2026-07-12
+> Status: v1.6.x complete | Last Updated: 2026-07-14
 
 ## Overall Progress
 
@@ -21,7 +21,8 @@
 | Phase 13: Highlight Browser | ✅ Complete | |
 | v1.5.0-alpha.x (UI Polish) | ✅ Complete | Final release: v1.5.0-alpha.2 (2026-07-05). No stable 1.5.0. |
 | v1.6.1-alpha (Input Refactor) | ✅ Complete | Unified FSM, semantic callbacks, TapDetector, bug fixes |
-| **v1.6.2 (Radial UX + Lifecycle)** | 🔄 In Progress | Current development |
+| v1.6.2-alpha (Radial Menu + Lifecycle) | ✅ Complete | Sector-based hit detection, Android lifecycle fix, highlight recolor fix |
+| v1.6.3-alpha (VSYNC + Idle Drain) | ✅ Complete | Android VSYNC fix, time-based idle drain, uncapped FPS on high-refresh |
 
 ## Phase A — Documentation Restructure ✅
 
@@ -254,19 +255,25 @@
 - [x] Radial menu hitbox — 1.8× visual scale
 - [x] Build scripts — Linux, Windows cross-compile, Android APK
 
-## v1.6.2 — Radial Menu UX/UI + Android Lifecycle 🔄
+## v1.6.2-alpha — Radial Menu UX/UI + Android Lifecycle ✅
 
-### Feature: Radial Menu UX/UI
-- [ ] Larger touch targets — button radius to 28dp, hit to 50dp
-- [ ] Press-down feedback — visual state change on finger-down (tint or scale)
-- [ ] Show/hide animation — fade + scale from center on open/close
-- [ ] Review radial layout for mobile — consider alternative arrangements if awkward
+- [x] Sector-based radial hit detection (replaces circular hitboxes, eliminates dead zones)
+- [x] Highlight recolor fix — `HighlightOverlapping()` prevents duplicate creation
+- [x] Android lifecycle — stop quitting on surface loss (`DestroyRequested()`)
+- [x] Skip draw when window null, keep PollInputEvents running during surface gap
+- [x] Reset input FSM on `APP_CMD_RESUME` (`InputHandler::ResetState()`)
+- [x] Save/restore scroll position across OS kills
+- [x] Debug tap overlay (red dot, fades over 1s)
+- [x] Tagged as `v1.6.2-alpha`
 
-### Feature: Android Lifecycle
-- [ ] Handle `APP_CMD_TERM_WINDOW` / `APP_CMD_INIT_WINDOW` — surface re-creation without quitting
-- [ ] Reset input FSM on `APP_CMD_RESUME`
-- [ ] Save/restore scroll position and current chapter on pause/resume
-- [ ] Fix bottom bar input corruption after resume
+## v1.6.3-alpha — Android VSYNC Fix + Idle Drain ✅
+
+- [x] Add EGL logging after `eglSwapInterval` call (display handle, return value, error code)
+- [x] Extend raylib patch — uncomment `eglSwapInterval` in `InitGraphicsDevice()`
+- [x] Add `eglSwapInterval` after `eglMakeCurrent` in context rebind path
+- [x] Time-based idle drain — cap draw rate at ~5fps when nothing changes
+- [x] Build, deploy, logcat-verified VSYNC working on device
+- [x] Tagged as `v1.6.3`
 
 ## Post-MVP: Release-Based Planning
 

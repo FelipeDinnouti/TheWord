@@ -60,7 +60,7 @@ The API returns HTML with structured `<div>` and `<span>` elements:
 
 | Version | ID | Notes |
 |---------|-----|-------|
-| BSB (Berean Standard Bible) | 3034 | ✅ Works with standard app key |
+| BSB (Berean Standard Bible) | 3034 | ✅ Works with standard app key — **this is the one the app uses** |
 | NIV (New International Version) | 111 | ❌ Requires special license |
 
 ## Usage in TheWord

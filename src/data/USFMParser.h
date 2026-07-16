@@ -28,7 +28,7 @@ private:
 
     std::vector<ChapterData> ParseBook(const std::string& bookId) const;
     std::string LoadFile(const std::string& filepath) const;
-    std::string StripFootnotes(const std::string& text) const;
+    std::string ExtractFootnotes(const std::string& text, std::vector<std::pair<int, Footnote>>& outFootnotes) const;
     std::string StripInlineMarkers(const std::string& text) const;
     std::string ExtractBookCodeFromId(const std::string& line) const;
 };
