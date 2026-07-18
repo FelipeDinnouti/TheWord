@@ -8,7 +8,6 @@
 #include <raylib.h>
 
 namespace theword::event { class EventBus; }
-namespace theword::highlight { class Highlighter; }
 namespace theword::persistence { class PersistenceManager; }
 namespace theword::ui { class NavigationStack; }
 
@@ -19,10 +18,9 @@ public:
     SettingsScreen(const Font& font, float fontSize,
                    NavigationStack& navStack,
                    theword::event::EventBus& eventBus,
-                   theword::highlight::Highlighter& highlighter,
                    theword::persistence::PersistenceManager& persistence,
                    const theword::core::UIScale& uiScale,
-                    float& currentFontSize, bool& versionOnline, bool& immersiveMode);
+                   float& currentFontSize, int& currentBibleId, bool& immersiveMode);
     void Draw() override;
     bool HandleInput(float deltaTime) override;
     const char* GetTitle() const override { return theword::core::Locale::Get("Settings"); }
@@ -32,15 +30,13 @@ private:
     float fontSize_;
     NavigationStack& navStack_;
     theword::event::EventBus& eventBus_;
-    theword::highlight::Highlighter& highlighter_;
     theword::persistence::PersistenceManager& persistence_;
     const theword::core::UIScale& uiScale_;
     float& currentFontSize_;
-    bool& versionOnline_;
+    int& currentBibleId_;
     bool& immersiveMode_;
 
     void ChangeFontSize(float delta);
-    void SwitchSource(bool online);
 
     TapDetector tapDetector_;
 };

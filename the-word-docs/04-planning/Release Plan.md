@@ -95,14 +95,16 @@
 - [ ] Naming consistency check (PascalCase convention)
 - [ ] Consolidate duplicated input patterns (TapDetector + mouse/press boilerplate across screens)
 
-### Feature: Bible Version Switcher
+### Feature: Bible Version Switcher ✅
 
-- [ ] Define curated list of public-domain Bible IDs (ASV 12, WEBUS 206, BSB 3034)
-- [ ] Add `BibleClient::SetBibleId(int id)` — updates ID + clears `cachedHasChapter`
-- [ ] Add `BibleVersionSwitchEvent{int bibleId}` to Events.h
-- [ ] Add "Version:" row to SettingsScreen with N-button picker
-- [ ] Wire event in App.cpp — destroy/recreate or SetBibleId + persist + reload chapter
-- [ ] Load saved `bible_id` preference in `App::Init()`
+- [x] Define curated version list — BSB (3034), WEB (206), ASV (12), BLV (0=USFM Portuguese)
+- [x] Remove USFM/API source duality — USFM is now just another version, CompositeProvider simplified to single-primary
+- [x] Remove Source row from SettingsScreen
+- [x] Remove Color (highlight swatch) row from SettingsScreen (already in radial menu)
+- [x] Add Version row to SettingsScreen with 4 buttons, emit `BibleVersionSwitchEvent` on tap
+- [x] Wire event in App.cpp — destroy/recreate BibleClient or switch to USFM, persist `bible_id`, reload chapter
+- [x] Load saved `bible_id` preference in `App::Init()`
+- [x] Remove `SourceSwitchEvent` (replaced by `BibleVersionSwitchEvent`)
 
 ### Feature: Modular Theme System
 

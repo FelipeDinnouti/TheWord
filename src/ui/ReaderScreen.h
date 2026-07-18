@@ -27,7 +27,7 @@ public:
                  const Font& uiFont, float uiFontSize,
                  float contentTop,
                    NavigationStack& navStack,
-                   const theword::core::UIScale& uiScale, float& currentFontSize, bool& versionOnline, bool& immersiveMode);
+                   const theword::core::UIScale& uiScale, float& currentFontSize, int& currentBibleId, bool& immersiveMode);
     ~ReaderScreen() override;
     void Draw() override;
     bool HandleInput(float deltaTime) override;
@@ -45,7 +45,7 @@ private:
     NavigationStack& navStack_;
     const theword::core::UIScale& uiScale_;
     float& currentFontSize_;
-    bool& versionOnline_;
+    int& currentBibleId_;
     bool& immersiveMode_;
 
     // Bottom bar

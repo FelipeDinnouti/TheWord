@@ -553,10 +553,9 @@ namespace {
     };
 }
 
-TEST_CASE("CompositeProvider returns primary result when it succeeds") {
+TEST_CASE("CompositeProvider delegates to primary") {
     AlwaysGenesisProvider primary;
-    FailingProvider fallback;
-    CompositeProvider composite(primary, fallback);
+    CompositeProvider composite(primary);
     auto result = composite.LoadChapter("GEN", 1);
     REQUIRE(result.has_value());
     CHECK(result->bookId == "GEN");
@@ -564,76 +563,36 @@ TEST_CASE("CompositeProvider returns primary result when it succeeds") {
     CHECK(result->words[0].text == "Genesis");
 }
 
-TEST_CASE("CompositeProvider falls back when primary fails") {
+TEST_CASE("CompositeProvider returns nullopt when primary fails") {
     FailingProvider primary;
-    AlwaysGenesisProvider fallback;
-    CompositeProvider composite(primary, fallback);
-    auto result = composite.LoadChapter("GEN", 1);
-    REQUIRE(result.has_value());
-    CHECK(result->bookId == "GEN");
-    CHECK(result->chapterNum == 1);
-}
-
-TEST_CASE("CompositeProvider returns nullopt when both fail") {
-    FailingProvider primary;
-    FailingProvider fallback;
-    CompositeProvider composite(primary, fallback);
+    CompositeProvider composite(primary);
     auto result = composite.LoadChapter("GEN", 1);
     CHECK_FALSE(result.has_value());
 }
 
-TEST_CASE("CompositeProvider HasChapter returns true if either provider has it") {
-    AlwaysGenesisProvider hasIt;
-    FailingProvider doesNot;
-    CompositeProvider composite(hasIt, doesNot);
-    CHECK(composite.HasChapter("GEN", 1));
-    CompositeProvider composite2(doesNot, hasIt);
-    CHECK(composite2.HasChapter("GEN", 1));
-}
-
-TEST_CASE("CompositeProvider HasChapter returns false when neither has it") {
-    FailingProvider a;
+TEST_CASE("CompositeProvider SetPrimary changes active provider") {
+    AlwaysGenesisProvider a;
     FailingProvider b;
-    CompositeProvider composite(a, b);
-    CHECK_FALSE(composite.HasChapter("GEN", 999));
+    CompositeProvider composite(a);
+    CHECK(composite.LoadChapter("GEN", 1).has_value());
+    composite.SetPrimary(b);
+    CHECK_FALSE(composite.LoadChapter("GEN", 1).has_value());
 }
 
-TEST_CASE("CompositeProvider setPrimary switches primary provider") {
-    AlwaysGenesisProvider ag;
-    FailingProvider fail;
+TEST_CASE("CompositeProvider HasChapter delegates to primary") {
+    AlwaysGenesisProvider hasIt;
+    CompositeProvider composite(hasIt);
+    CHECK(composite.HasChapter("GEN", 1));
 
-    // Start with primary=AlwaysGenesis, fallback=FailingProvider
-    CompositeProvider composite(ag, fail);
-    auto r1 = composite.LoadChapter("GEN", 1);
-    REQUIRE(r1.has_value());
-    CHECK(r1->words[0].text == "Genesis");
-
-    // After SetPrimary to fail, LoadChapter should fail (both primary and fallback fail)
-    composite.SetPrimary(fail);
-    auto r2 = composite.LoadChapter("GEN", 1);
-    CHECK_FALSE(r2.has_value());
+    FailingProvider doesNot;
+    CompositeProvider composite2(doesNot);
+    CHECK_FALSE(composite2.HasChapter("GEN", 999));
 }
 
-TEST_CASE("CompositeProvider setPrimary switches to working provider") {
-    AlwaysGenesisProvider ag;
-    FailingProvider fail;
-
-    CompositeProvider composite(fail, ag);
-    auto r1 = composite.LoadChapter("GEN", 1);
-    REQUIRE(r1.has_value());
-
-    // After SetPrimary to ag, primary succeeds directly
-    composite.SetPrimary(ag);
-    auto r2 = composite.LoadChapter("GEN", 1);
-    REQUIRE(r2.has_value());
-    CHECK(r2->words[0].text == "Genesis");
-}
-
-TEST_CASE("CompositeProvider ProviderName") {
+TEST_CASE("CompositeProvider ProviderName delegates to primary") {
     AlwaysGenesisProvider p;
-    FailingProvider f;
-    CompositeProvider composite(p, f);
-    CHECK(std::string(composite.ProviderName()) == "CompositeProvider");
+    CompositeProvider composite(p);
+    CHECK(std::string(composite.ProviderName()) == "AlwaysGenesis");
 }
 
 // ── Highlight System Tests ────────────────────────────────────────────

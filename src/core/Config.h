@@ -53,6 +53,19 @@ constexpr const char* YVP_APP_KEY = "YVP_APP_KEY";
 constexpr const char* DB_DIR = ".theword";
 constexpr const char* DB_FILE = "highlights.db";
 
+struct BibleVersionInfo {
+    int id;
+    const char* label;
+};
+constexpr BibleVersionInfo BIBLE_VERSIONS[] = {
+    {3034, "BSB"},
+    {206,  "WEB"},
+    {12,   "ASV"},
+    {0,    "BLV"},
+};
+constexpr int BIBLE_VERSION_COUNT = 4;
+constexpr int DEFAULT_BIBLE_ID = 3034;
+
 } } // namespace theword::core::config
 
 // On Android, raylib stores raw AKEYCODE values instead of raylib KEY_* constants.

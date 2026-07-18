@@ -15,7 +15,6 @@ namespace theword::event {
     struct ScrollEvent;
     struct ResizeEvent;
     struct FontSizeEvent;
-    struct SourceSwitchEvent;
 }
 
 namespace theword::document {
@@ -111,7 +110,6 @@ private:
     void OnScroll(const theword::event::ScrollEvent& e);
     void OnResize(const theword::event::ResizeEvent& e);
     void OnFontSize(const theword::event::FontSizeEvent& e);
-    void OnSourceSwitch(const theword::event::SourceSwitchEvent& e);
 
     void RecalculateChapterPositions();
     bool TryLoadAdjacent(bool prepend);

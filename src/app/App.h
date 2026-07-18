@@ -68,11 +68,9 @@ private:
     std::unique_ptr<theword::ui::NavigationStack> navStack_;
 
     theword::data::ChapterProvider* activeProv_ = nullptr;
-    theword::data::ChapterProvider* onlineProv_ = nullptr;
-    theword::data::ChapterProvider* offlineProv_ = nullptr;
 
     float currentFontSize_ = 24.0f;
-    bool versionOnline_ = false;
+    int currentBibleId_ = 3034;
     bool immersiveMode_ = false;
     float pendingScrollY_ = -1.0f;
     int accumStartWord_ = -1;

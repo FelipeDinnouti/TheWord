@@ -30,7 +30,7 @@ ReaderScreen::ReaderScreen(theword::event::EventBus& eventBus,
                            float contentTop,
                            NavigationStack& navStack,
                             const theword::core::UIScale& uiScale,
-                            float& currentFontSize, bool& versionOnline, bool& immersiveMode)
+                             float& currentFontSize, int& currentBibleId, bool& immersiveMode)
     : eventBus_(eventBus)
     , docManager_(docManager)
     , renderer_(renderer)
@@ -42,7 +42,7 @@ ReaderScreen::ReaderScreen(theword::event::EventBus& eventBus,
     , navStack_(navStack)
     , uiScale_(uiScale)
     , currentFontSize_(currentFontSize)
-    , versionOnline_(versionOnline)
+    , currentBibleId_(currentBibleId)
     , immersiveMode_(immersiveMode)
     , bottomBarHeight_(std::max(uiScale_.dp(48), uiFontSize * 0.7f + uiScale_.dp(16)))
     , bottomMargin_(uiScale_.bottomInset) {
@@ -257,7 +257,7 @@ void ReaderScreen::OpenCenterMenu() {
     navStack_.Push(std::make_unique<CenterMenu>(
         uiFont_, uiFontSize_, navStack_, eventBus_,
         highlighter_, persistence_,
-        uiScale_, currentFontSize_, versionOnline_, immersiveMode_,
+        uiScale_, currentFontSize_, currentBibleId_, immersiveMode_,
         docManager_.GetCurrentChapterId()
     ));
 }

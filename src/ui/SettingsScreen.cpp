@@ -6,7 +6,6 @@
 #include "core/Locale.h"
 #include "event/EventBus.h"
 #include "event/Events.h"
-#include "highlight/Highlighter.h"
 #include "persistence/PersistenceManager.h"
 #include <algorithm>
 
@@ -17,14 +16,13 @@ using namespace theword::core;
 SettingsScreen::SettingsScreen(const Font& font, float fontSize,
                                NavigationStack& navStack,
                                theword::event::EventBus& eventBus,
-                               theword::highlight::Highlighter& highlighter,
                                theword::persistence::PersistenceManager& persistence,
                                const theword::core::UIScale& uiScale,
-                                float& currentFontSize, bool& versionOnline, bool& immersiveMode)
+                               float& currentFontSize, int& currentBibleId, bool& immersiveMode)
     : font_(font), fontSize_(fontSize),
       navStack_(navStack), eventBus_(eventBus),
-      highlighter_(highlighter), persistence_(persistence),
-      uiScale_(uiScale), currentFontSize_(currentFontSize), versionOnline_(versionOnline), immersiveMode_(immersiveMode),
+      persistence_(persistence),
+      uiScale_(uiScale), currentFontSize_(currentFontSize), currentBibleId_(currentBibleId), immersiveMode_(immersiveMode),
       tapDetector_(uiScale_.dp(10)) {}
 
 void SettingsScreen::Draw() {
@@ -42,9 +40,6 @@ void SettingsScreen::Draw() {
     float decX = uiScale_.dp(140);
     float valX = uiScale_.dp(190);
     float incX = uiScale_.dp(240);
-    float swatchSize = uiScale_.dp(28);
-    float swatchGap = uiScale_.dp(8);
-    float colorStartX = uiScale_.dp(140);
 
     // Font row
     float rowY = headerH + uiScale_.dp(40);
@@ -66,30 +61,22 @@ void SettingsScreen::Draw() {
     DrawButton({incX, rowY, btnW, btnH}, "+", font_, controlSize,
                !atMax, theme::UI_BUTTON_TEXT, theme::BUTTON_BG);
 
-    // Source row
+    // Version row
     rowY += rowGap;
-    DrawTextEx(font_, Locale::Get("Source:"), {labelX, rowY}, labelSize, 1, theme::UI_TEXT);
+    DrawTextEx(font_, Locale::Get("Version:"), {labelX, rowY}, labelSize, 1, theme::UI_TEXT);
 
-    float srcBtnW = uiScale_.dp(80);
-    float srcBtnH = uiScale_.dp(30);
-    float usfmX = uiScale_.dp(140);
-    float onlineX = uiScale_.dp(230);
+    float verBtnW = uiScale_.dp(52);
+    float verBtnH = uiScale_.dp(30);
+    float verBtnGap = uiScale_.dp(4);
+    float verStartX = uiScale_.dp(140);
 
-    DrawButton({usfmX, rowY, srcBtnW, srcBtnH}, "USFM", font_, controlSize,
-               true, theme::UI_TEXT, versionOnline_ ? theme::SWITCH_OFF : theme::SWITCH_ON);
-    DrawButton({onlineX, rowY, srcBtnW, srcBtnH}, "API", font_, controlSize,
-               true, theme::UI_TEXT, versionOnline_ ? theme::SWITCH_ON : theme::SWITCH_OFF);
-
-    // Color row
-    rowY += rowGap;
-    DrawTextEx(font_, Locale::Get("Color:"), {labelX, rowY}, labelSize, 1, theme::UI_TEXT);
-
-    const auto& types = highlighter_.GetTypes();
-    int activeId = highlighter_.GetActiveTypeId();
-    for (size_t i = 0; i < types.size(); ++i) {
-        float swatchX = colorStartX + i * (swatchSize + swatchGap);
-        Color c = {types[i].color.r, types[i].color.g, types[i].color.b, 255};
-        DrawColorSwatch({swatchX, rowY, swatchSize, swatchSize}, c, types[i].id == activeId);
+    for (int i = 0; i < config::BIBLE_VERSION_COUNT; ++i) {
+        float vx = verStartX + i * (verBtnW + verBtnGap);
+        bool active = (currentBibleId_ == config::BIBLE_VERSIONS[i].id);
+        DrawButton({vx, rowY, verBtnW, verBtnH}, config::BIBLE_VERSIONS[i].label,
+                   font_, controlSize, true,
+                   theme::UI_TEXT,
+                   active ? theme::SWITCH_ON : theme::SWITCH_OFF);
     }
 
     // Immersive mode row
@@ -131,7 +118,6 @@ bool SettingsScreen::HandleInput(float /*deltaTime*/) {
         float headerH = uiScale_.dp(48);
         float backW = uiScale_.dp(56);
 
-        // Back button
         if (mousePos.y < headerH && mousePos.x < backW) {
             navStack_.Pop();
             return true;
@@ -141,13 +127,6 @@ bool SettingsScreen::HandleInput(float /*deltaTime*/) {
         float btnH = uiScale_.dp(30);
         float decX = uiScale_.dp(140);
         float incX = uiScale_.dp(240);
-        float srcBtnW = uiScale_.dp(80);
-        float srcBtnH = uiScale_.dp(30);
-        float usfmX = uiScale_.dp(140);
-        float onlineX = uiScale_.dp(230);
-        float swatchSize = uiScale_.dp(28);
-        float swatchGap = uiScale_.dp(8);
-        float colorStartX = uiScale_.dp(140);
 
         float rowY = headerH + uiScale_.dp(40);
         float rowGap = uiScale_.dp(48);
@@ -166,28 +145,22 @@ bool SettingsScreen::HandleInput(float /*deltaTime*/) {
             return true;
         }
 
-        // Source row
+        // Version row
         rowY += rowGap;
-        Rectangle usfmRect = {usfmX, rowY, srcBtnW, srcBtnH};
-        if (CheckCollisionPointRec(mousePos, usfmRect)) {
-            SwitchSource(false);
-            return true;
-        }
-        Rectangle apiRect = {onlineX, rowY, srcBtnW, srcBtnH};
-        if (CheckCollisionPointRec(mousePos, apiRect)) {
-            SwitchSource(true);
-            return true;
-        }
+        float verBtnW = uiScale_.dp(52);
+        float verBtnH = uiScale_.dp(30);
+        float verBtnGap = uiScale_.dp(4);
+        float verStartX = uiScale_.dp(140);
 
-        // Color row
-        rowY += rowGap;
-        const auto& types = highlighter_.GetTypes();
-        for (size_t i = 0; i < types.size(); ++i) {
-            float swatchX = colorStartX + i * (swatchSize + swatchGap);
-            Rectangle swatchRect = {swatchX, rowY, swatchSize, swatchSize};
-            if (CheckCollisionPointRec(mousePos, swatchRect)) {
-                highlighter_.SetActiveTypeId(types[i].id);
-                persistence_.SetPreference("active_color", std::to_string(types[i].id));
+        for (int i = 0; i < config::BIBLE_VERSION_COUNT; ++i) {
+            float vx = verStartX + i * (verBtnW + verBtnGap);
+            Rectangle verRect = {vx, rowY, verBtnW, verBtnH};
+            if (CheckCollisionPointRec(mousePos, verRect)) {
+                int newId = config::BIBLE_VERSIONS[i].id;
+                if (newId != currentBibleId_) {
+                    currentBibleId_ = newId;
+                    eventBus_.Emit(theword::event::BibleVersionSwitchEvent{newId});
+                }
                 return true;
             }
         }
@@ -224,13 +197,6 @@ void SettingsScreen::ChangeFontSize(float delta) {
         persistence_.SetPreference("font_size", std::to_string(static_cast<int>(newSize)));
         eventBus_.Emit(theword::event::FontSizeEvent{newSize * uiScale_.dpiScale, 0.0f});
     }
-}
-
-void SettingsScreen::SwitchSource(bool online) {
-    if (online == versionOnline_) return;
-    versionOnline_ = online;
-    persistence_.SetPreference("active_version", online ? "online" : "offline");
-    eventBus_.Emit(theword::event::SourceSwitchEvent{online});
 }
 
 } // namespace theword::ui

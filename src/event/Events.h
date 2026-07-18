@@ -22,7 +22,7 @@ struct ResizeEvent {
 };
 
 struct FontSizeEvent     { float newSize; float delta; };
-struct SourceSwitchEvent { bool online; };
+struct BibleVersionSwitchEvent { int bibleId; };
 
 struct DialogEvent {
     enum class Type { GoTo, Settings, About, ContextMenu } type;

@@ -7,7 +7,7 @@ namespace theword::data {
 
 class CompositeProvider : public ChapterProvider {
 public:
-    CompositeProvider(ChapterProvider& primary, ChapterProvider& fallback);
+    explicit CompositeProvider(ChapterProvider& primary);
 
     void SetPrimary(ChapterProvider& provider);
 
@@ -18,7 +18,6 @@ public:
 
 private:
     ChapterProvider* primary;
-    ChapterProvider& fallback;
 };
 
 } // namespace theword::data

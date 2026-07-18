@@ -26,7 +26,6 @@ DocumentManager::DocumentManager(theword::event::EventBus& eventBus,
     eventBus_.On<theword::event::ScrollEvent>([this](const auto& e) { OnScroll(e); });
     eventBus_.On<theword::event::ResizeEvent>([this](const auto& e) { OnResize(e); });
     eventBus_.On<theword::event::FontSizeEvent>([this](const auto& e) { OnFontSize(e); });
-    eventBus_.On<theword::event::SourceSwitchEvent>([this](const auto& e) { OnSourceSwitch(e); });
 }
 
 void DocumentManager::OnScroll(const theword::event::ScrollEvent& e) {
@@ -98,9 +97,6 @@ void DocumentManager::OnResize(const theword::event::ResizeEvent& e) {
 
 void DocumentManager::OnFontSize(const theword::event::FontSizeEvent& /*e*/) {
     InvalidateLayouts();
-}
-
-void DocumentManager::OnSourceSwitch(const theword::event::SourceSwitchEvent& /*e*/) {
 }
 
 void DocumentManager::LoadInitialChapter(const std::string& chapterId) {

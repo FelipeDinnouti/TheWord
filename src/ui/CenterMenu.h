@@ -24,7 +24,7 @@ public:
                theword::highlight::Highlighter& highlighter,
                theword::persistence::PersistenceManager& persistence,
                const theword::core::UIScale& uiScale,
-               float& currentFontSize, bool& versionOnline, bool& immersiveMode,
+               float& currentFontSize, int& currentBibleId, bool& immersiveMode,
                const std::string& currentChapterRef = "");
     void Draw() override;
     bool HandleInput(float deltaTime) override;
@@ -40,7 +40,7 @@ private:
     theword::persistence::PersistenceManager& persistence_;
     const theword::core::UIScale& uiScale_;
     float& currentFontSize_;
-    bool& versionOnline_;
+    int& currentBibleId_;
     bool& immersiveMode_;
 
     void HandleAction(int action);

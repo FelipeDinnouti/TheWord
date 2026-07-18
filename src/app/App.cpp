@@ -146,6 +146,9 @@ bool App::Init(const std::string& title) {
         try { currentFontSize_ = std::max(config::FONT_SIZE_MIN, std::min(config::FONT_SIZE_MAX, (float)std::stoi(savedFontSize))); } catch (...) {}
     }
 
+    std::string savedBibleId = persistence_->GetPreference("bible_id", std::to_string(config::DEFAULT_BIBLE_ID));
+    try { currentBibleId_ = std::stoi(savedBibleId); } catch (...) { currentBibleId_ = config::DEFAULT_BIBLE_ID; }
+
     Logger::Info("Loading fonts");
     ReloadFonts(currentFontSize_, fontCodepoints_);
     Logger::Info("Fonts loaded");
@@ -175,38 +178,30 @@ bool App::Init(const std::string& title) {
 
     Logger::Info("Creating USFM parser");
     usfmParser_ = std::make_unique<USFMParser>(config::USFM_DIR, std::move(plat.assets));
-    offlineProv_ = usfmParser_.get();
 
     if (!apiKey.empty()) {
         Logger::Info("API key found, creating online client");
         apiClient_ = platform::CreateHttpClient();
         if (apiClient_) {
             apiClient_->SetAppKey(apiKey);
-            bibleClient_ = std::make_unique<BibleClient>(*apiClient_, 3034);
-            compositeProv_ = std::make_unique<CompositeProvider>(*bibleClient_, *usfmParser_);
-            onlineProv_ = bibleClient_.get();
+            if (currentBibleId_ > 0) {
+                bibleClient_ = std::make_unique<BibleClient>(*apiClient_, currentBibleId_);
+                compositeProv_ = std::make_unique<CompositeProvider>(*bibleClient_);
+            } else {
+                compositeProv_ = std::make_unique<CompositeProvider>(*usfmParser_);
+            }
             activeProv_ = compositeProv_.get();
         }
     }
 
     if (activeProv_ == nullptr) {
-        activeProv_ = offlineProv_;
+        compositeProv_ = std::make_unique<CompositeProvider>(*usfmParser_);
+        activeProv_ = compositeProv_.get();
     }
 
     docManager_ = std::make_unique<DocumentManager>(*eventBus_, *layoutEngine_, viewportHeight, *activeProv_, contentTop);
 
-    if (compositeProv_) {
-        std::string savedVersion = persistence_->GetPreference("active_version", "online");
-        if (savedVersion == "offline") {
-            compositeProv_->SetPrimary(*offlineProv_);
-            versionOnline_ = false;
-        } else {
-            compositeProv_->SetPrimary(*onlineProv_);
-            versionOnline_ = true;
-        }
-    }
-
-    highlighter_->SetProvider(versionOnline_ ? "BibleClient" : "USFMParser");
+    highlighter_->SetProvider(currentBibleId_ > 0 ? "BibleClient" : "USFMParser");
 
     uiManager_ = std::make_unique<UIManager>(*highlighter_, smallFont_, scale_);
 
@@ -249,7 +244,7 @@ bool App::Init(const std::string& title) {
     navStack_->Push(std::make_unique<theword::ui::ReaderScreen>(
         *eventBus_, *docManager_, *renderer_, *highlighter_, *persistence_,
         headingFont_, headingSize_, contentTop,
-        *navStack_, uiScale_, currentFontSize_, versionOnline_, immersiveMode_
+        *navStack_, uiScale_, currentFontSize_, currentBibleId_, immersiveMode_
     ));
 
     {
@@ -360,11 +355,19 @@ void App::WireEvents() {
         renderer_->SetFontSizes(bodyF, headingF, largeF, smallF);
     });
 
-    eventBus_->On<theword::event::SourceSwitchEvent>([this](const auto& e) {
-        if (compositeProv_) {
-            compositeProv_->SetPrimary(e.online ? *onlineProv_ : *offlineProv_);
+    eventBus_->On<theword::event::BibleVersionSwitchEvent>([this](const auto& e) {
+        currentBibleId_ = e.bibleId;
+        persistence_->SetPreference("bible_id", std::to_string(e.bibleId));
+
+        if (e.bibleId == 0) {
+            compositeProv_->SetPrimary(*usfmParser_);
+        } else {
+            bibleClient_.reset();
+            bibleClient_ = std::make_unique<BibleClient>(*apiClient_, e.bibleId);
+            compositeProv_->SetPrimary(*bibleClient_);
         }
-        highlighter_->SetProvider(e.online ? "BibleClient" : "USFMParser");
+
+        highlighter_->SetProvider(e.bibleId == 0 ? "USFMParser" : "BibleClient");
         docManager_->LoadInitialChapter(docManager_->GetCurrentChapterId());
     });
 
@@ -430,8 +433,8 @@ void App::HandleShortcuts() {
     if (IsKeyPressed(key::S)) {
         navStack_->Push(std::make_unique<theword::ui::SettingsScreen>(
             headingFont_, headingSize_, *navStack_, *eventBus_,
-            *highlighter_, *persistence_,
-            uiScale_, currentFontSize_, versionOnline_, immersiveMode_
+            *persistence_,
+            uiScale_, currentFontSize_, currentBibleId_, immersiveMode_
         ));
     }
     if (IsKeyPressed(key::A)) {
