@@ -3,11 +3,9 @@
 
 #include <raylib.h>
 #include <functional>
-#include <cmath>
 #include <string>
 
 namespace theword::event { class EventBus; }
-namespace theword::ui { class NavigationStack; }
 
 namespace theword::input {
 
@@ -24,7 +22,7 @@ public:
                  std::function<bool(int)> isHighlightedFn = nullptr,
                  std::function<int(float, float)> hitTestFootnoteFn = nullptr);
 
-    void Poll(float deltaTime, theword::ui::NavigationStack* navStack = nullptr);
+    void Poll(float deltaTime);
     void ResetState();
     bool IsDialogActive() const { return dialogActive_; }
     bool HasMomentum() const { return false; }

@@ -147,7 +147,7 @@ Biblica can disapprove of distributors (e.g., app stores) that are "seriously, d
 
 **Implementation idea:**
 - In ReaderScreen or the UI, show a footer bar with copyright + "Read the Bible at Biblica.com" link.
-- Only shown when using the online NVI source.
+- Only shown when using the online source.
 
 ### Usage Statistics (§7.C.2)
 > "ORGANIZATION permits LICENSOR and its affiliates and subcontractors to obtain accurate and complete user statistics reports from the API for the CONTENT in the WORK."

@@ -2,7 +2,6 @@
 #define TAP_DETECTOR_H
 
 #include <raylib.h>
-#include <cmath>
 
 namespace theword::ui {
 

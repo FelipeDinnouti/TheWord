@@ -29,10 +29,11 @@ cmake --build build --parallel
 ### Doc Hierarchy
 
 ```
-the-word-docs/04-planning/Roadmap.md    ← High-level version timeline (stable)
-the-word-docs/04-planning/Release Plan.md ← Feature scope for current minor (stable)
-memory/Active.md                         ← Granular implementation checklist (ephemeral)
-memory/State.md                          ← Current project snapshot (per-session)
+the-word-docs/04-planning/Roadmap.md        ← High-level version timeline (stable)
+the-word-docs/04-planning/Release Plan.md   ← Feature scope for current minor (stable)
+the-word-docs/04-planning/Progress Tracking.md ← Historical log of all work (stable)
+memory/Active.md                             ← Granular implementation checklist (ephemeral)
+memory/State.md                              ← Current project snapshot (per-session)
 ```
 
 ## Agent Workflow

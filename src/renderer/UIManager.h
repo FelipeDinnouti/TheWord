@@ -44,9 +44,6 @@ public:
     void HideFootnotePopup();
     bool IsFootnotePopupActive() const;
 
-    void RecordDebugTap(Vector2 pos, bool wasHit = false);
-    void DrawDebugTap();
-
 private:
     std::unique_ptr<RadialMenu> radialMenu;
     theword::highlight::Highlighter& highlighter_;
@@ -61,9 +58,6 @@ private:
     Vector2 footnotePos_{0, 0};
     bool footnotePopupActive_ = false;
 
-    Vector2 debugTapPos_{0, 0};
-    double debugTapTime_ = 0.0;
-    bool debugTapWasHit_ = false;
 };
 
 } // namespace theword::renderer

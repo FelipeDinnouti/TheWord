@@ -50,12 +50,12 @@ private:
     float largeSize_;
     float smallSize_;
     float lineSpacing;
-    float leftMargin;
-    float rightMargin;
-    float paragraphGap;
-    float headingTopGap;
-    float headingBottomGap;
-    float poetryIndent;
+    const float leftMargin;
+    const float rightMargin;
+    const float paragraphGap;
+    const float headingTopGap;
+    const float headingBottomGap;
+    const float poetryIndent;
 
     std::vector<theword::data::ChapterLayout> cachedLayouts;
     std::atomic<int> layoutGeneration_{0};

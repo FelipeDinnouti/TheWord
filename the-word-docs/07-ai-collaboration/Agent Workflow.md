@@ -1,6 +1,6 @@
 # Agent Workflow
 
-> Status: Active | Last Updated: 2026-07-12
+> Status: Active | Last Updated: 2026-07-17
 
 ## Principles
 
@@ -12,12 +12,27 @@
 
 ## Standard Workflow
 
+### 0. Starting a New Release
+
+Before any implementation work begins on a new version:
+
+1. **Bump version** in `CMakeLists.txt` per [Versioning](../../AGENTS.md#versioning) conventions
+2. **Update `memory/State.md`** — set new version, update Current Focus
+3. **Archive current `memory/Active.md`** to `memory/archive/{date}_v{old-version}-active.md`
+4. **Create new `memory/Active.md`** — fresh checklist for the new release's workstreams
+5. **Update `the-word-docs/04-planning/Release Plan.md`** — move completed release to Past Releases, create new release section with feature scopes
+6. **Update `the-word-docs/04-planning/Roadmap.md`** — mark previous release complete, add new workstreams
+
 ### 1. Understand the Task
-- Read `memory/State.md` — current project state, version, known issues
-- Read `memory/Active.md` — active implementation checklist
-- Read `00-INDEX.md` to find relevant docs
+
+Read from high-level to low-level:
+
 - Read `the-word-docs/04-planning/Roadmap.md` — high-level version timeline
 - Read `the-word-docs/04-planning/Release Plan.md` — current release's feature scope
+- Read `the-word-docs/04-planning/Progress Tracking.md` — historical context
+- Read `memory/State.md` — current project snapshot, version, known issues
+- Read `memory/Active.md` — active implementation checklist
+- Read `00-INDEX.md` to find relevant docs
 - Read the module doc(s) for the area you're working on
 - Read `02-architecture/Data Structures.md` for core types
 - Read `02-architecture/Coordinate Spaces.md` if rendering or input

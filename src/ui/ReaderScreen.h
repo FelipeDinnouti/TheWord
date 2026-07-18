@@ -5,7 +5,6 @@
 #include "core/UIScale.h"
 #include <vector>
 #include <string>
-#include <utility>
 #include <raylib.h>
 
 namespace theword::data { struct Span; }

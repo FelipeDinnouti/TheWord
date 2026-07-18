@@ -17,7 +17,8 @@
   - `theword::highlight` — highlighting system (Highlighter, PersistenceInterface)
   - `theword::persistence` — SQLite operations
   - `theword::input` — input handling
-  - `theword::renderer` — UI rendering (Renderer, UIManager, dialogs)
+  - `theword::renderer` — UI rendering (Renderer, UIManager, RadialMenu)
+  - `theword::ui` — screen-based UI framework (Screen, NavigationStack, screen implementations, TapDetector)
   - `theword::event` — event bus and event structs
   - `theword::app` — top-level application orchestrator
   - Flat constants namespaces: `theword::core::config`, `theword::core::key`, `theword::core::theme`
@@ -68,10 +69,11 @@ src/
 ├── data/                # Data layer (ChapterProvider, USFMParser, BibleClient, CompositeProvider)
 ├── text/                # Layout engine
 ├── document/            # Document manager
-├── highlight/           # Highlighting system
+├── highlight/           # Highlighting system (portable SimpleColor, no raylib)
 ├── persistence/         # SQLite operations
-├── input/               # Input handling
-├── renderer/            # UI rendering (Renderer, UIManager, dialogs)
+├── input/               # Input handling (no UI dependencies)
+├── renderer/            # UI rendering (Renderer, UIManager, RadialMenu)
+├── ui/                  # Screen-based UI framework (Screen, NavigationStack, 7 screens, TapDetector, components)
 └── event/               # Event bus and event structs
 
 assets/                   # Fonts, JSON data, USFM files, shaders

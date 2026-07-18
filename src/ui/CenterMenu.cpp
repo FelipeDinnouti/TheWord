@@ -8,7 +8,6 @@
 #include "core/Theme.h"
 #include "core/Config.h"
 #include "core/Locale.h"
-#include <cmath>
 
 namespace theword::ui {
 

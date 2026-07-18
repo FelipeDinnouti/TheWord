@@ -1,22 +1,46 @@
 # Roadmap
 
-> Status: Release-Based Planning Active | Last Updated: 2026-07-16
+> Status: Release-Based Planning Active | Last Updated: 2026-07-18
 
 The original 13-phase MVP is complete. All future work is organized by **release** (SemVer) rather than phases.
 
-## Current: v1.7.0-alpha
+## Current: v1.8.0-alpha
+
+**Theme:** Customization & Navigation — Code Quality Audit, Fuzzy Finder, Bible Version Switcher, Modular Theme System
+
+| Status | Item |
+|--------|------|
+| ✅ | Code Quality Audit — all 8 steps (input consolidation deferred) |
+| ✅ | Architectural Remediation — A1/A3/A6/A7/A8 (5 immediate findings fixed) |
+| 🔲 | Fuzzy Finder — replace prefix-match book search with fuzzy scoring |
+| 🔲 | Bible Version Switcher — curated list of public-domain versions |
+| 🔲 | Modular Theme System — runtime-switchable theme, dark mode |
+
+## Planned: v1.9.0-alpha — Architecture Refactor
+
+**Theme:** Layer enforcement and platform decoupling — findings A2, A4, A5, A9
+
+| Status | Item |
+|--------|------|
+| 🔲 | A2: Extract Span/Line/ChapterLayout from `data/ChapterProvider.h` to `text/LayoutTypes.h` |
+| 🔲 | A4: Introduce DrawContext, eliminate direct raylib calls from all screens |
+| 🔲 | A5: Abstract MeasureTextEx behind TextMeasureFn |
+| 🔲 | A9: Extract FontManager + simplify selection flow through App |
+
+See `memory/Architecture-Analysis.md` for full details on each finding.
+
+Detailed per-release scope tracked in `Release Plan.md`.
+
+## Completed: v1.7.0-alpha
 
 **Theme:** Reading Experience — Copy Verse, Footnotes, Open Where You Left Off, Immersive Mode
 
 | Status | Item |
 |--------|------|
-| ✅ | App.cpp refactor — Run() extraction |
 | ✅ | Copy Verse Polish — citation format, Ctrl+C, toast feedback |
 | ✅ | Footnote Display — data layer, USFM/HTML parsing, markers, popup, cross-refs |
 | ✅ | Open Where You Left Off — scroll save/restore |
 | ✅ | Immersive / Clean Mode — hide verse numbers, section headings |
-
-Detailed per-release scope tracked in `Release Plan.md`.
 
 ## Completed: v1.6.x
 

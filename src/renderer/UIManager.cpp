@@ -2,7 +2,6 @@
 #include "RadialMenu.h"
 #include "highlight/Highlighter.h"
 #include "core/Theme.h"
-#include <cmath>
 
 namespace theword::renderer {
 
@@ -130,24 +129,8 @@ bool UIManager::IsFootnotePopupActive() const {
     return footnotePopupActive_;
 }
 
-void UIManager::RecordDebugTap(Vector2 pos, bool wasHit) {
-    debugTapPos_ = pos;
-    debugTapTime_ = GetTime();
-    debugTapWasHit_ = wasHit;
-}
-
-void UIManager::DrawDebugTap() {
-    double elapsed = GetTime() - debugTapTime_;
-    if (elapsed > 1.0) return;
-    float alpha = 255.0f * (1.0f - static_cast<float>(elapsed));
-    Color col = debugTapWasHit_ ? Color{255, 0, 0, static_cast<unsigned char>(alpha)}
-                                : Color{255, 200, 0, static_cast<unsigned char>(alpha)};
-    DrawCircleV(debugTapPos_, 5.0f * dpiScale_, col);
-}
-
 void UIManager::ShowRadialMenu(Vector2 position, int startWord, int endWord,
                                const std::string& bookId, int chapterNum) {
-    RecordDebugTap(position, true);
     if (!radialMenu) {
         radialMenu = std::make_unique<RadialMenu>(dpiScale_);
     }
@@ -165,11 +148,9 @@ bool UIManager::IsRadialMenuActive() const {
 
 void UIManager::DrawRadialMenu() {
     if (radialMenu) radialMenu->Draw();
-    // DrawDebugTap();
 }
 
 RadialMenuActionResult UIManager::HandleRadialMenuClick(Vector2 pos) {
-    RecordDebugTap(pos, false);
     RadialMenuActionResult result;
     if (!radialMenu || !radialMenu->IsActive()) return result;
 
@@ -203,7 +184,6 @@ RadialMenuActionResult UIManager::HandleRadialMenuClick(Vector2 pos) {
             break;
     }
 
-    debugTapWasHit_ = result.consumed;
     return result;
 }
 

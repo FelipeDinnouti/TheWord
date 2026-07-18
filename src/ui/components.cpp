@@ -3,7 +3,6 @@
 #include "core/Locale.h"
 #include <cctype>
 #include <algorithm>
-#include <cmath>
 
 namespace theword::ui {
 

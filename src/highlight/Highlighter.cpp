@@ -2,13 +2,11 @@
 #include "event/EventBus.h"
 #include "event/Events.h"
 #include "core/Logger.h"
-#include "core/Locale.h"
 #include <algorithm>
 
 namespace theword::highlight {
 namespace {
 const HighlightType DEFAULT_HIGHLIGHT_TYPE { 1, "Amarelo", {255, 255, 0, 100} };
-Color ToColor(const SimpleColor& c) { return {c.r, c.g, c.b, c.a}; }
 } // namespace
 
 Highlighter::Highlighter(theword::event::EventBus& eventBus, PersistenceInterface& persistence)
@@ -156,14 +154,14 @@ bool Highlighter::IsWordHighlighted(int wordId) const {
     return false;
 }
 
-Color Highlighter::GetHighlightForWord(int wordId) const {
+SimpleColor Highlighter::GetHighlightForWord(int wordId) const {
     for (const auto& h : highlights) {
         if (h.bookId == currentBookId_ && h.chapterNum == currentChapterNum_
             && wordId >= h.startWord && wordId <= h.endWord) {
             for (const auto& t : types) {
-                if (t.id == h.typeId) return ToColor(t.color);
+                if (t.id == h.typeId) return t.color;
             }
-            return ToColor(DEFAULT_HIGHLIGHT_TYPE.color);
+            return DEFAULT_HIGHLIGHT_TYPE.color;
         }
     }
     return {0, 0, 0, 0};
@@ -177,14 +175,14 @@ bool Highlighter::IsWordHighlighted(int wordId, const std::string& bookId, int c
     return false;
 }
 
-Color Highlighter::GetHighlightForWord(int wordId, const std::string& bookId, int chapterNum) const {
+SimpleColor Highlighter::GetHighlightForWord(int wordId, const std::string& bookId, int chapterNum) const {
     for (const auto& h : highlights) {
         if (h.bookId == bookId && h.chapterNum == chapterNum
             && wordId >= h.startWord && wordId <= h.endWord) {
             for (const auto& t : types) {
-                if (t.id == h.typeId) return ToColor(t.color);
+                if (t.id == h.typeId) return t.color;
             }
-            return ToColor(DEFAULT_HIGHLIGHT_TYPE.color);
+            return DEFAULT_HIGHLIGHT_TYPE.color;
         }
     }
     return {0, 0, 0, 0};

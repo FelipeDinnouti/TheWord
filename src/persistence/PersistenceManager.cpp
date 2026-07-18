@@ -1,11 +1,7 @@
 #include "PersistenceManager.h"
+#include "core/Platform.h"
 #include "core/Logger.h"
-#include "core/Locale.h"
 #include <sqlite3.h>
-#include <sys/stat.h>
-#ifdef _WIN32
-#include <direct.h>
-#endif
 
 namespace theword::persistence {
 
@@ -13,7 +9,7 @@ using namespace theword::core;
 using namespace theword::highlight;
 
 PersistenceManager::PersistenceManager(const std::string& dbPath) : db(nullptr) {
-    EnsureDirectory(dbPath);
+    platform::EnsureDirectoryExists(dbPath);
     if (sqlite3_open(dbPath.c_str(), &db) != SQLITE_OK) {
         Logger::Error("PersistenceManager: Failed to open database: "
                       + std::string(sqlite3_errmsg(db)));
@@ -26,18 +22,6 @@ PersistenceManager::PersistenceManager(const std::string& dbPath) : db(nullptr) 
 
 PersistenceManager::~PersistenceManager() {
     if (db) sqlite3_close(db);
-}
-
-void PersistenceManager::EnsureDirectory(const std::string& dbPath) {
-    if (dbPath == ":memory:") return;
-    size_t slash = dbPath.rfind('/');
-    if (slash == std::string::npos) return;
-    std::string dir = dbPath.substr(0, slash);
-#ifdef _WIN32
-    _mkdir(dir.c_str());
-#else
-    mkdir(dir.c_str(), 0755);
-#endif
 }
 
 void PersistenceManager::InitSchema() {

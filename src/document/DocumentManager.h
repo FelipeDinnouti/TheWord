@@ -6,7 +6,6 @@
 #include <mutex>
 #include <future>
 #include <optional>
-#include <cmath>
 #include "data/ChapterProvider.h"
 
 namespace theword::text { class LayoutEngine; }
@@ -89,7 +88,7 @@ private:
     float momentumDistance_ = 0.0f;
     float momentumElapsed_ = 0.0f;
     float viewportHeight;
-    float contentTop;
+    const float contentTop;
 
     static constexpr float DECEL_RATE = 2.358f;   // ln(0.78)/ln(0.9) — Android spline exponent
     static constexpr float INFLEXION = 0.35f;      // spline inflection point

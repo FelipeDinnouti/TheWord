@@ -11,8 +11,8 @@
 #include "core/Config.h"
 #include "event/EventBus.h"
 #include "event/Events.h"
-#include <cmath>
 #include <algorithm>
+#include <cmath>
 
 namespace theword::ui {
 

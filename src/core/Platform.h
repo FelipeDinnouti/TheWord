@@ -29,6 +29,7 @@ void WriteLog(LogLevel level, const char* message);
 std::string GetClipboard();
 void SetClipboard(const std::string& text);
 
+void EnsureDirectoryExists(const std::string& path);
 void ShowKeyboard();
 void HideKeyboard();
 

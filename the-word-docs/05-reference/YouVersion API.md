@@ -58,10 +58,23 @@ The API returns HTML with structured `<div>` and `<span>` elements:
 
 ## Bible Versions
 
-| Version | ID | Notes |
-|---------|-----|-------|
-| BSB (Berean Standard Bible) | 3034 | ✅ Works with standard app key — **this is the one the app uses** |
-| NIV (New International Version) | 111 | ❌ Requires special license |
+### Curated Public-Domain List
+
+These are the versions the app supports as selectable options. All are public domain and work with a standard app key:
+
+| ID | Abbreviation | Full Name | Notes |
+|----|-------------|-----------|-------|
+| 12 | ASV | American Standard Version | Public domain, English |
+| 206 | WEBUS | World English Bible (US) | Public domain, English |
+| 3034 | BSB | Berean Standard Bible | Public domain, English — **default** |
+
+### Other Versions (for reference)
+
+| ID | Abbreviation | Name | Notes |
+|----|-------------|------|-------|
+| 111 | NIV | New International Version | ❌ Requires special Biblica license |
+| 1 | — | Legacy numbering | Outdated; see ID 12 for ASV |
+| 129 | — | Legacy BSB numbering | Outdated; see ID 3034 |
 
 ## Usage in TheWord
 

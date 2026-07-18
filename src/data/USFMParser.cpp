@@ -2,7 +2,6 @@
 #include "DataUtils.h"
 #include <fstream>
 #include <sstream>
-#include <algorithm>
 #include <cctype>
 
 namespace theword::data {

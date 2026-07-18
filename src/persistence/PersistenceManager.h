@@ -29,7 +29,6 @@ public:
 private:
     sqlite3* db;
     void InitSchema();
-    void EnsureDirectory(const std::string& dbPath);
 };
 
 } // namespace theword::persistence

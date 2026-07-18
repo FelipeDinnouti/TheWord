@@ -7,6 +7,7 @@
 #include "core/Config.h"
 #include "core/Platform.h"
 #include "core/Locale.h"
+#include "core/FuzzyMatcher.h"
 #include "event/EventBus.h"
 #include "event/Events.h"
 #include <algorithm>
@@ -66,14 +67,19 @@ std::vector<int> BookListScreen::GetFilteredIndices() const {
         for (size_t i = 0; i < BOOKS.size(); ++i) all[i] = static_cast<int>(i);
         return all;
     }
-    std::vector<int> results;
+    std::vector<std::pair<int, int>> scored;
     for (int i = 0; i < static_cast<int>(BOOKS.size()); ++i) {
-        if (StartsWithIgnoreCase(BOOKS[i].code, search_) ||
-            StartsWithIgnoreCase(BOOKS[i].fullName, search_) ||
-            StartsWithIgnoreCase(BOOK_NAMES_PT[i], search_)) {
-            results.push_back(i);
-        }
+        int sCode = FuzzyMatch(search_, BOOKS[i].code);
+        int sName = FuzzyMatch(search_, BOOKS[i].fullName);
+        int sPt   = FuzzyMatch(search_, BOOK_NAMES_PT[i]);
+        int best = std::max({sCode, sName, sPt});
+        if (best >= 0) scored.push_back({i, best});
     }
+    std::sort(scored.begin(), scored.end(),
+              [](const auto& a, const auto& b) { return a.second > b.second; });
+    std::vector<int> results;
+    results.reserve(scored.size());
+    for (const auto& [idx, _] : scored) results.push_back(idx);
     return results;
 }
 

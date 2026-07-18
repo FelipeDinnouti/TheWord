@@ -8,10 +8,10 @@ namespace theword::core {
 
 class EnvLoader {
 public:
-    static void load(const std::string& filepath = ".env");
-    static void loadFromContent(const std::string& content);
-    static std::string get(const std::string& key);
-    static std::string get(const std::string& key, const std::string& defaultValue);
+    static void Load(const std::string& filepath = ".env");
+    static void LoadFromContent(const std::string& content);
+    static std::string Get(const std::string& key);
+    static std::string Get(const std::string& key, const std::string& defaultValue);
 
 private:
     static std::map<std::string, std::string> variables;

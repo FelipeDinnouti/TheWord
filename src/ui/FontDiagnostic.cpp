@@ -1,10 +1,8 @@
 #include "FontDiagnostic.h"
 #include "NavigationStack.h"
-#include "core/Theme.h"
 #include "core/Config.h"
 #include "core/Locale.h"
 #include <cstdio>
-#include <cstring>
 
 namespace theword::ui {
 

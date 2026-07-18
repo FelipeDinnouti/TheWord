@@ -7,6 +7,12 @@
 #include "Logger.h"
 #include <cstdlib>
 
+#ifdef _WIN32
+#include <direct.h>
+#else
+#include <sys/stat.h>
+#endif
+
 #if defined(__ANDROID__)
 #include <android_native_app_glue.h>
 #include <android/asset_manager.h>
@@ -41,7 +47,6 @@ Info Init(const char* title) {
         EGLDisplay dpy = eglGetCurrentDisplay();
         EGLBoolean vsyncOk = eglSwapInterval(dpy, 1);
         EGLint eglErr = eglGetError();
-        (void)vsyncOk; (void)eglErr;
         Logger::Info("VSYNC: display=" + std::string(dpy != EGL_NO_DISPLAY ? "valid" : "INVALID")
             + " eglSwapInterval(1)=" + std::string(vsyncOk == EGL_TRUE ? "OK" : "FAILED")
             + " eglGetError()=0x" + std::to_string(eglErr));
@@ -91,7 +96,7 @@ Info Init(const char* title) {
     info.assets = std::make_unique<AndroidAssetProvider>(appState->activity->assetManager);
     auto envContent = info.assets->readFileText(config::ENV_FILE);
     if (envContent) {
-        EnvLoader::loadFromContent(*envContent);
+        EnvLoader::LoadFromContent(*envContent);
     }
     info.dbPath = std::string("/data/data/com.theword.app/app_storage/") + config::DB_FILE;
 #elif defined(__EMSCRIPTEN__)
@@ -99,7 +104,7 @@ Info Init(const char* title) {
     info.dbPath = std::string("/persistent/") + config::DB_FILE;
 #else
     info.assets = std::make_unique<FileAssetProvider>();
-    EnvLoader::load(config::ENV_FILE);
+    EnvLoader::Load(config::ENV_FILE);
     std::string home = getenv("HOME") ? getenv("HOME") : ".";
     info.dbPath = home + "/" + config::DB_DIR + "/" + config::DB_FILE;
 #endif
@@ -292,6 +297,18 @@ void SetClipboard(const std::string& text) {
     app->activity->vm->DetachCurrentThread();
 #else
     SetClipboardText(text.c_str());
+#endif
+}
+
+void EnsureDirectoryExists(const std::string& path) {
+    if (path.empty()) return;
+    size_t slash = path.rfind('/');
+    if (slash == std::string::npos) return;
+    std::string dir = path.substr(0, slash);
+#ifdef _WIN32
+    _mkdir(dir.c_str());
+#else
+    mkdir(dir.c_str(), 0755);
 #endif
 }
 

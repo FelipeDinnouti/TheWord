@@ -39,7 +39,7 @@ void ParseLine(const std::string& line, std::map<std::string, std::string>& vars
 }
 } // namespace
 
-void EnvLoader::load(const std::string& filepath) {
+void EnvLoader::Load(const std::string& filepath) {
     std::ifstream file(filepath);
     if (!file.is_open()) {
         return;
@@ -51,7 +51,7 @@ void EnvLoader::load(const std::string& filepath) {
     }
 }
 
-void EnvLoader::loadFromContent(const std::string& content) {
+void EnvLoader::LoadFromContent(const std::string& content) {
     std::istringstream stream(content);
     std::string line;
     while (std::getline(stream, line)) {
@@ -59,7 +59,7 @@ void EnvLoader::loadFromContent(const std::string& content) {
     }
 }
 
-std::string EnvLoader::get(const std::string& key) {
+std::string EnvLoader::Get(const std::string& key) {
     auto it = variables.find(key);
     if (it != variables.end()) {
         return it->second;
@@ -73,8 +73,8 @@ std::string EnvLoader::get(const std::string& key) {
     return "";
 }
 
-std::string EnvLoader::get(const std::string& key, const std::string& defaultValue) {
-    std::string value = get(key);
+std::string EnvLoader::Get(const std::string& key, const std::string& defaultValue) {
+    std::string value = Get(key);
     return value.empty() ? defaultValue : value;
 }
 

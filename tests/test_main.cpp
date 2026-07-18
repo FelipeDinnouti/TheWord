@@ -6,6 +6,7 @@
 #include "core/Config.h"
 #include "core/EnvLoader.h"
 #include "core/BibleBooks.h"
+#include "core/FuzzyMatcher.h"
 #include "core/IHttpClient.h"
 #include "event/EventBus.h"
 #include "event/Events.h"
@@ -49,12 +50,12 @@ TEST_CASE("Config environment key constants") {
 }
 
 TEST_CASE("EnvLoader returns empty for missing key") {
-    std::string value = EnvLoader::get("NONEXISTENT_KEY_THAT_SHOULD_NOT_EXIST");
+    std::string value = EnvLoader::Get("NONEXISTENT_KEY_THAT_SHOULD_NOT_EXIST");
     CHECK(value.empty());
 }
 
 TEST_CASE("EnvLoader returns default for missing key") {
-    std::string value = EnvLoader::get("NONEXISTENT_KEY", "fallback_value");
+    std::string value = EnvLoader::Get("NONEXISTENT_KEY", "fallback_value");
     CHECK(value == "fallback_value");
 }
 
@@ -121,9 +122,48 @@ TEST_CASE("BibleBooks ChapterIdToTitle") {
     CHECK(title == "Genesis 1");
 }
 
+TEST_CASE("FuzzyMatcher prefix match") {
+    CHECK(FuzzyMatch("gen", "Genesis") > 0);
+    CHECK(FuzzyMatch("ex", "Exodus") > 0);
+    CHECK(FuzzyMatch("jo", "John") > 0);
+    CHECK(FuzzyMatch("jo", "Joel") > 0);
+    CHECK(FuzzyMatch("Gen", "Genesis") > FuzzyMatch("Gen", "James"));
+}
+
+TEST_CASE("FuzzyMatcher fuzzy match") {
+    CHECK(FuzzyMatch("gn", "Genesis") > 0);
+    CHECK(FuzzyMatch("gn", "James") < 0);
+    CHECK(FuzzyMatch("jhn", "John") > 0);
+    CHECK(FuzzyMatch("slm", "Salmos") > 0);
+}
+
+TEST_CASE("FuzzyMatcher accented Portuguese") {
+    CHECK(FuzzyMatch("gen", "G\u00eanesis") > 0);
+    CHECK(FuzzyMatch("genesis", "G\u00eanesis") > 0);
+    CHECK(FuzzyMatch("joao", "Jo\u00e3o") > 0);
+    CHECK(FuzzyMatch("exodo", "\u00caxodo") > 0);
+    CHECK(FuzzyMatch("numeros", "N\u00fameros") > 0);
+}
+
+TEST_CASE("FuzzyMatcher no match") {
+    CHECK(FuzzyMatch("xyz", "Genesis") < 0);
+    CHECK(FuzzyMatch("zzz", "John") < 0);
+}
+
+TEST_CASE("FuzzyMatcher empty query") {
+    CHECK(FuzzyMatch("", "Genesis") == 0);
+    CHECK(FuzzyMatch("", "") == 0);
+}
+
+TEST_CASE("FuzzyMatcher prefix scores higher than substring") {
+    int prefixScore = FuzzyMatch("jo", "John");
+    int fuzzyScore = FuzzyMatch("jo", "Major Prophets");
+    CHECK(prefixScore > fuzzyScore);
+}
+
 TEST_CASE("EnvLoader handles system environment") {
     // SYSTEMROOT is typically set on Windows, HOME on Unix
-    std::string home = EnvLoader::get("HOME");
+    std::string home = EnvLoader::Get("HOME");
     if (!home.empty()) {
         CHECK_FALSE(home.empty());
     }
@@ -665,9 +705,9 @@ TEST_CASE("Highlighter getHighlightForWord returns color for highlighted word") 
     Highlighter h(eb, store);
     h.SetChapterContext("GEN", 1, nullptr);
     h.CreateHighlight(5, 10, 1, "GEN", 1, nullptr);
-    Color c = h.GetHighlightForWord(7);
+    SimpleColor c = h.GetHighlightForWord(7);
     CHECK(c.a > 0);
-    Color c2 = h.GetHighlightForWord(99);
+    SimpleColor c2 = h.GetHighlightForWord(99);
     CHECK(c2.a == 0);
 }
 

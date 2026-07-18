@@ -4,8 +4,9 @@
 #include <string>
 #include <optional>
 #include <unordered_map>
-#include "core/IHttpClient.h"
 #include "ChapterProvider.h"
+
+namespace theword::core { class IHttpClient; }
 
 class BibleClientTest;  // test helper, defined in test_main.cpp
 
@@ -24,7 +25,7 @@ private:
     friend class ::BibleClientTest;
 
     theword::core::IHttpClient& apiClient;
-    int bibleId;
+    const int bibleId;
     const std::string baseUrl;
     std::unordered_map<std::string, bool> cachedHasChapter;
 

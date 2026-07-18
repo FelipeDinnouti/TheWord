@@ -1,5 +1,6 @@
 #include "BibleClient.h"
 #include "DataUtils.h"
+#include "core/IHttpClient.h"
 #include <algorithm>
 #include <cctype>
 

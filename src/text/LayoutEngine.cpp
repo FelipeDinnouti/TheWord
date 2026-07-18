@@ -1,13 +1,10 @@
 #include "LayoutEngine.h"
 #include "event/EventBus.h"
 #include "event/Events.h"
-#include "core/Theme.h"
 #include <algorithm>
-#include <cmath>
 
 namespace theword::text {
 
-using namespace theword::core;
 using namespace theword::data;
 
 LayoutEngine::LayoutEngine(theword::event::EventBus& eventBus,

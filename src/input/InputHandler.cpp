@@ -4,7 +4,6 @@
 #include <algorithm>
 #include "core/Config.h"
 #include "core/Platform.h"
-#include "ui/NavigationStack.h"
 #include <raylib.h>
 #include <cmath>
 
@@ -49,7 +48,7 @@ void InputHandler::ResetState() {
     // Preserve dialogActive_ (controlled by DialogEvent subscriber)
 }
 
-void InputHandler::Poll(float deltaTime, theword::ui::NavigationStack* navStack) {
+void InputHandler::Poll(float /*deltaTime*/) {
     // Capture press state at top so early-return paths update prevPressed_
     // correctly, preventing stale-justPressed on the next frame.
     bool isPressed = platform::HasTouchInput() ? (GetTouchPointCount() >= 1)
@@ -59,34 +58,19 @@ void InputHandler::Poll(float deltaTime, theword::ui::NavigationStack* navStack)
 
     // ── Poll execution order ───────────────────────────────────────────────
     //  1. Escape → onDismiss (radial menu / context dismiss, consumed)
-    //  2. Active screen HandleInput (buttons / list items, consumed)
-    //  3. Escape → KeyEvent (unconsumed, fallthrough)
-    //  4. Dialog guard (G/S/A hotkeys only, resets FSM)
-    //  5. Scroll / pinch / right-click (platform-specific)
-    //  6. RunUnifiedFSM (word tap / drag / long-press)
-    //  7. HandleWindowResize (viewport change)
+    //  2. Dialog guard (G/S/A hotkeys only, resets FSM)
+    //  3. Scroll / pinch / right-click (platform-specific)
+    //  4. RunUnifiedFSM (word tap / drag / long-press)
+    //  5. HandleWindowResize (viewport change)
     //
-    // Screens run before the FSM (stage 2 vs 6). This means screens consume
-    // button-area presses before the FSM can see them. Currently safe because
-    // screens handle UI (not text), but a screen that consumed a word-area
-    // press would starve the FSM. (P12)
+    // Screens handle input before this point (NavigationStack::HandleInput runs
+    // in App's main loop prior to Poll). This means screens consume button-area
+    // presses before the FSM can see them. (P12)
     // ────────────────────────────────────────────────────────────────────────
 
     // Escape → onDismiss (radial menu dismiss)
     if (IsKeyPressed(key::ESCAPE) && onDismiss && onDismiss()) {
         prevPressed_ = isPressed;
-        return;
-    }
-
-    // Let the active screen process input first
-    if (navStack && navStack->HandleInput(deltaTime)) {
-        prevPressed_ = isPressed;
-        return;
-    }
-
-    if (IsKeyPressed(key::ESCAPE)) {
-        prevPressed_ = isPressed;
-        eventBus_.Emit(theword::event::KeyEvent{key::ESCAPE});
         return;
     }
 

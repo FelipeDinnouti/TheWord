@@ -1,8 +1,20 @@
 # Release Plan
 
-> Status: v1.6.x complete | Last Updated: 2026-07-14
+> Status: v1.7.0-alpha complete | Last Updated: 2026-07-17
 
 ## Past Releases
+
+### v1.7.0-alpha (2026-07-16)
+
+**Theme:** Reading Experience — Copy Verse, Footnotes, Open Where You Left Off, Immersive Mode
+
+- [x] Copy Verse Polish — citation format, Ctrl+C, toast feedback
+- [x] Footnote Display — data layer, USFM/HTML parsing, markers, popup, cross-refs
+- [x] Open Where You Left Off — scroll save/restore
+- [x] Immersive / Clean Mode — hide verse numbers, section headings
+- [x] Verse Flow Fix — no forced line breaks between verses
+- [x] Bible ID Fix (129→3034)
+- [x] Tag: `git tag -am "v1.7.0-alpha" "v1.7.0-alpha"`
 
 ### v1.6.3-alpha (2026-07-13)
 
@@ -69,47 +81,50 @@
 - [x] Phase 13 Highlight Browser — data model + persistence + UI complete
 - [x] Tag: `git tag -am "v1.4.2" "v1.4.2"`
 
-## Current Release: v1.7.0-alpha
+## Current Release: v1.8.0-alpha
 
-**Theme:** Reading Experience — Copy Verse, Footnotes, Open Where You Left Off, Immersive Mode
+**Theme:** Customization & Navigation — Code Quality Audit, Fuzzy Finder, Bible Version Switcher, Modular Theme System
 
-### Feature: Copy Verse Polish
+### Feature: Code Quality Audit
 
-- [x] Citation format: `Book Chapter:Verse\n\n<text>` with two line breaks
-- [x] Ctrl+C keyboard shortcut on desktop
-- [x] Toast/popup feedback ("Copied!") after copy
-- [x] Refactor `AssembleSelectedText()` for citation prefix
+- [ ] Build with `-Wall -Wextra -Wpedantic`, fix all warnings
+- [ ] Remove dead code (GlobalId.h, commented blocks, unused variables)
+- [ ] Prune unused `#include`s, prefer forward declarations
+- [ ] `const`-correctness pass across all modules
+- [ ] Check all `std::optional` / pointer returns are error-handled
+- [ ] Naming consistency check (PascalCase convention)
+- [ ] Consolidate duplicated input patterns (TapDetector + mouse/press boilerplate across screens)
 
-### Feature: Footnote Display
+### Feature: Bible Version Switcher
 
-- [x] Data layer — `Footnote` struct, `SegmentType::FootnoteMarker`, `ChapterData::footnotes`
-- [x] USFM parser — extract footnotes instead of stripping (`\f ... \f*`)
-- [x] BibleClient — extract footnotes from HTML instead of stripping (`<span class="yv-n">`)
-- [x] LayoutEngine — insert `[n]` superscript marker spans
-- [x] Renderer — draw markers with superscript style
-- [x] Interaction — tap marker → popup, tap-away → dismiss (integrate with UnifiedFSM)
-- [x] FootnotePopup component (UIManager)
-- [x] Cross-reference (`\rq`) promotion to footnotes
+- [ ] Define curated list of public-domain Bible IDs (ASV 12, WEBUS 206, BSB 3034)
+- [ ] Add `BibleClient::SetBibleId(int id)` — updates ID + clears `cachedHasChapter`
+- [ ] Add `BibleVersionSwitchEvent{int bibleId}` to Events.h
+- [ ] Add "Version:" row to SettingsScreen with N-button picker
+- [ ] Wire event in App.cpp — destroy/recreate or SetBibleId + persist + reload chapter
+- [ ] Load saved `bible_id` preference in `App::Init()`
 
-### Feature: Open Where You Left Off
+### Feature: Modular Theme System
 
-- [x] Save `last_scroll` on app pause/close (desktop + Android)
-- [x] Restore scroll position after chapter load on startup
-- [x] Reuse/extend existing `lifecycle_scroll` pattern
+- [ ] Create `ThemeManager` class with `ThemePalette` struct (replaces constexpr Theme.h colors)
+- [ ] Define light and dark palettes
+- [ ] Integrate into App as a managed instance, pass `const ThemeManager&` to all draw sites
+- [ ] Add theme toggle row to SettingsScreen (Light/Dark buttons)
+- [ ] Add preference `dark_mode` (load on startup, apply on toggle)
+- [ ] Switch all `theme::COLOR` references to `themeManager.Current().colorName`
 
-### Feature: Immersive / Clean Mode
+### Feature: Fuzzy Finder (Book Selection) ✅
 
-- [x] Hide verse numbers, chapter labels, section headings
-- [x] Toggle via 'I' hotkey + SettingsScreen switch
-- [x] Persist setting in preferences
+- [x] Create `src/core/FuzzyMatcher.h/cpp` with `FuzzyMatch()` scoring function
+- [x] Replace `StartsWithIgnoreCase` in `BookListScreen::GetFilteredIndices()` with fuzzy scoring + sort
+- [ ] Apply same replacement to GoTo dialog auto-complete — **deferred: no GoTo dialog exists yet**
 
 ### Release Steps
 
-- [x] Update `State.md`
-- [x] Bump version in `CMakeLists.txt` (1.6.3 → 1.7.0), reconfigure, build
-- [x] Full test suite passes (75/77)
-- [x] Manual verification on Android
-- [ ] Tag release `v1.7.0-alpha`
+- [ ] Bump version in `CMakeLists.txt` (1.7.0 → 1.8.0-alpha), reconfigure, build
+- [ ] Full test suite passes (75/77)
+- [ ] Manual verification on Android
+- [ ] Tag release `v1.8.0-alpha`
 
 ## Backlog (Future Releases)
 

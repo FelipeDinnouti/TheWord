@@ -3,7 +3,6 @@
 #include "components.h"
 #include "core/Theme.h"
 #include "core/Config.h"
-#include "core/BibleBooks.h"
 #include "event/EventBus.h"
 #include "event/Events.h"
 

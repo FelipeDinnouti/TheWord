@@ -1,5 +1,5 @@
 #include "Renderer.h"
-#include <algorithm>
+#include "core/Theme.h"
 
 namespace theword::renderer {
 
@@ -39,7 +39,8 @@ void Renderer::DrawFrame(float scrollY, float totalHeight, float viewportHeight,
                           const std::vector<HighlightRect>& highlightRects) {
     for (const auto& hr : highlightRects) {
         if (hr.y < -CULL_MARGIN || hr.y > GetScreenHeight()) continue;
-        DrawRectangle(hr.x, hr.y, hr.width, hr.height, hr.color);
+        DrawRectangle(hr.x, hr.y, hr.width, hr.height,
+                      Color{hr.color.r, hr.color.g, hr.color.b, hr.color.a});
     }
 
     for (const auto& [span, docY] : docSpans) {

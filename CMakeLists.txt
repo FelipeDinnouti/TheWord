@@ -203,14 +203,16 @@ set(CORE_BASE_SOURCES
     src/core/FontHelper.h
     src/core/FileAssetProvider.cpp
     src/core/FileAssetProvider.h
+    src/core/FuzzyMatcher.cpp
+    src/core/FuzzyMatcher.h
     src/core/Platform.cpp
     src/core/Platform.h
     src/core/Config.h
     src/core/Theme.h
+    src/core/UIScale.h
     src/core/Locale.cpp
     src/core/Locale.h
     src/core/BibleBooks.h
-    src/core/GlobalId.h
     src/core/IHttpClient.h
     src/core/IAssetProvider.h
 )

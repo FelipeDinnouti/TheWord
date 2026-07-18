@@ -5,7 +5,7 @@
 #include <vector>
 #include <raylib.h>
 #include "data/ChapterProvider.h"
-#include "core/Theme.h"
+#include "highlight/PersistenceInterface.h"
 
 namespace theword::renderer {
 
@@ -14,7 +14,7 @@ struct HighlightRect {
     float y;
     float width;
     float height;
-    Color color;
+    theword::highlight::SimpleColor color;
 };
 
 class Renderer {
@@ -47,12 +47,12 @@ private:
     const Font& headingFont;
     const Font& largeFont;
     const Font& smallFont;
-    float contentTop;
+    const float contentTop;
     float bodySize_;
     float headingSize_;
     float largeSize_;
     float smallSize_;
-    float dpiScale_;
+    const float dpiScale_;
 
     void DrawSpan(const theword::data::Span& span, float screenY);
 };

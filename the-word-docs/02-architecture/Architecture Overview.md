@@ -1,49 +1,83 @@
 # Architecture Overview
 
-> Status: Updated 2026-06-22
+> Status: Updated 2026-07-18
 
-## Four-Layer Architecture
+## Module Architecture
 
-The system is organized into four conceptual layers. Each layer builds on the one below it and is implemented as a distinct module within `src/`.
+The system is organized into logical layers. Each layer builds on the one below it and is implemented as a distinct module within `src/`.
+
+## Layer Diagram
 
 ```
-┌─────────────────────────────────────────────────┐
-│                 UI LAYER                         │
-│  Renderer · InputHandler · UIManager             │
-│  (reads input, draws text, manages UI)           │
-├─────────────────────────────────────────────────┤
-│             DOCUMENT MANAGER                     │
-│  DocumentManager                                 │
-│  (infinite scroll, chapter lifecycle, anchors)   │
-├─────────────────────────────────────────────────┤
-│            TEXT LAYOUT ENGINE                    │
-│  LayoutEngine                                    │
-│  (segment-aware layout, word wrapping, caching)  │
-├─────────────────────────────────────────────────┤
-│                DATA LAYER                        │
-│  ChapterProvider (interface)                     │
-│    ├── USFMParser   (offline USFM files)         │
-│    └── BibleClient  (online HTML API)            │
-│  PersistenceManager (SQLite)                     │
-└─────────────────────────────────────────────────┘
+┌──────────────────────────────────────────────────────┐
+│                    APP LAYER                          │
+│  App.cpp (thin orchestrator, wires subsystems)       │
+├──────────────────────────────────────────────────────┤
+│                    UI LAYER                           │
+│  ├── renderer/   Renderer · UIManager · RadialMenu   │
+│  └── ui/         Screen-based UI                     │
+│       ├── Screen (base class)                        │
+│       ├── NavigationStack (push/pop screens)         │
+│       ├── ReaderScreen, BookListScreen,              │
+│       │   ChapterGridScreen, SettingsScreen,         │
+│       │   HighlightBrowserScreen, CenterMenu,        │
+│       │   CreditsOverlay, FontDiagnostic             │
+│       ├── TapDetector (touch/click helper)           │
+│       └── components (shared widgets)                │
+├──────────────────────────────────────────────────────┤
+│                    INPUT LAYER                        │
+│  InputHandler (raw input → EventBus events)          │
+│  No UI dependencies.                                 │
+├──────────────────────────────────────────────────────┤
+│                DOCUMENT MANAGER                       │
+│  DocumentManager                                     │
+│  (infinite scroll, chapter lifecycle, anchors)       │
+├──────────────────────────────────────────────────────┤
+│               TEXT LAYOUT ENGINE                      │
+│  LayoutEngine                                        │
+│  (segment-aware layout, word wrapping, caching)      │
+├──────────────────────────────────────────────────────┤
+│                   DATA LAYER                          │
+│  ChapterProvider (interface)                         │
+│    ├── USFMParser   (offline USFM files)             │
+│    └── BibleClient  (online HTML API)                │
+│  PersistenceManager (SQLite)                         │
+├──────────────────────────────────────────────────────┤
+│                CROSS-CUTTING                          │
+│  core/          Platform, Config, Theme, EnvLoader   │
+│  event/         EventBus (pub-sub)                   │
+│  highlight/     Highlighter (portable SimpleColor)   │
+└──────────────────────────────────────────────────────┘
 ```
 
 ## Module Dependency Graph
 
 ```
 main.cpp
-  ├── Renderer
-  │     └── UIManager      → Config
-  ├── InputHandler        → DocumentManager, Highlighter, LayoutEngine
-  └── DocumentManager
-        ├── LayoutEngine
-        │     └── Data Structures (Word, Span, Line, Segment, ChapterData)
-        └── ChapterProvider (interface)
-              ├── USFMParser
-              └── BibleClient → Config
-
-Highlighter
-  └── PersistenceInterface → PersistenceManager → Config
+  ├── App
+  │     ├── Renderer         → Config, HighlightRect (SimpleColor)
+  │     │     └── UIManager  → Config
+  │     ├── InputHandler     → EventBus only (no UI deps)
+  │     ├── NavigationStack  → Screen base
+  │     │     ├── ReaderScreen   → DocMgr, Highlighter, Renderer
+  │     │     ├── BookListScreen → UIScale, TapDetector
+  │     │     ├── ChapterGridScreen → UIScale, TapDetector
+  │     │     ├── SettingsScreen   → UIScale, TapDetector
+  │     │     ├── HighlightBrowserScreen → UIScale, TapDetector
+  │     │     ├── CenterMenu     → UIScale, TapDetector
+  │     │     ├── CreditsOverlay → UIScale, TapDetector
+  │     │     └── FontDiagnostic → (none)
+  │     └── DocumentManager
+  │           ├── LayoutEngine
+  │           │     └── ChapterProvider (for Segment, Word, ChapterData)
+  │           └── ChapterProvider (interface)
+  │                 ├── USFMParser
+  │                 └── BibleClient → Config
+  │
+  ├── Highlighter
+  │     └── PersistenceInterface → PersistenceManager → Config
+  │
+  └── EventBus (pub-sub, no business logic)
 ```
 
 All dependencies flow downward. No module depends on a higher layer.
@@ -52,19 +86,55 @@ All dependencies flow downward. No module depends on a higher layer.
 
 | Module | Directory | Responsibility |
 |--------|-----------|----------------|
+| App | `app/` | Wires subsystems, owns lifecycle, delegates to NavigationStack and InputHandler |
 | Config | `core/` | Constants: window size, asset paths, source selection |
-| APIClient | `core/` | HTTP client wrapper (libcurl, hard dependency) |
+| Platform | `core/` | Platform abstraction: init, I/O, clipboard, directory creation, DPI |
 | EnvLoader | `core/` | `.env` file parser (for API key) |
 | USFMParser | `data/` | USFM file → ChapterData (Segment[] + Word[]) |
 | BibleClient | `data/` | HTML API → ChapterData (Segment[] + Word[]) |
 | ChapterProvider | `data/` | Abstract interface for both data sources |
 | LayoutEngine | `text/` | Segment-aware layout, word wrapping, span generation |
 | DocumentManager | `document/` | Infinite scroll, chapter lifecycle (talks to ChapterProvider) |
-| Highlighter | `highlight/` | Per-word highlight management |
+| Highlighter | `highlight/` | Per-word highlight management (portable SimpleColor, no raylib) |
 | PersistenceManager | `persistence/` | SQLite operations |
-| InputHandler | `input/` | Input event translation (scroll, highlight selection, window resize) |
-| Renderer | `renderer/` | Top-level render coordinator |
+| InputHandler | `input/` | Raw input → EventBus events (no UI dependencies) |
+| Renderer | `renderer/` | Top-level render coordinator, HighlightRect conversion |
 | UIManager | `renderer/` | Top bar, settings, context menu, dialogs |
+| RadialMenu | `renderer/` | Sector-based highlight action menu |
+| Screen | `ui/` | Abstract base for on-screen views |
+| NavigationStack | `ui/` | Push/pop screen management, delegates input to active screen |
+| ReaderScreen | `ui/` | Main reading view (draws text + highlights) |
+| BookListScreen | `ui/` | Book selection list |
+| ChapterGridScreen | `ui/` | Chapter number grid |
+| SettingsScreen | `ui/` | Settings panel |
+| HighlightBrowserScreen | `ui/` | Highlight browsing |
+| CenterMenu | `ui/` | Navigation menu overlay |
+| CreditsOverlay | `ui/` | About/credits overlay |
+| FontDiagnostic | `ui/` | Debug font inspector |
+| TapDetector | `ui/` | Press/drag/release state helper |
+| EventBus | `event/` | Pub-sub message bus (no business logic) |
+
+## Event Governance
+
+The EventBus provides typed pub-sub communication. All events are defined in `src/event/Events.h`.
+
+| Event | Emitter(s) | Subscriber(s) |
+|-------|-----------|---------------|
+| `ScrollEvent` | InputHandler | ReaderScreen, ChapterGridScr, HighlightBrowserScr, BookListScr, DocumentManager |
+| `SelectionEvent` | App (input callbacks) | Highlighter |
+| `ResizeEvent` | InputHandler | App, LayoutEngine, DocumentManager |
+| `FontSizeEvent` | InputHandler, SettingsScreen | App, DocumentManager |
+| `SourceSwitchEvent` | SettingsScreen | App, DocumentManager |
+| `DialogEvent` | InputHandler | InputHandler (self) |
+| `NavigateEvent` | ReaderScreen, ChapterGridScr | App |
+| `NavigateToHighlightEvent` | HighlightBrowserScr | ReaderScreen |
+| `ChapterLoadedEvent` | DocumentManager | App |
+
+Guidelines:
+- Events carry data, not behavior. Keep structs small with value semantics.
+- Emitters delegate to EventBus; they do not know who listens.
+- Subscribers register in constructors; subscriptions are lifetime-bound.
+- Prefer direct method calls over EventBus when the callee is known and owned by the same component.
 
 ## Key Design Properties
 

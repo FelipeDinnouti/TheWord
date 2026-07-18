@@ -27,7 +27,6 @@
 #include "ui/CreditsOverlay.h"
 #include "ui/FontDiagnostic.h"
 
-#include <cstdlib>
 #include <algorithm>
 #include <sstream>
 
@@ -172,7 +171,7 @@ bool App::Init(const std::string& title) {
 
     float viewportHeight = renderH - contentTop;
 
-    std::string apiKey = EnvLoader::get(config::YVP_APP_KEY);
+    std::string apiKey = EnvLoader::Get(config::YVP_APP_KEY);
 
     Logger::Info("Creating USFM parser");
     usfmParser_ = std::make_unique<USFMParser>(config::USFM_DIR, std::move(plat.assets));
@@ -501,7 +500,9 @@ void App::MainLoop() {
         float deltaTime = (float)(currentTime - lastTime);
         lastTime = currentTime;
 
-        inputHandler_->Poll(deltaTime, navStack_.get());
+        if (!navStack_->HandleInput(deltaTime)) {
+            inputHandler_->Poll(deltaTime);
+        }
         docManager_->Update(deltaTime);
 
         HandleShortcuts();

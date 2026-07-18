@@ -4,7 +4,6 @@
 #include "PersistenceInterface.h"
 #include "data/ChapterProvider.h"
 #include <vector>
-#include <raylib.h>
 
 namespace theword::event {
     class EventBus;
@@ -21,8 +20,8 @@ public:
 
     bool IsWordHighlighted(int wordId) const;
     bool IsWordHighlighted(int wordId, const std::string& bookId, int chapterNum) const;
-    Color GetHighlightForWord(int wordId) const;
-    Color GetHighlightForWord(int wordId, const std::string& bookId, int chapterNum) const;
+    SimpleColor GetHighlightForWord(int wordId) const;
+    SimpleColor GetHighlightForWord(int wordId, const std::string& bookId, int chapterNum) const;
     const Highlight* HighlightAtWord(int wordId) const;
     const Highlight* HighlightAtWord(int wordId, const std::string& bookId, int chapterNum) const;
     const Highlight* HighlightOverlapping(int startWord, int endWord,
