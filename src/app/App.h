@@ -13,7 +13,7 @@ namespace theword::document { class DocumentManager; }
 namespace theword::renderer { class Renderer; class UIManager; }
 namespace theword::input { struct HitInfo; class InputHandler; }
 namespace theword::highlight { class Highlighter; }
-namespace theword::core { class IHttpClient; }
+namespace theword::core { class IHttpClient; class ThemeManager; }
 namespace theword::data { struct ChapterData; class USFMParser; class BibleClient; class CompositeProvider; class ChapterProvider; }
 namespace theword::persistence { class PersistenceManager; }
 namespace theword::ui { class NavigationStack; }
@@ -55,6 +55,7 @@ private:
 
     std::unique_ptr<theword::event::EventBus> eventBus_;
     std::unique_ptr<theword::core::IHttpClient> apiClient_;
+    std::unique_ptr<theword::core::ThemeManager> themeManager_;
     std::unique_ptr<theword::data::USFMParser> usfmParser_;
     std::unique_ptr<theword::data::BibleClient> bibleClient_;
     std::unique_ptr<theword::data::CompositeProvider> compositeProv_;

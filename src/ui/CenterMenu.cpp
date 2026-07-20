@@ -34,15 +34,18 @@ CenterMenu::CenterMenu(const Font& font, float fontSize,
                        theword::persistence::PersistenceManager& persistence,
                        const theword::core::UIScale& uiScale,
                        float& currentFontSize, int& currentBibleId, bool& immersiveMode,
+                       const theword::core::ThemeManager& themeManager,
                        const std::string& currentChapterRef)
     : font_(font), fontSize_(fontSize),
       navStack_(navStack), eventBus_(eventBus),
       highlighter_(highlighter), persistence_(persistence),
       uiScale_(uiScale), currentFontSize_(currentFontSize), currentBibleId_(currentBibleId), immersiveMode_(immersiveMode),
+      themeManager_(themeManager),
       showTime_(GetTime()), currentChapterRef_(currentChapterRef),
       tapDetector_(uiScale_.dp(10)) {}
 
 void CenterMenu::Draw() {
+    const auto& palette = themeManager_.Current();
     float screenW = static_cast<float>(GetScreenWidth());
     float screenH = static_cast<float>(GetScreenHeight());
 
@@ -60,8 +63,8 @@ void CenterMenu::Draw() {
         fadeAlpha = std::min(1.0f, elapsed / FADE_DURATION);
     }
 
-    Color overlayColor = theme::OVERLAY_BG;
-    overlayColor.a = static_cast<unsigned char>(theme::OVERLAY_BG.a * fadeAlpha);
+    Color overlayColor = palette.overlayBg;
+    overlayColor.a = static_cast<unsigned char>(palette.overlayBg.a * fadeAlpha);
     DrawRectangle(0, 0, static_cast<int>(screenW), static_cast<int>(screenH), overlayColor);
 
     float menuW = uiScale_.fitScreen(85, 320);
@@ -72,16 +75,17 @@ void CenterMenu::Draw() {
     float panelY = (screenH - totalHeight) / 2.0f;
 
     DrawPanel({panelX, panelY, menuW, totalHeight},
-              Fade(theme::PANEL_BG, fadeAlpha),
-              Fade(theme::PANEL_BORDER, fadeAlpha));
+              Fade(palette.panelBg, fadeAlpha),
+              Fade(palette.panelBorder, fadeAlpha));
 
     float itemY = panelY + padding;
     float labelSize = fontSize_ * 0.7f;
 
     for (int i = 0; i < ITEM_COUNT; ++i) {
         Rectangle itemRect = {panelX + padding, itemY, menuW - padding * 2, itemH};
-        DrawTextItem(itemRect, ItemLabel(i), font_, labelSize, i == selectedIndex_,
-                     Fade(theme::UI_TEXT, fadeAlpha), Fade(theme::UI_TITLE, fadeAlpha));
+        DrawTextItem(itemRect, ItemLabel(i), font_, labelSize, palette,
+                     i == selectedIndex_,
+                     Fade(palette.uiText, fadeAlpha), Fade(palette.uiTitle, fadeAlpha));
         itemY += itemH;
     }
 
@@ -166,25 +170,26 @@ void CenterMenu::HandleAction(int action) {
     switch (action) {
         case 0: // Books
             navStack_.Push(std::make_unique<BookListScreen>(
-                font_, fontSize_, navStack_, eventBus_, uiScale_, currentChapterRef_
+                font_, fontSize_, navStack_, eventBus_, uiScale_, themeManager_, currentChapterRef_
             ));
             return;
         case 1: // Settings
             navStack_.Push(std::make_unique<SettingsScreen>(
                 font_, fontSize_, navStack_, eventBus_,
                 persistence_,
-                uiScale_, currentFontSize_, currentBibleId_, immersiveMode_
+                uiScale_, currentFontSize_, currentBibleId_, immersiveMode_,
+                themeManager_
             ));
             return;
         case 2: // Highlights
             navStack_.Push(std::make_unique<HighlightBrowserScreen>(
                 font_, fontSize_, navStack_, eventBus_,
-                highlighter_, uiScale_
+                highlighter_, uiScale_, themeManager_
             ));
             return;
         case 3: // Credits
             navStack_.Push(std::make_unique<CreditsOverlay>(
-                font_, fontSize_, navStack_, uiScale_
+                font_, fontSize_, navStack_, uiScale_, themeManager_
             ));
             return;
     }

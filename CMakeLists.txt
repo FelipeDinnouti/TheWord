@@ -208,7 +208,8 @@ set(CORE_BASE_SOURCES
     src/core/Platform.cpp
     src/core/Platform.h
     src/core/Config.h
-    src/core/Theme.h
+    src/core/ThemeManager.cpp
+    src/core/ThemeManager.h
     src/core/UIScale.h
     src/core/Locale.cpp
     src/core/Locale.h

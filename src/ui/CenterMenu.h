@@ -4,6 +4,7 @@
 #include "Screen.h"
 #include "core/UIScale.h"
 #include "core/Locale.h"
+#include "core/ThemeManager.h"
 #include "TapDetector.h"
 #include <memory>
 #include <string>
@@ -25,6 +26,7 @@ public:
                theword::persistence::PersistenceManager& persistence,
                const theword::core::UIScale& uiScale,
                float& currentFontSize, int& currentBibleId, bool& immersiveMode,
+               const theword::core::ThemeManager& themeManager,
                const std::string& currentChapterRef = "");
     void Draw() override;
     bool HandleInput(float deltaTime) override;
@@ -42,6 +44,7 @@ private:
     float& currentFontSize_;
     int& currentBibleId_;
     bool& immersiveMode_;
+    const theword::core::ThemeManager& themeManager_;
 
     void HandleAction(int action);
     static const char* ItemLabel(int idx);

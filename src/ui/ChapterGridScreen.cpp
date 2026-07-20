@@ -17,11 +17,13 @@ ChapterGridScreen::ChapterGridScreen(const Font& font, float fontSize,
                                      const std::string& bookName,
                                      int chapterCount,
                                      const theword::core::UIScale& uiScale,
-                                     int currentChapter)
+                                     int currentChapter,
+                                     const theword::core::ThemeManager& themeManager)
     : font_(font), fontSize_(fontSize),
       navStack_(navStack), eventBus_(eventBus),
       bookCode_(bookCode), bookName_(bookName),
       chapterCount_(chapterCount), uiScale_(uiScale),
+      themeManager_(themeManager),
       tapDetector_(uiScale_.dp(10)) {
     if (currentChapter >= 1 && currentChapter <= chapterCount) {
         selectedChapter_ = currentChapter;
@@ -51,6 +53,7 @@ ChapterGridScreen::~ChapterGridScreen() {
 }
 
 void ChapterGridScreen::Draw() {
+    const auto& palette = themeManager_.Current();
     float screenW = static_cast<float>(GetScreenWidth());
     float screenH = static_cast<float>(GetScreenHeight());
 
@@ -61,7 +64,7 @@ void ChapterGridScreen::Draw() {
     float gap = uiScale_.dp(8);
     int columns = 5;
 
-    DrawHeaderBar(font_, fontSize_, bookName_.c_str(), true, static_cast<int>(screenW), uiScale_);
+    DrawHeaderBar(font_, fontSize_, bookName_.c_str(), true, static_cast<int>(screenW), uiScale_, palette);
 
     float gridY = headerH + padding;
     float totalRowWidth = columns * cellW + (columns - 1) * gap;
@@ -97,13 +100,13 @@ void ChapterGridScreen::Draw() {
         float numY = cy + (cellH - numSize.y) / 2.0f;
 
         if (ch == selectedChapter_) {
-            Color bg = theme::ACCENT_TEAL;
+            Color bg = palette.accentTeal;
             bg.a = 30;
             DrawRectangleRounded({cx, cy, cellW, cellH}, 0.15f, 8, bg);
-            DrawRectangleRoundedLines({cx, cy, cellW, cellH}, 0.15f, 8, 1.5f, theme::ACCENT_TEAL);
-            DrawTextEx(font_, num.c_str(), {numX, numY}, labelSize, 1, theme::ACCENT_TEAL);
+            DrawRectangleRoundedLines({cx, cy, cellW, cellH}, 0.15f, 8, 1.5f, palette.accentTeal);
+            DrawTextEx(font_, num.c_str(), {numX, numY}, labelSize, 1, palette.accentTeal);
         } else {
-            DrawTextEx(font_, num.c_str(), {numX, numY}, labelSize, 1, theme::UI_TEXT);
+            DrawTextEx(font_, num.c_str(), {numX, numY}, labelSize, 1, palette.uiText);
         }
     }
 

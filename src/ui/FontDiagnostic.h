@@ -3,7 +3,9 @@
 
 #include "Screen.h"
 #include "core/Locale.h"
+#include "core/ThemeManager.h"
 #include <raylib.h>
+#include <vector>
 
 namespace theword::ui { class NavigationStack; }
 
@@ -13,12 +15,12 @@ class FontDiagnostic : public Screen {
 public:
     FontDiagnostic(const Font& bodyFont, const Font& headingFont,
                    const Font& largeFont, const Font& smallFont,
-                   const Font& boldFont,
-                   float dpiScale, NavigationStack& navStack);
+                   const Font& boldFont, float dpiScale,
+                   NavigationStack& navStack,
+                   const theword::core::ThemeManager& themeManager);
     void Draw() override;
     bool HandleInput(float deltaTime) override;
     const char* GetTitle() const override { return theword::core::Locale::Get("Font Diagnostic"); }
-    bool IsOverlay() const override { return true; }
 
 private:
     const Font& bodyFont_;
@@ -27,11 +29,12 @@ private:
     const Font& smallFont_;
     const Font& boldFont_;
     NavigationStack& navStack_;
-    float scrollY_ = 0.0f;
+    const theword::core::ThemeManager& themeManager_;
+
+    int scrollY_ = 0;
     float contentHeight_ = 0.0f;
 
-    void DrawSample(float& y, const char* label,
-                    const Font& font, float renderSize,
+    void DrawSample(float& y, const char* label, const Font& font, float renderSize,
                     const char* sample, Color color, int filterMode);
 };
 

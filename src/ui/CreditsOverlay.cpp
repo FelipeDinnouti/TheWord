@@ -12,12 +12,15 @@ namespace theword::ui {
 using namespace theword::core;
 
 CreditsOverlay::CreditsOverlay(const Font& font, float fontSize, NavigationStack& navStack,
-                               const theword::core::UIScale& uiScale)
+                               const theword::core::UIScale& uiScale,
+                               const theword::core::ThemeManager& themeManager)
     : font_(font), fontSize_(fontSize), navStack_(navStack), uiScale_(uiScale),
+      themeManager_(themeManager),
       showTime_(GetTime()),
       tapDetector_(uiScale_.dp(10)) {}
 
 void CreditsOverlay::Draw() {
+    const auto& palette = themeManager_.Current();
     float screenW = static_cast<float>(GetScreenWidth());
     float screenH = static_cast<float>(GetScreenHeight());
 
@@ -35,8 +38,8 @@ void CreditsOverlay::Draw() {
         fadeAlpha = std::min(1.0f, elapsed / FADE_DURATION);
     }
 
-    Color overlayColor = theme::OVERLAY_BG;
-    overlayColor.a = static_cast<unsigned char>(theme::OVERLAY_BG.a * fadeAlpha);
+    Color overlayColor = palette.overlayBg;
+    overlayColor.a = static_cast<unsigned char>(palette.overlayBg.a * fadeAlpha);
     DrawRectangle(0, 0, static_cast<int>(screenW), static_cast<int>(screenH), overlayColor);
 
     float panelW = uiScale_.fitScreen(90, 400);
@@ -54,26 +57,26 @@ void CreditsOverlay::Draw() {
     float panelY = (screenH - contentH) / 2.0f;
 
     DrawPanel({panelX, panelY, panelW, contentH},
-              Fade(theme::PANEL_BG, fadeAlpha),
-              Fade(theme::PANEL_BORDER, fadeAlpha));
+              Fade(palette.panelBg, fadeAlpha),
+              Fade(palette.panelBorder, fadeAlpha));
 
     float y = panelY + padding;
 
     std::string title = std::string("TheWord v") + APP_VERSION;
     DrawTextEx(font_, title.c_str(), {panelX + padding, y}, labelSize, 1,
-               Fade(theme::UI_TITLE, fadeAlpha));
+               Fade(palette.uiTitle, fadeAlpha));
     y += labelSize + uiScale_.dp(12);
 
     DrawTextEx(font_, Locale::Get("Built with Raylib & C++17"), {panelX + padding, y},
-               smallSize, 1, Fade(theme::UI_TEXT, fadeAlpha));
+               smallSize, 1, Fade(palette.uiText, fadeAlpha));
     y += smallSize + uiScale_.dp(8);
 
     DrawTextEx(font_, Locale::Get("Data: USFM (offline) + YouVersion API (online)"),
-               {panelX + padding, y}, smallSize, 1, Fade(theme::UI_TEXT, fadeAlpha));
+               {panelX + padding, y}, smallSize, 1, Fade(palette.uiText, fadeAlpha));
     y += smallSize + uiScale_.dp(8);
 
     DrawTextEx(font_, Locale::Get("Press Escape or tap outside to close"),
-               {panelX + padding, y}, smallSize, 1, Fade(theme::UI_TEXT, fadeAlpha));
+               {panelX + padding, y}, smallSize, 1, Fade(palette.uiText, fadeAlpha));
 
     SetMouseCursor(MOUSE_CURSOR_DEFAULT);
 }

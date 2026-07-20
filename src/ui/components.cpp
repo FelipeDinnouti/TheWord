@@ -15,23 +15,24 @@ static float RadiusToRoundness(float radius, float w, float h) {
 }
 
 void DrawHeaderBar(const Font& font, float fontSize, const char* title,
-                   bool hasBack, int screenWidth, const theword::core::UIScale& uiScale) {
+                   bool hasBack, int screenWidth, const theword::core::UIScale& uiScale,
+                   const ThemePalette& palette) {
     float barHeight = uiScale.dp(48);
     float labelSize = fontSize * 0.7f;
 
-    DrawRectangle(0, 0, screenWidth, static_cast<int>(barHeight), theme::WINDOW_BG);
-    DrawRectangle(0, static_cast<int>(barHeight) - 1, screenWidth, 1, LIGHTGRAY);
+    DrawRectangle(0, 0, screenWidth, static_cast<int>(barHeight), palette.windowBg);
+    DrawRectangle(0, static_cast<int>(barHeight) - 1, screenWidth, 1, palette.buttonBorder);
 
     if (hasBack) {
         std::string backLabel = std::string("\xE2\x86\xA9 ") + Locale::Get("Back");
         DrawTextEx(font, backLabel.c_str(), {uiScale.dp(8), (barHeight - labelSize) / 2.0f},
-                   labelSize, 1, theme::UI_TEXT);
+                   labelSize, 1, palette.uiText);
     }
 
     Vector2 titleSize = MeasureTextEx(font, title, labelSize, 1);
     float titleX = (static_cast<float>(screenWidth) - titleSize.x) / 2.0f;
     float titleY = (barHeight - titleSize.y) / 2.0f;
-    DrawTextEx(font, title, {titleX, titleY}, labelSize, 1, theme::UI_TITLE);
+    DrawTextEx(font, title, {titleX, titleY}, labelSize, 1, palette.uiTitle);
 }
 
 bool StartsWithIgnoreCase(const std::string& str, const std::string& prefix) {
@@ -45,7 +46,7 @@ bool StartsWithIgnoreCase(const std::string& str, const std::string& prefix) {
 }
 
 bool DrawButton(Rectangle bounds, const char* text, const Font& font, float fontSize,
-                bool enabled, Color textColor, Color bgColor) {
+                const ThemePalette& palette, bool enabled, Color textColor, Color bgColor) {
     Vector2 mouse = GetMousePosition();
     bool hovered = enabled && CheckCollisionPointRec(mouse, bounds);
     bool pressed = hovered && IsMouseButtonDown(MOUSE_LEFT_BUTTON);
@@ -53,17 +54,17 @@ bool DrawButton(Rectangle bounds, const char* text, const Font& font, float font
     Color fill;
     Color border;
     if (!enabled) {
-        fill = theme::BUTTON_BORDER_DISABLED;
-        border = theme::BUTTON_BORDER_DISABLED;
+        fill = palette.buttonBorderDisabled;
+        border = palette.buttonBorderDisabled;
     } else if (pressed) {
         fill = theme::Darken(bgColor, theme::PRESS_DARKEN);
-        border = theme::Darken(theme::BUTTON_BORDER, theme::PRESS_DARKEN);
+        border = theme::Darken(palette.buttonBorder, theme::PRESS_DARKEN);
     } else if (hovered) {
         fill = theme::Darken(bgColor, theme::HOVER_DARKEN);
-        border = theme::BUTTON_BORDER;
+        border = palette.buttonBorder;
     } else {
         fill = bgColor;
-        border = theme::BUTTON_BORDER;
+        border = palette.buttonBorder;
     }
 
     float const bw = 1.0f;
@@ -78,7 +79,7 @@ bool DrawButton(Rectangle bounds, const char* text, const Font& font, float font
     float tx = bounds.x + (bounds.width - textSize.x) * 0.5f;
     float ty = bounds.y + (bounds.height - textSize.y) * 0.5f;
     DrawTextEx(font, text, {tx, ty}, fontSize, 1,
-               enabled ? textColor : theme::UI_BUTTON_TEXT_DISABLED);
+               enabled ? textColor : palette.uiButtonTextDisabled);
 
     return hovered && IsMouseButtonReleased(MOUSE_LEFT_BUTTON);
 }
@@ -94,20 +95,20 @@ void DrawPanel(Rectangle bounds, Color bgColor, Color borderColor,
 }
 
 bool DrawTextItem(Rectangle bounds, const char* text, const Font& font, float fontSize,
-                  bool selected, Color textColor, Color selTextColor) {
+                  const ThemePalette& palette, bool selected, Color textColor, Color selTextColor) {
     Vector2 mouse = GetMousePosition();
     bool hovered = CheckCollisionPointRec(mouse, bounds);
     bool pressed = hovered && IsMouseButtonDown(MOUSE_LEFT_BUTTON);
 
     Color bg;
     if (selected && pressed) {
-        bg = theme::Darken(theme::SELECTED_BG, theme::PRESS_DARKEN);
+        bg = theme::Darken(palette.selectedBg, theme::PRESS_DARKEN);
     } else if (selected) {
-        bg = theme::SELECTED_BG;
+        bg = palette.selectedBg;
     } else if (pressed) {
-        bg = theme::Darken(theme::WINDOW_BG, theme::PRESS_DARKEN);
+        bg = theme::Darken(palette.windowBg, theme::PRESS_DARKEN);
     } else if (hovered) {
-        bg = theme::Darken(theme::WINDOW_BG, theme::HOVER_DARKEN);
+        bg = theme::Darken(palette.windowBg, theme::HOVER_DARKEN);
     } else {
         bg = {0, 0, 0, 0};
     }
@@ -125,7 +126,8 @@ bool DrawTextItem(Rectangle bounds, const char* text, const Font& font, float fo
     return hovered && IsMouseButtonReleased(MOUSE_LEFT_BUTTON);
 }
 
-bool DrawToggle(Rectangle bounds, Color accentColor, bool& value) {
+bool DrawToggle(Rectangle bounds, const ThemePalette& palette,
+                Color accentColor, bool& value) {
     Vector2 mouse = GetMousePosition();
     bool hovered = CheckCollisionPointRec(mouse, bounds);
     bool clicked = hovered && IsMouseButtonReleased(MOUSE_LEFT_BUTTON);
@@ -135,7 +137,7 @@ bool DrawToggle(Rectangle bounds, Color accentColor, bool& value) {
     }
 
     float roundness = RadiusToRoundness(bounds.height * 0.5f, bounds.width, bounds.height);
-    Color trackColor = value ? accentColor : theme::SWITCH_OFF;
+    Color trackColor = value ? accentColor : palette.switchOff;
     DrawRectangleRounded(bounds, roundness, 8, trackColor);
 
     float knobSize = bounds.height - 4.0f;
@@ -147,7 +149,8 @@ bool DrawToggle(Rectangle bounds, Color accentColor, bool& value) {
     return clicked;
 }
 
-bool DrawColorSwatch(Rectangle bounds, Color color, bool selected) {
+bool DrawColorSwatch(Rectangle bounds, Color color, const ThemePalette& palette,
+                     bool selected) {
     Vector2 mouse = GetMousePosition();
     bool hovered = CheckCollisionPointRec(mouse, bounds);
     bool clicked = hovered && IsMouseButtonReleased(MOUSE_LEFT_BUTTON);
@@ -160,7 +163,7 @@ bool DrawColorSwatch(Rectangle bounds, Color color, bool selected) {
     }
 
     float borderW = selected ? 2.0f : 1.0f;
-    Color borderC = selected ? BLACK : theme::BUTTON_BORDER;
+    Color borderC = selected ? BLACK : palette.buttonBorder;
 
     float roundness = RadiusToRoundness(3.0f, bounds.width, bounds.height);
     DrawRectangleRounded(bounds, roundness, 8, borderC);

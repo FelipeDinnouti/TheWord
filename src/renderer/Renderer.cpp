@@ -1,5 +1,6 @@
 #include "Renderer.h"
 #include "core/Theme.h"
+#include "core/ThemeManager.h"
 
 namespace theword::renderer {
 
@@ -11,13 +12,14 @@ Renderer::Renderer(const Font& bodyFont, const Font& headingFont,
                    float contentTop,
                    float bodySize, float headingSize,
                    float largeSize, float smallSize,
-                   float dpiScale)
+                   float dpiScale,
+                   const ThemeManager& themeManager)
     : bodyFont(bodyFont), headingFont(headingFont),
       largeFont(largeFont), smallFont(smallFont),
       contentTop(contentTop),
       bodySize_(bodySize), headingSize_(headingSize),
       largeSize_(largeSize), smallSize_(smallSize),
-      dpiScale_(dpiScale) {}
+      dpiScale_(dpiScale), themeManager_(themeManager) {}
 
 void Renderer::SetFontSizes(float body, float heading, float large, float small) {
     bodySize_ = body;
@@ -55,37 +57,38 @@ void Renderer::DrawFrame(float scrollY, float totalHeight, float viewportHeight,
 }
 
 void Renderer::DrawSpan(const Span& span, float screenY) {
-    Color color = theme::DOC_BODY;
+    const auto& palette = themeManager_.Current();
+    Color color = palette.docBody;
     float drawSize = bodySize_;
     Font useFont = bodyFont;
 
     switch (span.type) {
         case SegmentType::BookTitle:
-            color = theme::DOC_BOOK_TITLE;
+            color = palette.docBookTitle;
             drawSize = largeSize_;
             useFont = largeFont;
             break;
         case SegmentType::ChapterLabel:
-            color = theme::DOC_CHAPTER_LABEL;
+            color = palette.docChapterLabel;
             drawSize = largeSize_;
             useFont = largeFont;
             break;
         case SegmentType::SectionHeading:
-            color = theme::DOC_HEADING;
+            color = palette.docHeading;
             drawSize = headingSize_;
             useFont = headingFont;
             break;
         case SegmentType::PoetryLine:
-            color = theme::DOC_POETRY;
+            color = palette.docPoetry;
             drawSize = bodySize_;
             break;
         case SegmentType::VerseNumber:
-            color = theme::DOC_VERSE_NUMBER;
+            color = palette.docVerseNumber;
             drawSize = smallSize_;
             useFont = smallFont;
             break;
         case SegmentType::FootnoteMarker:
-            color = theme::DOC_FOOTNOTE_CALLER;
+            color = palette.docFootnoteCaller;
             drawSize = smallSize_;
             useFont = smallFont;
             break;
@@ -110,9 +113,10 @@ void Renderer::DrawScrollbar(float scrollY, float totalHeight, float viewportHei
     float rightGap = 8.0f * dpiScale_;
     float roundness = 2.0f / (barWidth * 0.5f);
     if (roundness > 1.0f) roundness = 1.0f;
+    const auto& palette = themeManager_.Current();
     DrawRectangleRounded(
         {GetScreenWidth() - rightGap, scrollBarY, barWidth, scrollBarHeight},
-        roundness, 8, theme::SCROLLBAR_THUMB);
+        roundness, 8, palette.scrollbarThumb);
 }
 
 void Renderer::DrawFpsCounter(int x, int y) {

@@ -23,6 +23,7 @@ struct ResizeEvent {
 
 struct FontSizeEvent     { float newSize; float delta; };
 struct BibleVersionSwitchEvent { int bibleId; };
+struct ThemeToggleEvent {};
 
 struct DialogEvent {
     enum class Type { GoTo, Settings, About, ContextMenu } type;

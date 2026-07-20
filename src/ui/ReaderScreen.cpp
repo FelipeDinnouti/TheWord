@@ -30,7 +30,8 @@ ReaderScreen::ReaderScreen(theword::event::EventBus& eventBus,
                            float contentTop,
                            NavigationStack& navStack,
                             const theword::core::UIScale& uiScale,
-                             float& currentFontSize, int& currentBibleId, bool& immersiveMode)
+                             float& currentFontSize, int& currentBibleId, bool& immersiveMode,
+                             const theword::core::ThemeManager& themeManager)
     : eventBus_(eventBus)
     , docManager_(docManager)
     , renderer_(renderer)
@@ -44,6 +45,7 @@ ReaderScreen::ReaderScreen(theword::event::EventBus& eventBus,
     , currentFontSize_(currentFontSize)
     , currentBibleId_(currentBibleId)
     , immersiveMode_(immersiveMode)
+    , themeManager_(themeManager)
     , bottomBarHeight_(std::max(uiScale_.dp(48), uiFontSize * 0.7f + uiScale_.dp(16)))
     , bottomMargin_(uiScale_.bottomInset) {
 
@@ -258,6 +260,7 @@ void ReaderScreen::OpenCenterMenu() {
         uiFont_, uiFontSize_, navStack_, eventBus_,
         highlighter_, persistence_,
         uiScale_, currentFontSize_, currentBibleId_, immersiveMode_,
+        themeManager_,
         docManager_.GetCurrentChapterId()
     ));
 }
@@ -281,13 +284,14 @@ float ReaderScreen::FindLineYForWord(int wordId) const {
 }
 
 void ReaderScreen::DrawBottomBarContent() {
+    const auto& palette = themeManager_.Current();
     float screenW = static_cast<float>(GetScreenWidth());
     float screenH = static_cast<float>(GetScreenHeight());
 
     float bottomHeight = barAnimation_ + bottomMargin_;
     float bottomTop = screenH - bottomHeight;
     DrawRectangle(0, static_cast<int>(bottomTop), static_cast<int>(screenW),
-                  static_cast<int>(bottomHeight), theme::WINDOW_BG);
+                  static_cast<int>(bottomHeight), palette.windowBg);
 
     if (barAnimation_ < 1.0f) return;
 
@@ -306,7 +310,7 @@ void ReaderScreen::DrawBottomBarContent() {
 
     float fadeRatio = barAnimation_ / bottomBarHeight_;
     float alpha = std::clamp((fadeRatio - 0.4f) / 0.6f, 0.0f, 1.0f);
-    Color textColor = Fade(theme::UI_TEXT, alpha);
+    Color textColor = Fade(palette.uiText, alpha);
 
     Vector2 mouse = GetMousePosition();
     float hitArea = uiScale_.dp(56);
@@ -318,16 +322,16 @@ void ReaderScreen::DrawBottomBarContent() {
 
     if (overLeft) {
         if (IsMouseButtonDown(MOUSE_LEFT_BUTTON)) {
-            arrowColorLeft = Fade(theme::UI_TEXT, alpha * 0.3f);
+            arrowColorLeft = Fade(palette.uiText, alpha * 0.3f);
         } else {
-            arrowColorLeft = Fade(theme::UI_TITLE, alpha);
+            arrowColorLeft = Fade(palette.uiTitle, alpha);
         }
     }
     if (overRight) {
         if (IsMouseButtonDown(MOUSE_LEFT_BUTTON)) {
-            arrowColorRight = Fade(theme::UI_TEXT, alpha * 0.3f);
+            arrowColorRight = Fade(palette.uiText, alpha * 0.3f);
         } else {
-            arrowColorRight = Fade(theme::UI_TITLE, alpha);
+            arrowColorRight = Fade(palette.uiTitle, alpha);
         }
     }
 

@@ -3,6 +3,7 @@
 
 #include "Screen.h"
 #include "core/UIScale.h"
+#include "core/ThemeManager.h"
 #include <vector>
 #include <string>
 #include <raylib.h>
@@ -27,7 +28,8 @@ public:
                  const Font& uiFont, float uiFontSize,
                  float contentTop,
                    NavigationStack& navStack,
-                   const theword::core::UIScale& uiScale, float& currentFontSize, int& currentBibleId, bool& immersiveMode);
+                   const theword::core::UIScale& uiScale, float& currentFontSize, int& currentBibleId, bool& immersiveMode,
+                   const theword::core::ThemeManager& themeManager);
     ~ReaderScreen() override;
     void Draw() override;
     bool HandleInput(float deltaTime) override;
@@ -47,8 +49,8 @@ private:
     float& currentFontSize_;
     int& currentBibleId_;
     bool& immersiveMode_;
+    const theword::core::ThemeManager& themeManager_;
 
-    // Bottom bar
     float bottomBarHeight_;
     float bottomMargin_;
     static constexpr float SHOW_HIDE_THRESHOLD = 30.0f;

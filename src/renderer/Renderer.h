@@ -7,6 +7,8 @@
 #include "data/ChapterProvider.h"
 #include "highlight/PersistenceInterface.h"
 
+namespace theword::core { class ThemeManager; }
+
 namespace theword::renderer {
 
 struct HighlightRect {
@@ -24,7 +26,8 @@ public:
              float contentTop,
              float bodySize, float headingSize,
              float largeSize, float smallSize,
-             float dpiScale);
+             float dpiScale,
+             const theword::core::ThemeManager& themeManager);
 
     void DrawFrame(float scrollY, float totalHeight, float viewportHeight,
                    const std::vector<std::pair<theword::data::Span, float>>& docSpans,
@@ -53,6 +56,7 @@ private:
     float largeSize_;
     float smallSize_;
     const float dpiScale_;
+    const theword::core::ThemeManager& themeManager_;
 
     void DrawSpan(const theword::data::Span& span, float screenY);
 };

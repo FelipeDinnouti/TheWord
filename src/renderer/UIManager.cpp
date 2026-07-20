@@ -2,13 +2,15 @@
 #include "RadialMenu.h"
 #include "highlight/Highlighter.h"
 #include "core/Theme.h"
+#include "core/ThemeManager.h"
 
 namespace theword::renderer {
 
 using namespace theword::core;
 
-UIManager::UIManager(theword::highlight::Highlighter& highlighter, const Font& uiFont, float dpiScale)
-    : highlighter_(highlighter), uiFont_(uiFont), dpiScale_(dpiScale) {}
+UIManager::UIManager(theword::highlight::Highlighter& highlighter, const Font& uiFont,
+                     const theword::core::ThemeManager& themeManager, float dpiScale)
+    : highlighter_(highlighter), uiFont_(uiFont), themeManager_(themeManager), dpiScale_(dpiScale) {}
 
 UIManager::~UIManager() = default;
 
@@ -108,14 +110,15 @@ void UIManager::DrawFootnotePopup() {
         py = GetScreenHeight() - totalHeight - margin;
     if (py < margin) py = margin;
 
+    const auto& palette = themeManager_.Current();
     Rectangle bg = {px, py, totalWidth, totalHeight};
-    DrawRectangleRounded(bg, 0.2f, 6, theme::DOC_FOOTNOTE_POPUP_BG);
-    DrawRectangleRoundedLines(bg, 0.2f, 6, 1.5f, theme::DOC_FOOTNOTE_POPUP_BORDER);
+    DrawRectangleRounded(bg, 0.2f, 6, palette.docFootnotePopupBg);
+    DrawRectangleRoundedLines(bg, 0.2f, 6, 1.5f, palette.docFootnotePopupBorder);
 
     float textX = px + 8.0f * dpiScale_;
     float textY = py + 8.0f * dpiScale_;
     for (const auto& line : lines) {
-        DrawTextEx(uiFont_, line.c_str(), {textX, textY}, fontSize, 1, theme::DOC_FOOTNOTE_POPUP_TEXT);
+        DrawTextEx(uiFont_, line.c_str(), {textX, textY}, fontSize, 1, palette.docFootnotePopupText);
         textY += lineHeight;
     }
 }

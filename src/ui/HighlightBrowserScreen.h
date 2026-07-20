@@ -4,13 +4,14 @@
 #include "Screen.h"
 #include "core/UIScale.h"
 #include "core/Locale.h"
+#include "core/ThemeManager.h"
 #include "TapDetector.h"
-#include <vector>
-#include <string>
 #include <memory>
+#include <string>
+#include <vector>
 #include <raylib.h>
 
-namespace theword::event { class EventBus; }
+namespace theword::event { class EventBus; struct ScrollEvent; }
 namespace theword::highlight { class Highlighter; struct Highlight; }
 namespace theword::ui { class NavigationStack; }
 
@@ -22,47 +23,50 @@ public:
                            NavigationStack& navStack,
                            theword::event::EventBus& eventBus,
                            const theword::highlight::Highlighter& highlighter,
-                           const theword::core::UIScale& uiScale);
-    ~HighlightBrowserScreen();
+                           const theword::core::UIScale& uiScale,
+                           const theword::core::ThemeManager& themeManager);
+    ~HighlightBrowserScreen() override;
     void Draw() override;
     bool HandleInput(float deltaTime) override;
     const char* GetTitle() const override { return theword::core::Locale::Get("Highlights"); }
 
-    struct ItemLayout {
-        float height;
-        std::vector<std::string> subtitleLines;
-    };
-
 private:
-    const Font& font_;
-    float fontSize_;
-    NavigationStack& navStack_;
-    theword::event::EventBus& eventBus_;
-    const theword::highlight::Highlighter& highlighter_;
-    const theword::core::UIScale& uiScale_;
-
-    int activeColorId_ = 0;
-    float scrollY_ = 0.0f;
-
     struct DisplayItem {
         const theword::highlight::Highlight* hl;
         std::string title;
         std::string subtitle;
     };
 
+    struct ItemLayout {
+        float height;
+        std::vector<std::string> subtitleLines;
+    };
+
+    const Font& font_;
+    float fontSize_;
+    NavigationStack& navStack_;
+    theword::event::EventBus& eventBus_;
+    const theword::highlight::Highlighter& highlighter_;
+    const theword::core::UIScale& uiScale_;
+    const theword::core::ThemeManager& themeManager_;
+
+    int activeColorId_ = 0;
+    float scrollY_ = 0.0f;
+
     mutable std::vector<DisplayItem> cachedItems_;
     mutable int cachedFilterColorId_ = -1;
     mutable size_t cachedHighlightsCount_ = 0;
     mutable std::vector<ItemLayout> layouts_;
-    mutable float lastTextWrapWidth_ = 0;
-    TapDetector tapDetector_;
-
-    std::shared_ptr<bool> aliveGuard_ = std::make_shared<bool>(true);
+    mutable float lastTextWrapWidth_ = 0.0f;
 
     const std::vector<DisplayItem>& GetFilteredItems() const;
     void RebuildLayouts(float textWrapWidth) const;
     void OnItemTapped(int index);
     void NavigateToHighlight(const theword::highlight::Highlight& h);
+
+    TapDetector tapDetector_;
+
+    std::shared_ptr<bool> aliveGuard_ = std::make_shared<bool>(true);
 };
 
 } // namespace theword::ui

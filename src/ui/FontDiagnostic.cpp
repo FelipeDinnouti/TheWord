@@ -11,10 +11,11 @@ using namespace theword::core;
 FontDiagnostic::FontDiagnostic(const Font& bodyFont, const Font& headingFont,
                                const Font& largeFont, const Font& smallFont,
                                const Font& boldFont,
-                               float /*dpiScale*/, NavigationStack& navStack)
+                               float /*dpiScale*/, NavigationStack& navStack,
+                               const theword::core::ThemeManager& themeManager)
     : bodyFont_(bodyFont), headingFont_(headingFont),
       largeFont_(largeFont), smallFont_(smallFont), boldFont_(boldFont),
-      navStack_(navStack) {}
+      navStack_(navStack), themeManager_(themeManager) {}
 
 static void SetFilter(Font& font, int mode) {
     SetTextureFilter(font.texture, mode);
@@ -89,7 +90,7 @@ void FontDiagnostic::Draw() {
     Font largeMut = largeFont_;
     Font smallMut = smallFont_;
 
-    // ─── POINT samples ───
+    // --- POINT samples ---
     DrawTextAt(bodyMut, Locale::Get("--- POINT ---"), 10.0f, y + scrollY_, bodySz * 0.5f, DARKGRAY);
     y += bodySz * 0.5f + 12.0f;
     SetFilter(bodyMut, TEXTURE_FILTER_POINT);
@@ -113,7 +114,7 @@ void FontDiagnostic::Draw() {
                smallMut, smallSz,
                "1 2 3 4 5 6 7 8 9 10 11 12 13 14 15", docColor, TEXTURE_FILTER_POINT);
 
-    // ─── BILINEAR comparison ───
+    // --- BILINEAR comparison ---
     DrawTextAt(bodyMut, "--- BILINEAR ---", 10.0f, y + scrollY_, bodySz * 0.5f, DARKGRAY);
     y += bodySz * 0.5f + 12.0f;
     SetFilter(bodyMut, TEXTURE_FILTER_BILINEAR);
@@ -137,7 +138,7 @@ void FontDiagnostic::Draw() {
                smallMut, smallSz,
                "1 2 3 4 5 6 7 8 9 10 11 12 13 14 15", docColor, TEXTURE_FILTER_BILINEAR);
 
-    // ─── Bold comparison (bold font, POINT) ───
+    // --- Bold comparison (bold font, POINT) ---
     DrawTextAt(bodyMut, Locale::Get("--- BOLD (POINT) ---"), 10.0f, y + scrollY_, bodySz * 0.5f, DARKGRAY);
     y += bodySz * 0.5f + 12.0f;
     Font boldMut = boldFont_;
@@ -158,7 +159,7 @@ void FontDiagnostic::Draw() {
 
     EndScissorMode();
 
-    // ─── Non-scrolling header & footer ───
+    // --- Non-scrolling header & footer ---
     DrawTextAt(GetFontDefault(), Locale::Get("Font Diagnostic"), 10.0f, 8.0f, 14.0f, DARKGRAY);
 
     char footer[128];

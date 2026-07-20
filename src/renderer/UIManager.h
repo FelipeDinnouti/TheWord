@@ -6,6 +6,7 @@
 #include <raylib.h>
 
 namespace theword::highlight { class Highlighter; }
+namespace theword::core { class ThemeManager; }
 
 namespace theword::renderer {
 
@@ -25,7 +26,8 @@ struct RadialMenuActionResult {
 
 class UIManager {
 public:
-    UIManager(theword::highlight::Highlighter& highlighter, const Font& uiFont, float dpiScale = 1.0f);
+    UIManager(theword::highlight::Highlighter& highlighter, const Font& uiFont,
+              const theword::core::ThemeManager& themeManager, float dpiScale = 1.0f);
 
     ~UIManager();
 
@@ -48,6 +50,7 @@ private:
     std::unique_ptr<RadialMenu> radialMenu;
     theword::highlight::Highlighter& highlighter_;
     const Font& uiFont_;
+    const theword::core::ThemeManager& themeManager_;
     float dpiScale_;
 
     std::string toastText_;

@@ -8,6 +8,7 @@
 #include "core/Logger.h"
 #include "core/EnvLoader.h"
 #include "core/Theme.h"
+#include "core/ThemeManager.h"
 #include "core/Locale.h"
 #include "event/EventBus.h"
 #include "event/Events.h"
@@ -113,7 +114,10 @@ bool App::Init(const std::string& title) {
     int renderH = GetScreenHeight();
     uiScale_ = {scale_, (float)renderW, (float)renderH, (float)plat.bottomInset};
 
+    themeManager_ = std::make_unique<ThemeManager>();
+
     {
+        const auto& pal = themeManager_->Current();
         const char* splashTitle = "TheWord";
         const char* subtitle = Locale::Get("Loading...");
         float titleSize = 48.0f * scale_;
@@ -121,15 +125,15 @@ bool App::Init(const std::string& title) {
         Vector2 titleDims = MeasureTextEx(GetFontDefault(), splashTitle, titleSize, 1);
         Vector2 subDims = MeasureTextEx(GetFontDefault(), subtitle, subSize, 1);
         BeginDrawing();
-        ClearBackground(theme::WINDOW_BG);
+        ClearBackground(pal.windowBg);
         DrawTextEx(GetFontDefault(), splashTitle,
                    {(renderW - titleDims.x) / 2.0f,
                     (renderH - titleDims.y) / 2.0f - 20.0f * scale_},
-                   titleSize, 1, theme::SPLASH_TITLE);
+                   titleSize, 1, pal.splashTitle);
         DrawTextEx(GetFontDefault(), subtitle,
                    {(renderW - subDims.x) / 2.0f,
                     (renderH - subDims.y) / 2.0f + 20.0f * scale_},
-                   subSize, 1, theme::SPLASH_SUBTITLE);
+                   subSize, 1, pal.splashSubtitle);
         EndDrawing();
     }
 
@@ -138,6 +142,9 @@ bool App::Init(const std::string& title) {
     Logger::Info("Opening database: " + plat.dbPath);
     persistence_ = std::make_unique<PersistenceManager>(plat.dbPath);
     highlighter_ = std::make_unique<Highlighter>(*eventBus_, *persistence_);
+
+    std::string savedDarkMode = persistence_->GetPreference("dark_mode", "0");
+    if (savedDarkMode == "1") themeManager_->SetDarkMode(true);
 
     Logger::Info("Database initialized");
     currentFontSize_ = config::FONT_SIZE;
@@ -170,7 +177,8 @@ bool App::Init(const std::string& title) {
                                                    smallFont_, initSmallF,
                                                    config::LINE_SPACING, scale_);
     renderer_ = std::make_unique<Renderer>(bodyFont_, headingFont_, largeFont_, smallFont_,
-                                            contentTop, initBodyF, initHeadingF, initLargeF, initSmallF, scale_);
+                                            contentTop, initBodyF, initHeadingF, initLargeF, initSmallF, scale_,
+                                            *themeManager_);
 
     float viewportHeight = renderH - contentTop;
 
@@ -203,7 +211,7 @@ bool App::Init(const std::string& title) {
 
     highlighter_->SetProvider(currentBibleId_ > 0 ? "BibleClient" : "USFMParser");
 
-    uiManager_ = std::make_unique<UIManager>(*highlighter_, smallFont_, scale_);
+    uiManager_ = std::make_unique<UIManager>(*highlighter_, smallFont_, *themeManager_, scale_);
 
     {
         std::string im = persistence_->GetPreference("immersive_mode", "0");
@@ -244,7 +252,8 @@ bool App::Init(const std::string& title) {
     navStack_->Push(std::make_unique<theword::ui::ReaderScreen>(
         *eventBus_, *docManager_, *renderer_, *highlighter_, *persistence_,
         headingFont_, headingSize_, contentTop,
-        *navStack_, uiScale_, currentFontSize_, currentBibleId_, immersiveMode_
+        *navStack_, uiScale_, currentFontSize_, currentBibleId_, immersiveMode_,
+        *themeManager_
     ));
 
     {
@@ -371,6 +380,11 @@ void App::WireEvents() {
         docManager_->LoadInitialChapter(docManager_->GetCurrentChapterId());
     });
 
+    eventBus_->On<theword::event::ThemeToggleEvent>([this](const auto&) {
+        themeManager_->Toggle();
+        persistence_->SetPreference("dark_mode", themeManager_->IsDarkMode() ? "1" : "0");
+    });
+
     eventBus_->On<theword::event::NavigateEvent>([this](const auto& e) {
         persistence_->SetPreference("last_scroll",
             std::to_string(docManager_->GetScrollY()));
@@ -434,12 +448,14 @@ void App::HandleShortcuts() {
         navStack_->Push(std::make_unique<theword::ui::SettingsScreen>(
             headingFont_, headingSize_, *navStack_, *eventBus_,
             *persistence_,
-            uiScale_, currentFontSize_, currentBibleId_, immersiveMode_
+            uiScale_, currentFontSize_, currentBibleId_, immersiveMode_,
+            *themeManager_
         ));
     }
     if (IsKeyPressed(key::A)) {
         navStack_->Push(std::make_unique<theword::ui::CreditsOverlay>(
-            headingFont_, headingSize_, *navStack_, uiScale_
+            headingFont_, headingSize_, *navStack_, uiScale_,
+            *themeManager_
         ));
     }
     if (IsKeyPressed(key::I)) {
@@ -449,7 +465,8 @@ void App::HandleShortcuts() {
     if (IsKeyPressed(KEY_D)) {
         navStack_->Push(std::make_unique<theword::ui::FontDiagnostic>(
             bodyFont_, headingFont_, largeFont_, smallFont_, boldFont_,
-            scale_, *navStack_
+            scale_, *navStack_,
+            *themeManager_
         ));
     }
     if (IsKeyDown(KEY_LEFT_CONTROL) && IsKeyPressed(KEY_C) && accumStartWord_ >= 0) {
@@ -536,8 +553,9 @@ void App::MainLoop() {
         }
 
         if (doDraw) {
+            const auto& pal = themeManager_->Current();
             BeginDrawing();
-            ClearBackground(theme::WINDOW_BG);
+            ClearBackground(pal.windowBg);
 
             navStack_->DrawActive();
 

@@ -4,6 +4,7 @@
 #include "Screen.h"
 #include "core/UIScale.h"
 #include "core/Locale.h"
+#include "core/ThemeManager.h"
 #include "TapDetector.h"
 #include <raylib.h>
 
@@ -20,7 +21,8 @@ public:
                    theword::event::EventBus& eventBus,
                    theword::persistence::PersistenceManager& persistence,
                    const theword::core::UIScale& uiScale,
-                   float& currentFontSize, int& currentBibleId, bool& immersiveMode);
+                   float& currentFontSize, int& currentBibleId, bool& immersiveMode,
+                   const theword::core::ThemeManager& themeManager);
     void Draw() override;
     bool HandleInput(float deltaTime) override;
     const char* GetTitle() const override { return theword::core::Locale::Get("Settings"); }
@@ -35,6 +37,7 @@ private:
     float& currentFontSize_;
     int& currentBibleId_;
     bool& immersiveMode_;
+    const theword::core::ThemeManager& themeManager_;
 
     void ChangeFontSize(float delta);
 

@@ -106,14 +106,14 @@
 - [x] Load saved `bible_id` preference in `App::Init()`
 - [x] Remove `SourceSwitchEvent` (replaced by `BibleVersionSwitchEvent`)
 
-### Feature: Modular Theme System
+### Feature: Modular Theme System ✅
 
-- [ ] Create `ThemeManager` class with `ThemePalette` struct (replaces constexpr Theme.h colors)
-- [ ] Define light and dark palettes
-- [ ] Integrate into App as a managed instance, pass `const ThemeManager&` to all draw sites
-- [ ] Add theme toggle row to SettingsScreen (Light/Dark buttons)
-- [ ] Add preference `dark_mode` (load on startup, apply on toggle)
-- [ ] Switch all `theme::COLOR` references to `themeManager.Current().colorName`
+- [x] Create `ThemeManager` class with `ThemePalette` struct (replaces constexpr Theme.h colors)
+- [x] Define light and dark palettes — `ThemePalette::Light()` and `ThemePalette::Dark()`
+- [x] Integrate into App as a managed instance, inject `const ThemeManager&` to all draw sites
+- [x] Add theme toggle row to SettingsScreen (Claro/Escuro buttons)
+- [x] Add preference `dark_mode` (load on startup, apply on toggle via `ThemeToggleEvent`)
+- [x] Switch all `theme::COLOR` references to `themeManager.Current().colorName` (86 call sites across 11 files)
 
 ### Feature: Fuzzy Finder (Book Selection) ✅
 

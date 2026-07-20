@@ -3,12 +3,13 @@
 
 #include "Screen.h"
 #include "core/UIScale.h"
+#include "core/ThemeManager.h"
 #include "TapDetector.h"
 #include <string>
 #include <memory>
 #include <raylib.h>
 
-namespace theword::event { class EventBus; }
+namespace theword::event { class EventBus; struct ScrollEvent; }
 namespace theword::ui { class NavigationStack; }
 
 namespace theword::ui {
@@ -18,15 +19,13 @@ public:
     ChapterGridScreen(const Font& font, float fontSize,
                       NavigationStack& navStack,
                       theword::event::EventBus& eventBus,
-                      const std::string& bookCode,
-                      const std::string& bookName,
-                      int chapterCount,
-                      const theword::core::UIScale& uiScale,
-                      int currentChapter = 1);
+                      const std::string& bookCode, const std::string& bookName, int chapterCount,
+                      const theword::core::UIScale& uiScale, int currentChapter,
+                      const theword::core::ThemeManager& themeManager);
     ~ChapterGridScreen() override;
     void Draw() override;
     bool HandleInput(float deltaTime) override;
-    const char* GetTitle() const override { return bookName_.c_str(); }
+    const char* GetTitle() const override { return "ChapterGrid"; }
 
 private:
     const Font& font_;
@@ -37,6 +36,7 @@ private:
     std::string bookName_;
     int chapterCount_;
     const theword::core::UIScale& uiScale_;
+    const theword::core::ThemeManager& themeManager_;
 
     int selectedChapter_ = 1;
     float gridScrollY_ = 0.0f;
