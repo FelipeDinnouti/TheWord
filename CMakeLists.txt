@@ -14,7 +14,7 @@ set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 # Pre-release suffix (empty for release builds, e.g. "-alpha.1")
-set(THEWORD_VERSION_SUFFIX "-alpha")
+set(THEWORD_VERSION_SUFFIX "")
 set(APP_VERSION_FULL "${PROJECT_VERSION}${THEWORD_VERSION_SUFFIX}")
 
 # Auto-generate Version.h from template (substitutes @PROJECT_VERSION@ etc.)

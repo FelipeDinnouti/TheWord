@@ -377,6 +377,7 @@ void App::WireEvents() {
         }
 
         highlighter_->SetProvider(e.bibleId == 0 ? "USFMParser" : "BibleClient");
+        layoutEngine_->InvalidateCache();
         docManager_->LoadInitialChapter(docManager_->GetCurrentChapterId());
     });
 
