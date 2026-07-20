@@ -41,7 +41,7 @@ void FontDiagnostic::DrawSample(float& y, const char* label,
                   filterMode == TEXTURE_FILTER_POINT ? "P" : "B",
                   font.baseSize, renderSize, ratio);
 
-    DrawTextAt(font, info, 10.0f, y + scrollY_, labelSize, GRAY);
+    DrawTextAt(font, info, 10.0f, y + scrollY_, labelSize, themeManager_.Current().uiText);
     y += labelSize + 4.0f;
 
     DrawTextAt(font, sample, 10.0f, y + scrollY_, renderSize, color);
@@ -49,10 +49,11 @@ void FontDiagnostic::DrawSample(float& y, const char* label,
 }
 
 void FontDiagnostic::Draw() {
+    const auto& pal = themeManager_.Current();
     float screenW = static_cast<float>(GetScreenWidth());
     float screenH = static_cast<float>(GetScreenHeight());
 
-    DrawRectangle(0, 0, static_cast<int>(screenW), static_cast<int>(screenH), WHITE);
+    DrawRectangle(0, 0, static_cast<int>(screenW), static_cast<int>(screenH), pal.windowBg);
 
     // Clipping region for scrollable content (leave room for header + footer)
     float clipY = 30.0f;
@@ -64,7 +65,6 @@ void FontDiagnostic::Draw() {
     float largeSz = (float)largeFont_.baseSize;
     float smallSz = (float)smallFont_.baseSize;
     float boldSz = (float)boldFont_.baseSize;
-    Color docColor = {50, 50, 50, 255};
     contentHeight_ = 36.0f + bodySz * 0.5f + 12.0f + bodySz * 0.5f + 12.0f;
 
     float sizes[] = {bodySz, headingSz, largeSz, smallSz, bodySz, headingSz, largeSz, smallSz};
@@ -91,7 +91,7 @@ void FontDiagnostic::Draw() {
     Font smallMut = smallFont_;
 
     // --- POINT samples ---
-    DrawTextAt(bodyMut, Locale::Get("--- POINT ---"), 10.0f, y + scrollY_, bodySz * 0.5f, DARKGRAY);
+    DrawTextAt(bodyMut, Locale::Get("--- POINT ---"), 10.0f, y + scrollY_, bodySz * 0.5f, pal.uiTitle);
     y += bodySz * 0.5f + 12.0f;
     SetFilter(bodyMut, TEXTURE_FILTER_POINT);
     SetFilter(headingMut, TEXTURE_FILTER_POINT);
@@ -100,22 +100,22 @@ void FontDiagnostic::Draw() {
 
     DrawSample(y, Locale::Get("body"),
                bodyMut, bodySz,
-               "The quick brown fox jumps over the lazy dog.", docColor, TEXTURE_FILTER_POINT);
+               "The quick brown fox jumps over the lazy dog.", pal.docBody, TEXTURE_FILTER_POINT);
 
     DrawSample(y, Locale::Get("heading"),
                headingMut, headingSz,
-               "The Quick Brown Fox Jumps", docColor, TEXTURE_FILTER_POINT);
+               "The Quick Brown Fox Jumps", pal.docBody, TEXTURE_FILTER_POINT);
 
     DrawSample(y, Locale::Get("large"),
                largeMut, largeSz,
-               "The Gospel According to John", docColor, TEXTURE_FILTER_POINT);
+               "The Gospel According to John", pal.docBody, TEXTURE_FILTER_POINT);
 
     DrawSample(y, Locale::Get("small"),
                smallMut, smallSz,
-               "1 2 3 4 5 6 7 8 9 10 11 12 13 14 15", docColor, TEXTURE_FILTER_POINT);
+               "1 2 3 4 5 6 7 8 9 10 11 12 13 14 15", pal.docBody, TEXTURE_FILTER_POINT);
 
     // --- BILINEAR comparison ---
-    DrawTextAt(bodyMut, "--- BILINEAR ---", 10.0f, y + scrollY_, bodySz * 0.5f, DARKGRAY);
+    DrawTextAt(bodyMut, "--- BILINEAR ---", 10.0f, y + scrollY_, bodySz * 0.5f, pal.uiTitle);
     y += bodySz * 0.5f + 12.0f;
     SetFilter(bodyMut, TEXTURE_FILTER_BILINEAR);
     SetFilter(headingMut, TEXTURE_FILTER_BILINEAR);
@@ -124,32 +124,32 @@ void FontDiagnostic::Draw() {
 
     DrawSample(y, Locale::Get("body"),
                bodyMut, bodySz,
-               "The quick brown fox jumps over the lazy dog.", docColor, TEXTURE_FILTER_BILINEAR);
+               "The quick brown fox jumps over the lazy dog.", pal.docBody, TEXTURE_FILTER_BILINEAR);
 
     DrawSample(y, Locale::Get("heading"),
                headingMut, headingSz,
-               "The Quick Brown Fox Jumps", docColor, TEXTURE_FILTER_BILINEAR);
+               "The Quick Brown Fox Jumps", pal.docBody, TEXTURE_FILTER_BILINEAR);
 
     DrawSample(y, Locale::Get("large"),
                largeMut, largeSz,
-               "The Gospel According to John", docColor, TEXTURE_FILTER_BILINEAR);
+               "The Gospel According to John", pal.docBody, TEXTURE_FILTER_BILINEAR);
 
     DrawSample(y, Locale::Get("small"),
                smallMut, smallSz,
-               "1 2 3 4 5 6 7 8 9 10 11 12 13 14 15", docColor, TEXTURE_FILTER_BILINEAR);
+               "1 2 3 4 5 6 7 8 9 10 11 12 13 14 15", pal.docBody, TEXTURE_FILTER_BILINEAR);
 
     // --- Bold comparison (bold font, POINT) ---
-    DrawTextAt(bodyMut, Locale::Get("--- BOLD (POINT) ---"), 10.0f, y + scrollY_, bodySz * 0.5f, DARKGRAY);
+    DrawTextAt(bodyMut, Locale::Get("--- BOLD (POINT) ---"), 10.0f, y + scrollY_, bodySz * 0.5f, pal.uiTitle);
     y += bodySz * 0.5f + 12.0f;
     Font boldMut = boldFont_;
     SetFilter(boldMut, TEXTURE_FILTER_POINT);
     DrawSample(y, Locale::Get("body bold"),
                boldMut, boldSz,
-               "The quick brown fox jumps over the lazy dog.", docColor, TEXTURE_FILTER_POINT);
+               "The quick brown fox jumps over the lazy dog.", pal.docBody, TEXTURE_FILTER_POINT);
 
     DrawSample(y, Locale::Get("body bold"),
                boldMut, boldSz,
-               "The Quick Brown Fox Jumps In Bold", docColor, TEXTURE_FILTER_POINT);
+               "The Quick Brown Fox Jumps In Bold", pal.docBody, TEXTURE_FILTER_POINT);
 
     // Restore — body/large/small stay POINT, heading stays BILINEAR
     SetFilter(bodyMut, TEXTURE_FILTER_POINT);
@@ -160,7 +160,7 @@ void FontDiagnostic::Draw() {
     EndScissorMode();
 
     // --- Non-scrolling header & footer ---
-    DrawTextAt(GetFontDefault(), Locale::Get("Font Diagnostic"), 10.0f, 8.0f, 14.0f, DARKGRAY);
+    DrawTextAt(GetFontDefault(), Locale::Get("Font Diagnostic"), 10.0f, 8.0f, 14.0f, pal.uiTitle);
 
     char footer[128];
     std::snprintf(footer, sizeof(footer),
@@ -168,7 +168,7 @@ void FontDiagnostic::Draw() {
                   bodyFont_.baseSize, headingFont_.baseSize,
                   largeFont_.baseSize, smallFont_.baseSize,
                   Locale::Get("ESC to close"));
-    DrawTextAt(GetFontDefault(), footer, 10.0f, screenH - 20.0f, 12.0f, GRAY);
+    DrawTextAt(GetFontDefault(), footer, 10.0f, screenH - 20.0f, 12.0f, pal.uiText);
 }
 
 bool FontDiagnostic::HandleInput(float /*deltaTime*/) {

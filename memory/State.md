@@ -1,13 +1,13 @@
 # Project State
 
-> Last updated: 2026-07-18
+> Last updated: 2026-07-20
 >
 > Previous: `memory/archive/2026-07-16_v1.7.0-alpha-complete.md`
 
 ## Version
 
 - **Base**: `1.8.0-alpha`
-- **Latest tag**: `v1.7.0-alpha`
+- **Latest tag**: `v1.8.0-alpha`
 
 ## Build Status
 
@@ -20,15 +20,14 @@
 
 ## Tests
 
-- **Total**: 77 test cases, 279 assertions
-- **Passing**: 75/77 (275/279 assertions)
+- **Total**: 80 test cases, 290 assertions
+- **Passing**: 78/80 (286/290 assertions)
 - **Failing**: 2 (both locale-related — system runs pt_BR, tests expect English)
 - **Run**: `./build/theword_test`
 
 ## Current Focus
 
-v1.8.0-alpha "Customization & Navigation" in development.
-Code Quality Audit and Architectural Remediation (immediate) complete.
+v1.8.0-alpha "Customization & Navigation" complete.
 
 ### Completed
 
@@ -36,18 +35,21 @@ Code Quality Audit and Architectural Remediation (immediate) complete.
 - [x] Code Quality Audit (all 8 steps)
 - [x] Architectural Analysis (9 findings in `memory/Architecture-Analysis.md`)
 - [x] Architectural Remediation: A1, A3, A6, A7, A8
+- [x] Fuzzy Finder (Book Selection)
+- [x] Bible Version Switcher
+- [x] Modular Theme System
 
 ### Queued
 
 | Workstream | Status |
 |------------|--------|
-| Fuzzy Finder (Book Selection) | 🔲 Pending |
-| Bible Version Switcher | 🔲 Pending |
-| Modular Theme System | 🔲 Pending |
+| (next release planning) | 🔲 Pending |
 
-### What Changed (v1.7.0-alpha)
+### What Changed (v1.8.0-alpha)
 
-See archived file: `memory/archive/2026-07-16_v1.7.0-alpha-complete.md`
+- **Fuzzy Finder**: `FuzzyMatcher` with character-sequence scoring + `StripAccents()` for Portuguese UTF-8. Replaced `StartsWithIgnoreCase` in `BookListScreen`.
+- **Bible Version Switcher**: 4 versions (BSB, WEB, ASV, BLV). CompositeProvider simplified. Version selection in SettingsScreen.
+- **Modular Theme System**: `ThemeManager` + `ThemePalette` (Light/Dark). 34-color palette injected via `const&` across all draw sites. Theme toggle in SettingsScreen. `dark_mode` preference persisted.
 
 ### Known Issues
 
@@ -61,6 +63,6 @@ See archived file: `memory/archive/2026-07-16_v1.7.0-alpha-complete.md`
 |----------|-----------|
 | Code audit before feature work | Solid foundation before building |
 | Fuzzy Finder replaces prefix-match | Strictly better UX for book search |
-| Curated Bible ID list (3 versions) | Proves feature works; extensible |
+| Curated Bible ID list (4 versions) | Proves feature works; extensible |
 | ThemeManager runtime object | Enables future themes + user customization |
 | Search Across Books deferred | Online-primary app can't ship offline-only search |
