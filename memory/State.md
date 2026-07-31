@@ -1,8 +1,8 @@
 # Project State
 
-> Last updated: 2026-07-20
+> Last updated: 2026-07-31
 >
-> Previous: `memory/archive/2026-07-16_v1.7.0-alpha-complete.md`
+> Previous: `memory/archive/2026-07-20_v1.8.0-alpha-active.md`
 
 ## Version
 
@@ -27,7 +27,9 @@
 
 ## Current Focus
 
-v1.8.0-alpha "Customization & Navigation" complete.
+v1.8.0-alpha "Customization & Navigation" complete (released 2026-07-20).
+
+Next release: **v1.9.0-alpha — Architecture Refactor + Code Quality Assurance** (A2, A4, A5, A9 + fresh audit). Full scope confirmed 2026-07-31 — Roadmap wins over the earlier Architecture-Analysis deferral of A4/A9.2-3.
 
 ### Completed
 
@@ -43,7 +45,8 @@ v1.8.0-alpha "Customization & Navigation" complete.
 
 | Workstream | Status |
 |------------|--------|
-| (next release planning) | 🔲 Pending |
+| v1.9.0-alpha — Architecture Refactor + Code Quality Assurance (A2, A4, A5, A9 + fresh audit) | 🔲 Planned (documented in `memory/Active.md`) |
+| v1.10.0-alpha — Animations & UI Polish + Web Deployment (WASM verification + `scripts/serve-web.sh`) | 🔲 Planned (documented in `memory/Active.md`) |
 
 ### What Changed (v1.8.0-alpha)
 
@@ -66,3 +69,5 @@ v1.8.0-alpha "Customization & Navigation" complete.
 | Curated Bible ID list (4 versions) | Proves feature works; extensible |
 | ThemeManager runtime object | Enables future themes + user customization |
 | Search Across Books deferred | Online-primary app can't ship offline-only search |
+| v1.9 = full Roadmap scope (A2, A4, A5, A9 + fresh audit) | Confirmed 2026-07-31 — Roadmap scope wins over Analysis deferral |
+| v1.10 = Animations & UI Polish + Web Deployment | Web version never tested; simple static server suffices |

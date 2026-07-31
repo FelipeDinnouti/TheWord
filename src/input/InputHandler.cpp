@@ -44,6 +44,7 @@ void InputHandler::ResetState() {
     didScroll_ = false;
     prevPressed_ = false;
     slopAccumulator = 0.0f;
+    suppressDragEnd_ = false;
     // Preserve double-click tracking (lastClickTime_, lastClickPos_)
     // Preserve dialogActive_ (controlled by DialogEvent subscriber)
 }
@@ -212,6 +213,18 @@ void InputHandler::RunUnifiedFSM(bool isPressed, bool justPressed, bool justRele
             } else if (GetTime() - pressStartTime > LONG_PRESS_TIME) {
                 if (pressStartHit.wordId >= 0) {
                     selectStartWord = pressStartHit.wordId;
+                    eventBus_.Emit(theword::event::SelectionEvent{
+                        theword::event::SelectionEvent::Action::Start, selectStartWord, selectStartWord,
+                        pressStartHit.bookId, pressStartHit.chapterNum});
+                    if (!platform::HasTouchInput() && isHighlightedFn
+                        && isHighlightedFn(pressStartHit.wordId)) {
+                        eventBus_.Emit(theword::event::SelectionEvent{
+                            theword::event::SelectionEvent::Action::End, selectStartWord, selectStartWord,
+                            pressStartHit.bookId, pressStartHit.chapterNum});
+                        suppressDragEnd_ = true;
+                    } else {
+                        suppressDragEnd_ = false;
+                    }
                     if (onLongPress) onLongPress(pressStartHit.wordId, cbPos);
                     pressState = PressState::LongPress;
                 } else {
@@ -229,6 +242,10 @@ void InputHandler::RunUnifiedFSM(bool isPressed, bool justPressed, bool justRele
                             // immediately (mouse drag always means select).
                             pressState = PressState::Idle;
                         } else {
+                            eventBus_.Emit(theword::event::SelectionEvent{
+                                theword::event::SelectionEvent::Action::Start,
+                                pressStartHit.wordId, pressStartHit.wordId,
+                                pressStartHit.bookId, pressStartHit.chapterNum});
                             if (onDragStart) onDragStart(pressStartHit.wordId, cbPos);
                             pressState = PressState::Dragging;
                         }
@@ -243,6 +260,10 @@ void InputHandler::RunUnifiedFSM(bool isPressed, bool justPressed, bool justRele
             if (isPressed) {
                 HitInfo hi = hitTestFn ? hitTestFn(pos.x, pos.y) : HitInfo{};
                 if (hi.wordId >= 0 && onDragUpdate) {
+                    eventBus_.Emit(theword::event::SelectionEvent{
+                        theword::event::SelectionEvent::Action::Update,
+                        pressStartHit.wordId, hi.wordId,
+                        pressStartHit.bookId, pressStartHit.chapterNum});
                     onDragUpdate(pressStartHit.wordId, hi.wordId, cbPos);
                     lastDragWord_ = hi.wordId;
                 }
@@ -250,7 +271,15 @@ void InputHandler::RunUnifiedFSM(bool isPressed, bool justPressed, bool justRele
             if (justReleased) {
                 int endWord = hitTestFn ? hitTestFn(pos.x, pos.y).wordId : lastDragWord_;
                 if (endWord < 0) endWord = lastDragWord_;
-                if (onDragEnd) onDragEnd(pressStartHit.wordId, endWord, cbPos);
+                if (suppressDragEnd_) {
+                    suppressDragEnd_ = false;
+                } else {
+                    eventBus_.Emit(theword::event::SelectionEvent{
+                        theword::event::SelectionEvent::Action::End,
+                        pressStartHit.wordId, endWord,
+                        pressStartHit.bookId, pressStartHit.chapterNum});
+                    if (onDragEnd) onDragEnd(pressStartHit.wordId, endWord, cbPos);
+                }
                 pressState = PressState::Idle;
             }
             break;
@@ -260,11 +289,22 @@ void InputHandler::RunUnifiedFSM(bool isPressed, bool justPressed, bool justRele
                 HitInfo hi = hitTestFn(pos.x, pos.y);
                 if (hi.wordId >= 0 && hi.wordId != pressStartHit.wordId) {
                     pressStartHit = hi;
+                    eventBus_.Emit(theword::event::SelectionEvent{
+                        theword::event::SelectionEvent::Action::Update,
+                        selectStartWord, hi.wordId, hi.bookId, hi.chapterNum});
                     if (onDragUpdate) onDragUpdate(selectStartWord, hi.wordId, cbPos);
                 }
             }
             if (justReleased) {
-                if (onDragEnd) onDragEnd(selectStartWord, pressStartHit.wordId, cbPos);
+                if (suppressDragEnd_) {
+                    suppressDragEnd_ = false;
+                } else {
+                    eventBus_.Emit(theword::event::SelectionEvent{
+                        theword::event::SelectionEvent::Action::End,
+                        selectStartWord, pressStartHit.wordId,
+                        pressStartHit.bookId, pressStartHit.chapterNum});
+                    if (onDragEnd) onDragEnd(selectStartWord, pressStartHit.wordId, cbPos);
+                }
                 pressState = PressState::Idle;
             }
             break;

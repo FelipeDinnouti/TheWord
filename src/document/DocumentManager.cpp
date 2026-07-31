@@ -12,6 +12,7 @@ namespace theword::document {
 
 using namespace theword::core;
 using namespace theword::data;
+using namespace theword::text;
 
 DocumentManager::DocumentManager(theword::event::EventBus& eventBus,
                                   theword::text::LayoutEngine& engine, float viewportHeight,
@@ -378,7 +379,7 @@ void DocumentManager::InvalidateLayouts() {
     RecalculateChapterPositions();
 }
 
-void DocumentManager::GetVisibleSpans(std::vector<std::pair<Span, float>>& docSpans) const {
+void DocumentManager::GetVisibleSpans(std::vector<std::pair<theword::text::Span, float>>& docSpans) const {
     docSpans.clear();
 
     float visibleTop = scrollY - viewportHeight;
@@ -448,7 +449,7 @@ std::string DocumentManager::GetChapterTitle() const {
     return ChapterIdToTitle(chapters.front().chapterId);
 }
 
-const theword::data::ChapterLayout* DocumentManager::GetCurrentLayout() const {
+const theword::text::ChapterLayout* DocumentManager::GetCurrentLayout() const {
     for (const auto& ch : chapters) {
         if (ch.chapterId == visibleChapterId_) {
             return &ch.layout;

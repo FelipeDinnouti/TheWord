@@ -64,6 +64,7 @@ private:
     HitInfo pressStartHit;
     int selectStartWord;
     int lastDragWord_;
+    bool suppressDragEnd_ = false;
 
     float touchLastY;
     float touchLaunchVelocity_ = 0.0f;

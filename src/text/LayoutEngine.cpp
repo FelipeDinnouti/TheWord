@@ -9,14 +9,12 @@ using namespace theword::data;
 
 LayoutEngine::LayoutEngine(theword::event::EventBus& eventBus,
                            float maxWidth,
-                           const Font& bodyFont, float bodySize,
-                           const Font& headingFont, float headingSize,
-                           const Font& largeFont, float largeSize,
-                           const Font& smallFont, float smallSize,
+                           TextMeasureFn measureFn,
+                           float bodySize, float headingSize,
+                           float largeSize, float smallSize,
                            float lineSpacing, float scaleFactor)
     : eventBus_(eventBus), maxWidth(maxWidth),
-      bodyFont_(bodyFont), headingFont_(headingFont),
-      largeFont_(largeFont), smallFont_(smallFont),
+      measureFn_(std::move(measureFn)),
       bodySize_(bodySize), headingSize_(headingSize),
       largeSize_(largeSize), smallSize_(smallSize),
       lineSpacing(lineSpacing),
@@ -108,7 +106,7 @@ ChapterLayout LayoutEngine::LayoutChapter(const std::string& chapterId, const Ch
 
             case SegmentType::SectionHeading:
                 flushVt();
-                currentY += LayoutHeading(seg, currentY, layout.lines, headingFont_, headingSize_);
+                currentY += LayoutHeading(seg, currentY, layout.lines, FontKind::Heading, headingSize_);
                 break;
 
             case SegmentType::VerseText:
@@ -129,7 +127,7 @@ ChapterLayout LayoutEngine::LayoutChapter(const std::string& chapterId, const Ch
             case SegmentType::ChapterLabel:
             case SegmentType::BookTitle:
                 flushVt();
-                currentY += LayoutHeading(seg, currentY, layout.lines, largeFont_, largeSize_);
+                currentY += LayoutHeading(seg, currentY, layout.lines, FontKind::Large, largeSize_);
                 break;
 
             case SegmentType::VerseNumber:
@@ -152,7 +150,7 @@ float LayoutEngine::LayoutWords(const Segment& seg, const ChapterData& data, flo
                                 std::vector<Line>& lines, float indent, SegmentType spanType) {
     float lineHeight = bodySize_ * lineSpacing;
     float availableWidth = maxWidth - leftMargin - rightMargin - indent;
-    float spaceWidth = MeasureTextEx(bodyFont_, " ", bodySize_, 1).x;
+    float spaceWidth = measureFn_(FontKind::Body, " ", bodySize_).width;
     float y = startY;
     float startX = leftMargin + indent;
     float x = startX;
@@ -169,7 +167,7 @@ float LayoutEngine::LayoutWords(const Segment& seg, const ChapterData& data, flo
         if (spanType == SegmentType::VerseText && word.verseId != currentVerse) {
             currentVerse = word.verseId;
             std::string vnText = std::to_string(word.verseId);
-            float vnWidth = MeasureTextEx(smallFont_, vnText.c_str(), smallSize_, 1).x;
+            float vnWidth = measureFn_(FontKind::Small, vnText, smallSize_).width;
 
             float vnWithSpace = vnWidth;
             if (!currentLine.spans.empty()) {
@@ -227,7 +225,7 @@ float LayoutEngine::LayoutWords(const Segment& seg, const ChapterData& data, flo
                     fnSpan.chapterNum = data.chapterNum;
                     fnSpan.startWord = -1;
                     fnSpan.endWord = -1;
-                    float fnWidth = MeasureTextEx(smallFont_, fnSpan.text.c_str(), smallSize_, 1).x;
+                    float fnWidth = measureFn_(FontKind::Small, fnSpan.text, smallSize_).width;
                     fnSpan.x = x;
                     fnSpan.y = y;
                     fnSpan.width = fnWidth;
@@ -238,7 +236,7 @@ float LayoutEngine::LayoutWords(const Segment& seg, const ChapterData& data, flo
             }
         }
 
-        float wordWidth = MeasureTextEx(bodyFont_, word.text.c_str(), bodySize_, 1).x;
+        float wordWidth = measureFn_(FontKind::Body, word.text, bodySize_).width;
         float spaceAfterWord = wordWidth;
 
         if (!currentLine.spans.empty()) {
@@ -284,7 +282,7 @@ float LayoutEngine::LayoutWords(const Segment& seg, const ChapterData& data, flo
 }
 
 float LayoutEngine::LayoutHeading(const Segment& seg, float startY, std::vector<Line>& lines,
-                                   const Font& useFont, float renderSize) {
+                                   FontKind kind, float renderSize) {
     float lineHeight = renderSize * lineSpacing;
     float y = startY + headingTopGap;
 
@@ -309,7 +307,7 @@ float LayoutEngine::LayoutHeading(const Segment& seg, float startY, std::vector<
         return y - startY;
     }
 
-    float spaceWidth = MeasureTextEx(useFont, " ", renderSize, 1).x;
+    float spaceWidth = measureFn_(kind, " ", renderSize).width;
     float availableWidth = maxWidth - leftMargin - rightMargin;
 
     // Wrap words into lines
@@ -320,7 +318,7 @@ float LayoutEngine::LayoutHeading(const Segment& seg, float startY, std::vector<
     std::vector<WrappedLine> wrappedLines;
     WrappedLine current;
     for (const auto& word : words) {
-        float wordWidth = MeasureTextEx(useFont, word.c_str(), renderSize, 1).x;
+        float wordWidth = measureFn_(kind, word, renderSize).width;
         float addedGap = current.wordTexts.empty() ? 0.0f : spaceWidth;
         if (current.totalWidth + addedGap + wordWidth > availableWidth && !current.wordTexts.empty()) {
             wrappedLines.push_back(current);
@@ -343,7 +341,7 @@ float LayoutEngine::LayoutHeading(const Segment& seg, float startY, std::vector<
         float x = (maxWidth - wl.totalWidth) / 2.0f;
         float wordX = x;
         for (const auto& wt : wl.wordTexts) {
-            float ww = MeasureTextEx(useFont, wt.c_str(), renderSize, 1).x;
+            float ww = measureFn_(kind, wt, renderSize).width;
 
             Span span;
             span.text = wt;

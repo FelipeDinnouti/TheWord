@@ -4,7 +4,7 @@
 #include <string>
 #include <vector>
 #include <raylib.h>
-#include "data/ChapterProvider.h"
+#include "text/LayoutTypes.h"
 #include "highlight/PersistenceInterface.h"
 
 namespace theword::core { class ThemeManager; }
@@ -30,7 +30,7 @@ public:
              const theword::core::ThemeManager& themeManager);
 
     void DrawFrame(float scrollY, float totalHeight, float viewportHeight,
-                   const std::vector<std::pair<theword::data::Span, float>>& docSpans,
+                   const std::vector<std::pair<theword::text::Span, float>>& docSpans,
                    const std::vector<HighlightRect>& highlightRects = {});
     void DrawScrollbar(float scrollY, float totalHeight, float viewportHeight);
     void SetFontSizes(float body, float heading, float large, float small);
@@ -58,7 +58,7 @@ private:
     const float dpiScale_;
     const theword::core::ThemeManager& themeManager_;
 
-    void DrawSpan(const theword::data::Span& span, float screenY);
+    void DrawSpan(const theword::text::Span& span, float screenY);
 };
 
 } // namespace theword::renderer

@@ -6,6 +6,7 @@ namespace theword::renderer {
 
 using namespace theword::core;
 using namespace theword::data;
+using namespace theword::text;
 
 Renderer::Renderer(const Font& bodyFont, const Font& headingFont,
                    const Font& largeFont, const Font& smallFont,

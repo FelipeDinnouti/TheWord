@@ -1,6 +1,6 @@
 # Progress Tracking
 
-> Status: v1.6.x complete | Last Updated: 2026-07-14
+> Status: v1.8.0-alpha complete | Last Updated: 2026-07-31
 
 ## Overall Progress
 
@@ -23,6 +23,10 @@
 | v1.6.1-alpha (Input Refactor) | ✅ Complete | Unified FSM, semantic callbacks, TapDetector, bug fixes |
 | v1.6.2-alpha (Radial Menu + Lifecycle) | ✅ Complete | Sector-based hit detection, Android lifecycle fix, highlight recolor fix |
 | v1.6.3-alpha (VSYNC + Idle Drain) | ✅ Complete | Android VSYNC fix, time-based idle drain, uncapped FPS on high-refresh |
+| v1.7.0-alpha (Reading Experience) | ✅ Complete | Copy Verse, Footnotes, Open Where You Left Off, Immersive Mode |
+| v1.8.0-alpha (Customization & Navigation) | ✅ Complete | Code Quality Audit, Fuzzy Finder, Bible Version Switcher, Modular Theme System |
+| v1.9.0-alpha (Architecture Refactor + Code Quality Assurance) | 🔲 Planned | A2, A4, A5, A9 + fresh audit — current release |
+| v1.10.0-alpha (Animations & UI Polish + Web Deployment) | 🔲 Planned | WASM verification, `serve-web.sh` static server, animation pass |
 
 ## Phase A — Documentation Restructure ✅
 
@@ -274,6 +278,37 @@
 - [x] Time-based idle drain — cap draw rate at ~5fps when nothing changes
 - [x] Build, deploy, logcat-verified VSYNC working on device
 - [x] Tagged as `v1.6.3`
+
+## v1.7.0-alpha — Reading Experience ✅
+
+- [x] Copy Verse Polish — citation format, Ctrl+C, toast feedback
+- [x] Footnote Display — data layer, USFM/HTML parsing, markers, popup, cross-refs
+- [x] Open Where You Left Off — scroll save/restore
+- [x] Immersive / Clean Mode — hide verse numbers, section headings
+- [x] Verse Flow Fix — no forced line breaks between verses
+- [x] Bible ID Fix (129→3034)
+- [x] Tagged as `v1.7.0-alpha`
+
+## v1.8.0-alpha — Customization & Navigation ✅
+
+- [x] Code Quality Audit — all 8 steps (`-Wall -Wextra -Wpedantic` clean, dead code removed, includes pruned, const-correctness, error-handling, naming consistency)
+- [x] Architectural Remediation — A1, A3, A6, A7, A8
+- [x] Fuzzy Finder — FuzzyMatcher scoring replaces prefix-match in BookListScreen
+- [x] Bible Version Switcher — curated list (BSB, WEB, ASV, BLV), `bible_id` persistence
+- [x] Modular Theme System — ThemeManager + Light/Dark palettes, `dark_mode` preference
+- [x] Layout cache invalidation on Bible version switch
+- [x] Tagged as `v1.8.0-alpha`
+
+## v1.9.0-alpha — Architecture Refactor + Code Quality Assurance 🔲 Planned
+
+- [ ] A2: LayoutTypes extraction · A4: DrawContext · A5: TextMeasureFn · A9: FontManager + selection flow
+- [ ] Code Quality Assurance — fresh full audit across all src/ (incl. deferred input consolidation)
+- See `memory/Active.md` for the implementation checklist
+
+## v1.10.0-alpha — Animations & UI Polish + Web Deployment 🔲 Planned
+
+- [ ] WASM browser verification (web version never tested) + `scripts/serve-web.sh` static server
+- [ ] Animations & UI Polish — animation/transition pass across screens and overlays
 
 ## Post-MVP: Release-Based Planning
 

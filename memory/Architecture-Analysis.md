@@ -498,20 +498,22 @@ immediately beneficial.
 | A7 | Move `#ifdef _WIN32` to Platform::EnsureDirectoryExists | Trivial |
 | A8 | Remove dead KeyEvent emission + add event governance to docs | Small |
 
-### Short-Term (v1.9.0-alpha — Refactor Release)
+### Short-Term (v1.9.0-alpha — Refactor + Code Quality Release)
+
+> Full scope confirmed 2026-07-31: A4 and A9.2-3 promoted from Long-Term per the Roadmap.
 
 | Finding | Action | Effort |
 |---------|--------|--------|
 | A2 | Extract Span/Line/ChapterLayout from ChapterProvider.h to text/LayoutTypes.h | Medium |
 | A5 | Abstract MeasureTextEx behind TextMeasureFn interface | Medium |
 | A9.1 | Remove selection re-emission hop through App | Small |
+| A9.2-3 | Extract FontManager, move resize handling from App | Medium-Large |
+| A4 | Introduce DrawContext, eliminate direct raylib calls from all screens | Large |
 
 ### Long-Term (Deferred)
 
-| Finding | Action | Effort |
-|---------|--------|--------|
-| A4 | Introduce DrawContext, eliminate direct raylib calls from all screens | Large |
-| A9.2-3 | Extract FontManager, move resize handling from App | Medium-Large |
+No remaining findings — all remediation items are scheduled for v1.9.0-alpha.
+New findings will be tracked here as they surface.
 
 ---
 

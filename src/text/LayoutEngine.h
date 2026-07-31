@@ -4,8 +4,9 @@
 #include <string>
 #include <vector>
 #include <atomic>
-#include <raylib.h>
 #include "data/ChapterProvider.h"
+#include "text/LayoutTypes.h"
+#include "text/TextMeasure.h"
 
 namespace theword::event {
     class EventBus;
@@ -19,13 +20,12 @@ class LayoutEngine {
 public:
     LayoutEngine(theword::event::EventBus& eventBus,
                  float maxWidth,
-                 const Font& bodyFont, float bodySize,
-                 const Font& headingFont, float headingSize,
-                 const Font& largeFont, float largeSize,
-                 const Font& smallFont, float smallSize,
+                 TextMeasureFn measureFn,
+                 float bodySize, float headingSize,
+                 float largeSize, float smallSize,
                  float lineSpacing, float scaleFactor = 1.0f);
 
-    theword::data::ChapterLayout LayoutChapter(const std::string& chapterId, const theword::data::ChapterData& data, bool skipCache = false);
+    ChapterLayout LayoutChapter(const std::string& chapterId, const theword::data::ChapterData& data, bool skipCache = false);
 
     int GetGeneration() const { return layoutGeneration_; }
 
@@ -36,15 +36,12 @@ public:
     void SetMaxWidth(float width);
     void InvalidateCache();
 
-    int HitTestLine(const theword::data::ChapterLayout& layout, float chapterRelativeY, float screenX) const;
+    int HitTestLine(const ChapterLayout& layout, float chapterRelativeY, float screenX) const;
 
 private:
     theword::event::EventBus& eventBus_;
     float maxWidth;
-    const Font& bodyFont_;
-    const Font& headingFont_;
-    const Font& largeFont_;
-    const Font& smallFont_;
+    TextMeasureFn measureFn_;
     float bodySize_;
     float headingSize_;
     float largeSize_;
@@ -57,15 +54,15 @@ private:
     const float headingBottomGap;
     const float poetryIndent;
 
-    std::vector<theword::data::ChapterLayout> cachedLayouts;
+    std::vector<ChapterLayout> cachedLayouts;
     std::atomic<int> layoutGeneration_{0};
 
     void OnResize(const theword::event::ResizeEvent& e);
 
     float LayoutWords(const theword::data::Segment& seg, const theword::data::ChapterData& data, float startY,
-                      std::vector<theword::data::Line>& lines, float indent, theword::data::SegmentType spanType);
-    float LayoutHeading(const theword::data::Segment& seg, float startY, std::vector<theword::data::Line>& lines,
-                        const Font& useFont, float renderSize);
+                      std::vector<Line>& lines, float indent, theword::data::SegmentType spanType);
+    float LayoutHeading(const theword::data::Segment& seg, float startY, std::vector<Line>& lines,
+                        FontKind kind, float renderSize);
 };
 
 } // namespace theword::text

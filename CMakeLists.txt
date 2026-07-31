@@ -262,6 +262,8 @@ set(DATA_SOURCES
 set(TEXT_SOURCES
     src/text/LayoutEngine.cpp
     src/text/LayoutEngine.h
+    src/text/LayoutTypes.h
+    src/text/TextMeasure.h
 )
 
 set(DOCUMENT_SOURCES
@@ -283,6 +285,8 @@ set(INPUT_SOURCES
 )
 
 set(RENDERER_SOURCES
+    src/renderer/FontManager.cpp
+    src/renderer/FontManager.h
     src/renderer/Renderer.cpp
     src/renderer/Renderer.h
     src/renderer/UIManager.cpp

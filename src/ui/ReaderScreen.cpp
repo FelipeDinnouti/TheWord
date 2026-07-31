@@ -87,7 +87,7 @@ void ReaderScreen::Draw() {
     float totalHeight = docManager_.GetTotalHeight();
     float viewHeight = docManager_.GetViewportHeight();
 
-    std::vector<std::pair<Span, float>> docSpans;
+    std::vector<std::pair<theword::text::Span, float>> docSpans;
     docManager_.GetVisibleSpans(docSpans);
 
     if (immersiveMode_) {

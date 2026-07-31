@@ -8,7 +8,7 @@
 #include <string>
 #include <raylib.h>
 
-namespace theword::data { struct Span; }
+namespace theword::text { struct Span; }
 namespace theword::event { class EventBus; struct ScrollEvent; struct NavigateToHighlightEvent; }
 namespace theword::renderer { class Renderer; struct HighlightRect; }
 namespace theword::document { class DocumentManager; }

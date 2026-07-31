@@ -2,12 +2,10 @@
 #include "raylib.h"
 #include "core/Config.h"
 #include "core/Platform.h"
-#include "core/FontHelper.h"
 #include "core/BibleBooks.h"
 #include "core/IHttpClient.h"
 #include "core/Logger.h"
 #include "core/EnvLoader.h"
-#include "core/Theme.h"
 #include "core/ThemeManager.h"
 #include "core/Locale.h"
 #include "event/EventBus.h"
@@ -16,9 +14,11 @@
 #include "data/BibleClient.h"
 #include "data/CompositeProvider.h"
 #include "text/LayoutEngine.h"
+#include "text/LayoutTypes.h"
 #include "document/DocumentManager.h"
 #include "renderer/Renderer.h"
 #include "renderer/UIManager.h"
+#include "renderer/FontManager.h"
 #include "input/InputHandler.h"
 #include "highlight/Highlighter.h"
 #include "persistence/PersistenceManager.h"
@@ -44,10 +44,7 @@ using namespace theword::input;
 
 App::App() = default;
 App::~App() {
-    UnloadFont(bodyFont_);
-    UnloadFont(headingFont_);
-    UnloadFont(largeFont_);
-    UnloadFont(smallFont_);
+    fontManager_.reset();
     CloseWindow();
 }
 
@@ -137,8 +134,6 @@ bool App::Init(const std::string& title) {
         EndDrawing();
     }
 
-    fontCodepoints_ = LoadFontCodepoints(*plat.assets, config::FONT_REGULAR);
-
     Logger::Info("Opening database: " + plat.dbPath);
     persistence_ = std::make_unique<PersistenceManager>(plat.dbPath);
     highlighter_ = std::make_unique<Highlighter>(*eventBus_, *persistence_);
@@ -157,27 +152,26 @@ bool App::Init(const std::string& title) {
     try { currentBibleId_ = std::stoi(savedBibleId); } catch (...) { currentBibleId_ = config::DEFAULT_BIBLE_ID; }
 
     Logger::Info("Loading fonts");
-    ReloadFonts(currentFontSize_, fontCodepoints_);
+    fontManager_ = std::make_unique<FontManager>(scale_);
+    fontManager_->Init(*plat.assets, currentFontSize_);
     Logger::Info("Fonts loaded");
 
-    headingSize_ = currentFontSize_ * theme::FONT_HEADING * scale_;
     float contentTop = 0.0f;
     float contentWidth = static_cast<float>(renderW);
 
-    int initBody = (int)(currentFontSize_ * scale_);
-    float initBodyF = (float)std::max(1, initBody);
-    float initHeadingF = (float)std::max(1, (int)(currentFontSize_ * theme::FONT_HEADING * scale_));
-    float initLargeF = (float)std::max(1, (int)(currentFontSize_ * theme::FONT_LARGE_HEADING * scale_));
-    float initSmallF = (float)std::max(1, (int)(currentFontSize_ * theme::FONT_VERSE_NUMBER * scale_));
-
     layoutEngine_ = std::make_unique<LayoutEngine>(*eventBus_, contentWidth,
-                                                   bodyFont_, initBodyF,
-                                                   headingFont_, initHeadingF,
-                                                   largeFont_, initLargeF,
-                                                   smallFont_, initSmallF,
+                                                   TextMeasureFn{[this](FontKind kind, const std::string& text, float size) {
+                                                       Vector2 dims = MeasureTextEx(fontManager_->Get(kind), text.c_str(), size, 1);
+                                                       return TextExtent{dims.x, dims.y};
+                                                   }},
+                                                   fontManager_->BodySize(), fontManager_->HeadingFontSize(),
+                                                   fontManager_->LargeSize(), fontManager_->SmallSize(),
                                                    config::LINE_SPACING, scale_);
-    renderer_ = std::make_unique<Renderer>(bodyFont_, headingFont_, largeFont_, smallFont_,
-                                            contentTop, initBodyF, initHeadingF, initLargeF, initSmallF, scale_,
+    renderer_ = std::make_unique<Renderer>(fontManager_->Body(), fontManager_->Heading(),
+                                            fontManager_->Large(), fontManager_->Small(),
+                                            contentTop,
+                                            fontManager_->BodySize(), fontManager_->HeadingFontSize(),
+                                            fontManager_->LargeSize(), fontManager_->SmallSize(), scale_,
                                             *themeManager_);
 
     float viewportHeight = renderH - contentTop;
@@ -211,7 +205,7 @@ bool App::Init(const std::string& title) {
 
     highlighter_->SetProvider(currentBibleId_ > 0 ? "BibleClient" : "USFMParser");
 
-    uiManager_ = std::make_unique<UIManager>(*highlighter_, smallFont_, *themeManager_, scale_);
+    uiManager_ = std::make_unique<UIManager>(*highlighter_, fontManager_->Small(), *themeManager_, scale_);
 
     {
         std::string im = persistence_->GetPreference("immersive_mode", "0");
@@ -234,7 +228,7 @@ bool App::Init(const std::string& title) {
         return highlighter_->IsWordHighlighted(wordId);
     };
     auto hitTestFootnoteFn = [this, contentTop](float x, float y) -> int {
-        std::vector<std::pair<theword::data::Span, float>> spans;
+        std::vector<std::pair<theword::text::Span, float>> spans;
         docManager_->GetVisibleSpans(spans);
         for (const auto& [span, docY] : spans) {
             if (span.type != SegmentType::FootnoteMarker || span.footnoteIndex < 0) continue;
@@ -251,7 +245,7 @@ bool App::Init(const std::string& title) {
     navStack_ = std::make_unique<theword::ui::NavigationStack>();
     navStack_->Push(std::make_unique<theword::ui::ReaderScreen>(
         *eventBus_, *docManager_, *renderer_, *highlighter_, *persistence_,
-        headingFont_, headingSize_, contentTop,
+        fontManager_->Heading(), fontManager_->HeadingSize(), contentTop,
         *navStack_, uiScale_, currentFontSize_, currentBibleId_, immersiveMode_,
         *themeManager_
     ));
@@ -287,77 +281,25 @@ bool App::Init(const std::string& title) {
     return true;
 }
 
-void App::ReloadFonts(float newFontSize, std::vector<int>& codepoints) {
-    int scaledFontSize = (int)(newFontSize * scale_);
-    scaledFontSize = std::max(1, scaledFontSize);
-    int scaledHeadingSize = (int)(newFontSize * theme::FONT_HEADING * scale_);
-    scaledHeadingSize = std::max(1, scaledHeadingSize);
-    int scaledLargeSize = (int)(newFontSize * theme::FONT_LARGE_HEADING * scale_);
-    scaledLargeSize = std::max(1, scaledLargeSize);
-    int scaledSmallSize = (int)(newFontSize * theme::FONT_VERSE_NUMBER * scale_);
-    scaledSmallSize = std::max(1, scaledSmallSize);
-
-    Font newBody = LoadFontEx(config::FONT_REGULAR, scaledFontSize,
-                              codepoints.data(), (int)codepoints.size());
-    SetTextureFilter(newBody.texture, TEXTURE_FILTER_POINT);
-
-    Font newHeading = LoadFontEx(config::FONT_REGULAR, scaledHeadingSize,
-                                 codepoints.data(), (int)codepoints.size());
-    SetTextureFilter(newHeading.texture, TEXTURE_FILTER_BILINEAR);
-
-    Font newLarge = LoadFontEx(config::FONT_REGULAR, scaledLargeSize,
-                               codepoints.data(), (int)codepoints.size());
-    SetTextureFilter(newLarge.texture, TEXTURE_FILTER_POINT);
-
-    Font newSmall = LoadFontEx(config::FONT_REGULAR, scaledSmallSize,
-                               codepoints.data(), (int)codepoints.size());
-    SetTextureFilter(newSmall.texture, TEXTURE_FILTER_POINT);
-
-    Font newBold = LoadFontEx(config::FONT_BOLD, scaledFontSize,
-                              codepoints.data(), (int)codepoints.size());
-    SetTextureFilter(newBold.texture, TEXTURE_FILTER_POINT);
-
-    headingSize_ = config::FONT_HEADING_SIZE / config::FONT_SIZE * newFontSize * scale_;
-
-    Font oldBody = bodyFont_;
-    Font oldHeading = headingFont_;
-    Font oldLarge = largeFont_;
-    Font oldSmall = smallFont_;
-    Font oldBold = boldFont_;
-    bodyFont_ = newBody;
-    headingFont_ = newHeading;
-    largeFont_ = newLarge;
-    smallFont_ = newSmall;
-    boldFont_ = newBold;
-
-    UnloadFont(oldBody);
-    UnloadFont(oldHeading);
-    UnloadFont(oldLarge);
-    UnloadFont(oldSmall);
-    UnloadFont(oldBold);
-}
-
 void App::WireEvents() {
     eventBus_->On<theword::event::FontSizeEvent>([this](const auto& e) {
         float newSize;
         if (e.delta != 0.0f && e.newSize == 0.0f) {
-            newSize = std::max(config::FONT_SIZE_MIN,
-                      std::min(config::FONT_SIZE_MAX, currentFontSize_ + e.delta));
+            newSize = fontManager_->CurrentSize() + e.delta;
         } else if (e.newSize != 0.0f) {
             newSize = e.newSize / scale_;
         } else {
             return;
         }
 
-        if (newSize == currentFontSize_) return;
-        currentFontSize_ = newSize;
+        if (newSize == fontManager_->CurrentSize()) return;
+        fontManager_->ReloadSizes(newSize);
+        currentFontSize_ = fontManager_->CurrentSize();
 
-        ReloadFonts(newSize, fontCodepoints_);
-
-        float bodyF = (float)std::max(1, (int)(newSize * scale_));
-        float headingF = (float)std::max(1, (int)(newSize * theme::FONT_HEADING * scale_));
-        float largeF = (float)std::max(1, (int)(newSize * theme::FONT_LARGE_HEADING * scale_));
-        float smallF = (float)std::max(1, (int)(newSize * theme::FONT_VERSE_NUMBER * scale_));
+        float bodyF = fontManager_->BodySize();
+        float headingF = fontManager_->HeadingFontSize();
+        float largeF = fontManager_->LargeSize();
+        float smallF = fontManager_->SmallSize();
         layoutEngine_->SetFontSizes(bodyF, headingF, largeF, smallF);
         layoutEngine_->InvalidateCache();
         docManager_->InvalidateLayouts();
@@ -417,12 +359,6 @@ void App::WireInputCallbacks() {
     inputHandler_->onTapEmpty = [this](Vector2 pos) {
         OnTapEmpty(pos);
     };
-    inputHandler_->onDragStart = [this](int startWord, Vector2 pos) {
-        OnDragStart(startWord, pos);
-    };
-    inputHandler_->onDragUpdate = [this](int startWord, int currentWord, Vector2 pos) {
-        OnDragUpdate(startWord, currentWord, pos);
-    };
     inputHandler_->onDragEnd = [this](int startWord, int endWord, Vector2 pos) {
         OnDragEnd(startWord, endWord, pos);
     };
@@ -447,7 +383,7 @@ void App::HandleShortcuts() {
 
     if (IsKeyPressed(key::S)) {
         navStack_->Push(std::make_unique<theword::ui::SettingsScreen>(
-            headingFont_, headingSize_, *navStack_, *eventBus_,
+            fontManager_->Heading(), fontManager_->HeadingSize(), *navStack_, *eventBus_,
             *persistence_,
             uiScale_, currentFontSize_, currentBibleId_, immersiveMode_,
             *themeManager_
@@ -455,7 +391,7 @@ void App::HandleShortcuts() {
     }
     if (IsKeyPressed(key::A)) {
         navStack_->Push(std::make_unique<theword::ui::CreditsOverlay>(
-            headingFont_, headingSize_, *navStack_, uiScale_,
+            fontManager_->Heading(), fontManager_->HeadingSize(), *navStack_, uiScale_,
             *themeManager_
         ));
     }
@@ -465,7 +401,8 @@ void App::HandleShortcuts() {
     }
     if (IsKeyPressed(KEY_D)) {
         navStack_->Push(std::make_unique<theword::ui::FontDiagnostic>(
-            bodyFont_, headingFont_, largeFont_, smallFont_, boldFont_,
+            fontManager_->Body(), fontManager_->Heading(),
+            fontManager_->Large(), fontManager_->Small(), fontManager_->Bold(),
             scale_, *navStack_,
             *themeManager_
         ));
@@ -713,40 +650,15 @@ void App::OnTapEmpty(Vector2 pos) {
     }
 }
 
-void App::OnDragStart(int startWord, Vector2 /*pos*/) {
-    auto& ph = inputHandler_->GetPressStartHit();
-    eventBus_->Emit(theword::event::SelectionEvent{
-        theword::event::SelectionEvent::Action::Start, startWord, startWord, ph.bookId, ph.chapterNum});
-}
-
-void App::OnDragUpdate(int startWord, int currentWord, Vector2 /*pos*/) {
-    auto& ph = inputHandler_->GetPressStartHit();
-    eventBus_->Emit(theword::event::SelectionEvent{
-        theword::event::SelectionEvent::Action::Update, startWord, currentWord, ph.bookId, ph.chapterNum});
-}
-
 void App::OnDragEnd(int startWord, int endWord, Vector2 pos) {
-    if (longPressHandled_) {
-        longPressHandled_ = false;
-        return;
-    }
     auto& ph = inputHandler_->GetPressStartHit();
-    eventBus_->Emit(theword::event::SelectionEvent{
-        theword::event::SelectionEvent::Action::End, startWord, endWord, ph.bookId, ph.chapterNum});
     uiManager_->ShowRadialMenu(pos, startWord, endWord, ph.bookId, ph.chapterNum);
 }
 
 void App::OnLongPress(int wordId, Vector2 pos) {
     auto& ph = inputHandler_->GetPressStartHit();
-    eventBus_->Emit(theword::event::SelectionEvent{
-        theword::event::SelectionEvent::Action::Start, wordId, wordId, ph.bookId, ph.chapterNum});
     if (!platform::HasTouchInput() && highlighter_->IsWordHighlighted(wordId, ph.bookId, ph.chapterNum)) {
-        eventBus_->Emit(theword::event::SelectionEvent{
-            theword::event::SelectionEvent::Action::End, wordId, wordId, ph.bookId, ph.chapterNum});
         uiManager_->ShowRadialMenu(pos, wordId, wordId, ph.bookId, ph.chapterNum);
-        longPressHandled_ = true;
-    } else {
-        longPressHandled_ = false;
     }
 }
 

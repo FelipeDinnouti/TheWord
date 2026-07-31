@@ -1,8 +1,20 @@
 # Release Plan
 
-> Status: v1.7.0-alpha complete | Last Updated: 2026-07-17
+> Status: v1.8.0-alpha complete | Last Updated: 2026-07-31
 
 ## Past Releases
+
+### v1.8.0-alpha (2026-07-20)
+
+**Theme:** Customization & Navigation — Code Quality Audit, Fuzzy Finder, Bible Version Switcher, Modular Theme System
+
+- [x] Code Quality Audit — `-Wall -Wextra -Wpedantic` clean, dead code removed (GlobalId.h, commented blocks), includes pruned, const-correctness pass, error-handling check, naming consistency (input consolidation deferred to v1.9 audit)
+- [x] Architectural Remediation — A1, A3, A6, A7, A8 (see `memory/Architecture-Analysis.md`)
+- [x] Bible Version Switcher — curated list (BSB 3034, WEB 206, ASV 12, BLV 0=USFM), single-primary CompositeProvider, `bible_id` preference persisted, `SourceSwitchEvent` removed
+- [x] Modular Theme System — ThemeManager + ThemePalette (Light/Dark), `dark_mode` preference, 86 call sites across 11 files migrated
+- [x] Fuzzy Finder — FuzzyMatcher scoring replaces prefix-match in BookListScreen (GoTo dialog deferred: none exists)
+- [x] Layout cache invalidation on Bible version switch
+- [x] Tag: `git tag -am "v1.8.0-alpha" "v1.8.0-alpha"`
 
 ### v1.7.0-alpha (2026-07-16)
 
@@ -81,52 +93,48 @@
 - [x] Phase 13 Highlight Browser — data model + persistence + UI complete
 - [x] Tag: `git tag -am "v1.4.2" "v1.4.2"`
 
-## Current Release: v1.8.0-alpha
+## Current Release: v1.9.0-alpha
 
-**Theme:** Customization & Navigation — Code Quality Audit, Fuzzy Finder, Bible Version Switcher, Modular Theme System
+**Theme:** Architecture Refactor + Code Quality Assurance — findings A2, A4, A5, A9 + fresh audit
 
-### Feature: Code Quality Audit
+> Full scope confirmed 2026-07-31: the Roadmap scope wins over the earlier
+> Architecture-Analysis deferral — A4 and A9.2-3 are in this release.
+> See `memory/Architecture-Analysis.md` for details on each finding.
 
-- [ ] Build with `-Wall -Wextra -Wpedantic`, fix all warnings
-- [ ] Remove dead code (GlobalId.h, commented blocks, unused variables)
-- [ ] Prune unused `#include`s, prefer forward declarations
-- [ ] `const`-correctness pass across all modules
-- [ ] Check all `std::optional` / pointer returns are error-handled
-- [ ] Naming consistency check (PascalCase convention)
-- [ ] Consolidate duplicated input patterns (TapDetector + mouse/press boilerplate across screens)
+### Feature: Architectural Remediation
 
-### Feature: Bible Version Switcher ✅
+- [ ] A2: Extract Span/Line/ChapterLayout from `data/ChapterProvider.h` to `text/LayoutTypes.h` (Medium)
+- [ ] A5: Abstract `MeasureTextEx` behind TextMeasureFn interface (Medium)
+- [ ] A9.1: Remove selection re-emission hop through App (Small)
+- [ ] A9.2-3: Extract FontManager, move resize handling from App (Medium-Large)
+- [ ] A4: Introduce DrawContext, eliminate direct raylib calls from all screens (Large)
 
-- [x] Define curated version list — BSB (3034), WEB (206), ASV (12), BLV (0=USFM Portuguese)
-- [x] Remove USFM/API source duality — USFM is now just another version, CompositeProvider simplified to single-primary
-- [x] Remove Source row from SettingsScreen
-- [x] Remove Color (highlight swatch) row from SettingsScreen (already in radial menu)
-- [x] Add Version row to SettingsScreen with 4 buttons, emit `BibleVersionSwitchEvent` on tap
-- [x] Wire event in App.cpp — destroy/recreate BibleClient or switch to USFM, persist `bible_id`, reload chapter
-- [x] Load saved `bible_id` preference in `App::Init()`
-- [x] Remove `SourceSwitchEvent` (replaced by `BibleVersionSwitchEvent`)
+### Feature: Code Quality Assurance
 
-### Feature: Modular Theme System ✅
-
-- [x] Create `ThemeManager` class with `ThemePalette` struct (replaces constexpr Theme.h colors)
-- [x] Define light and dark palettes — `ThemePalette::Light()` and `ThemePalette::Dark()`
-- [x] Integrate into App as a managed instance, inject `const ThemeManager&` to all draw sites
-- [x] Add theme toggle row to SettingsScreen (Claro/Escuro buttons)
-- [x] Add preference `dark_mode` (load on startup, apply on toggle via `ThemeToggleEvent`)
-- [x] Switch all `theme::COLOR` references to `themeManager.Current().colorName` (86 call sites across 11 files)
-
-### Feature: Fuzzy Finder (Book Selection) ✅
-
-- [x] Create `src/core/FuzzyMatcher.h/cpp` with `FuzzyMatch()` scoring function
-- [x] Replace `StartsWithIgnoreCase` in `BookListScreen::GetFilteredIndices()` with fuzzy scoring + sort
-- [ ] Apply same replacement to GoTo dialog auto-complete — **deferred: no GoTo dialog exists yet**
+- [ ] Fresh full audit pass across all `src/` (read + fix) — includes the input-consolidation work deferred from v1.8 (TapDetector + mouse/press boilerplate across screens)
+- [ ] Granular checklist TBD during implementation planning
 
 ### Release Steps
 
-- [ ] Bump version in `CMakeLists.txt` (1.7.0 → 1.8.0-alpha), reconfigure, build
-- [ ] Full test suite passes (75/77)
+- [ ] Bump version in `CMakeLists.txt` (1.8.0 → 1.9.0-alpha), reconfigure, build
+- [ ] Full test suite passes
 - [ ] Manual verification on Android
-- [ ] Tag release `v1.8.0-alpha`
+- [ ] Tag release `v1.9.0-alpha`
+
+## Planned: v1.10.0-alpha
+
+**Theme:** Animations & UI Polish + Web Deployment
+
+### Feature: Web Deployment
+
+- [ ] Verify WASM build in a browser — build via `scripts/build-wasm.sh`, run, fix issues (web version was never tested)
+- [ ] Add `scripts/serve-web.sh` — simple static server for `build-wasm/` with correct MIME types (`application/wasm`), formalizing the `python3 -m http.server` one-liner from the Build Guide
+- [ ] IDBFS persistence remains backlogged — highlights are session-only on WASM in this release
+
+### Feature: Animations & UI Polish
+
+- [ ] Animation / transition pass across screens and overlays
+- [ ] UI polish items (checklist TBD during implementation planning)
 
 ## Backlog (Future Releases)
 
@@ -134,12 +142,12 @@
 
 - [x] Java activity stub (`TheWordActivity.java`) for IME/splash — done
 - [x] Soft keyboard integration for go-to dialog — done
-- [ ] Complex IME composition (CJK, emoji) — would require hidden EditText + TextWatcher (future)
+- [ ] Complex IME composition (CJK, emoji) — would require hidden EditText + TextWatcher (future) - Emojis don't seem to be necessary and sadly CJK is somewhat out of scope for now.
 - [ ] Android immersive mode (hide system nav bar) — distinct from in-app Clean Mode
 - [x] Lifecycle save/restore (scroll position on pause/resume) — done in v1.6.2-alpha
 - [ ] WASM persistence via IDBFS
-- [ ] `scripts/build-wasm.sh` for one-step WASM build
-- [ ] libcurl as optional dependency
+- [x] `scripts/build-wasm.sh` for one-step WASM build — done
+- [x] libcurl as optional dependency — done (`find_package(CURL QUIET)`, USFM-only mode without it)
 - [ ] Platform abstraction module (`src/core/Platform.h`)
 
 ### Feature Backlog
@@ -147,13 +155,10 @@
 - Note System (details TBD)
 - Custom Reading Plan System (details TBD)
 - Bookmark System (expansion of highlight system, details TBD)
-- **Bible Version Switcher** — dropdown/selector in SettingsScreen to choose from enabled YouVersion IDs; persist choice; re-init `BibleClient` + `CompositeProvider` on change
 - Search across books/chapters
-- Dark / sepia theme
-- Night mode
+- Sepia theme
 - Reading progress tracking
 - Font selection (system fonts)
 - Highlight export/import
 - Performance profiling & optimization
 - Non-contiguous verse selection
-- Code quality audit beyond input system

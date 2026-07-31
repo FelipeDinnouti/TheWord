@@ -40,32 +40,6 @@ struct Segment {
     size_t wordCount;
 };
 
-struct Span {
-    std::string text;
-    float x = 0.0f, y = 0.0f;
-    float width = 0.0f, height = 0.0f;
-    int verseId = 0;
-    int startWord = 0;
-    int endWord = 0;
-    std::string bookId;
-    int chapterNum = 0;
-    int footnoteIndex = -1;
-    SegmentType type = SegmentType::VerseText;
-};
-
-struct Line {
-    float y;
-    float height;
-    std::vector<Span> spans;
-};
-
-struct ChapterLayout {
-    std::string chapterId;
-    float startY;
-    float totalHeight;
-    std::vector<Line> lines;
-};
-
 struct ChapterData {
     std::string bookId;
     int chapterNum;

@@ -12,6 +12,7 @@
 #include "event/Events.h"
 #include "MockHttpClient.h"
 #include "data/ChapterProvider.h"
+#include "text/LayoutTypes.h"
 #include "data/BibleClient.h"
 #include "data/CompositeProvider.h"
 #include "data/StubChapterProvider.h"
@@ -22,6 +23,7 @@
 
 using namespace theword::core;
 using namespace theword::data;
+using namespace theword::text;
 using namespace theword::highlight;
 using namespace theword::persistence;
 using namespace theword::test;

@@ -1,24 +1,15 @@
 # Roadmap
 
-> Status: Release-Based Planning Active | Last Updated: 2026-07-18
+> Status: Release-Based Planning Active | Last Updated: 2026-07-31
 
 The original 13-phase MVP is complete. All future work is organized by **release** (SemVer) rather than phases.
 
-## Current: v1.8.0-alpha
+## Current: v1.9.0-alpha
 
-**Theme:** Customization & Navigation — Code Quality Audit, Fuzzy Finder, Bible Version Switcher, Modular Theme System
+**Theme:** Architecture Refactor + Code Quality Assurance — findings A2, A4, A5, A9 + fresh audit
 
-| Status | Item |
-|--------|------|
-| ✅ | Code Quality Audit — all 8 steps (input consolidation deferred) |
-| ✅ | Architectural Remediation — A1/A3/A6/A7/A8 (5 immediate findings fixed) |
-| 🔲 | Fuzzy Finder — replace prefix-match book search with fuzzy scoring |
-| 🔲 | Bible Version Switcher — curated list of public-domain versions |
-| 🔲 | Modular Theme System — runtime-switchable theme, dark mode |
-
-## Planned: v1.9.0-alpha — Architecture Refactor
-
-**Theme:** Layer enforcement and platform decoupling — findings A2, A4, A5, A9
+> Full scope confirmed 2026-07-31: A4 and A9.2-3 are in this release (previously
+> deferred in the Architecture-Analysis remediation roadmap).
 
 | Status | Item |
 |--------|------|
@@ -26,10 +17,33 @@ The original 13-phase MVP is complete. All future work is organized by **release
 | 🔲 | A4: Introduce DrawContext, eliminate direct raylib calls from all screens |
 | 🔲 | A5: Abstract MeasureTextEx behind TextMeasureFn |
 | 🔲 | A9: Extract FontManager + simplify selection flow through App |
+| 🔲 | Code Quality Assurance — fresh full audit pass across all `src/` (incl. deferred input consolidation) |
 
 See `memory/Architecture-Analysis.md` for full details on each finding.
 
+## Planned: v1.10.0-alpha
+
+**Theme:** Animations & UI Polish + Web Deployment
+
+| Status | Item |
+|--------|------|
+| 🔲 | Animations & UI Polish — animation/transition pass across screens and overlays |
+| 🔲 | Web Deployment — verify WASM build in a browser (web version never tested) |
+| 🔲 | Web Deployment — `scripts/serve-web.sh` static server with correct MIME types |
+
 Detailed per-release scope tracked in `Release Plan.md`.
+
+## Completed: v1.8.0-alpha
+
+**Theme:** Customization & Navigation — Code Quality Audit, Fuzzy Finder, Bible Version Switcher, Modular Theme System
+
+| Status | Item |
+|--------|------|
+| ✅ | Code Quality Audit — all 8 steps (input consolidation deferred to v1.9) |
+| ✅ | Architectural Remediation — A1/A3/A6/A7/A8 (5 immediate findings fixed) |
+| ✅ | Fuzzy Finder — replace prefix-match book search with fuzzy scoring |
+| ✅ | Bible Version Switcher — curated list of public-domain versions |
+| ✅ | Modular Theme System — runtime-switchable theme, dark mode |
 
 ## Completed: v1.7.0-alpha
 

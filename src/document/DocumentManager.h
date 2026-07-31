@@ -7,6 +7,7 @@
 #include <future>
 #include <optional>
 #include "data/ChapterProvider.h"
+#include "text/LayoutTypes.h"
 
 namespace theword::text { class LayoutEngine; }
 
@@ -22,7 +23,7 @@ namespace theword::document {
 struct LoadedChapter {
     std::string chapterId;
     theword::data::ChapterData data;
-    theword::data::ChapterLayout layout;
+    theword::text::ChapterLayout layout;
     float startY;
     float height;
 };
@@ -55,7 +56,7 @@ public:
     bool HasMomentum() const { return momentumActive_; }
     bool HasPendingLoads() const;
 
-    void GetVisibleSpans(std::vector<std::pair<theword::data::Span, float>>& docSpans) const;
+    void GetVisibleSpans(std::vector<std::pair<theword::text::Span, float>>& docSpans) const;
 
     struct HitResult { int wordId = -1; const theword::data::ChapterData* chapterData = nullptr; };
     int HitTestWord(float screenX, float screenY, float scrollY) const;
@@ -64,7 +65,7 @@ public:
 
     const std::string& GetCurrentChapterId() const;
     std::string GetChapterTitle() const;
-    const theword::data::ChapterLayout* GetCurrentLayout() const;
+    const theword::text::ChapterLayout* GetCurrentLayout() const;
     const theword::data::ChapterData* GetCurrentChapterData() const;
     const theword::data::ChapterData* GetChapterData(const std::string& bookId, int chapterNum) const;
 
