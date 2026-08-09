@@ -20,11 +20,9 @@ BookListScreen::BookListScreen(const Font& font, float fontSize,
                                NavigationStack& navStack,
                                theword::event::EventBus& eventBus,
                                const theword::core::UIScale& uiScale,
-                               const theword::core::ThemeManager& themeManager,
                                const std::string& currentChapterRef)
     : font_(font), fontSize_(fontSize),
       navStack_(navStack), eventBus_(eventBus), uiScale_(uiScale),
-      themeManager_(themeManager),
       currentChapterRef_(currentChapterRef),
       tapDetector_(uiScale_.dp(10)) {
     if (!currentChapterRef_.empty()) {
@@ -90,10 +88,10 @@ int BookListScreen::GetVisibleCount(float listHeight) const {
     return static_cast<int>(listHeight / itemH);
 }
 
-void BookListScreen::Draw() {
-    const auto& palette = themeManager_.Current();
-    float screenW = static_cast<float>(GetScreenWidth());
-    float screenH = static_cast<float>(GetScreenHeight());
+void BookListScreen::Draw(theword::renderer::DrawContext& ctx) {
+    const auto& palette = ctx.themeManager.Current();
+    float screenW = ctx.uiScale.screenW;
+    float screenH = ctx.uiScale.screenH;
 
     float headerH = uiScale_.dp(48);
     float searchH = uiScale_.dp(44);
@@ -109,7 +107,7 @@ void BookListScreen::Draw() {
         scrollOffset_ = std::min(maxScroll, std::max(0, selection_ - visibleCount / 2));
     }
 
-    DrawHeaderBar(font_, fontSize_, Locale::Get("Books"), true, static_cast<int>(screenW), uiScale_, palette);
+    DrawHeaderBar(ctx, font_, fontSize_, Locale::Get("Books"), true);
 
     // Search bar
     float searchY = headerH + uiScale_.dp(4);
@@ -140,8 +138,8 @@ void BookListScreen::Draw() {
         int bookIdx = indices[i];
         std::string label = std::string(BOOKS[bookIdx].code) + "  " + BOOK_NAMES_PT[bookIdx];
 
-        DrawTextItem({0, itemY, screenW, itemH}, label.c_str(), font_, labelSize,
-                     palette, bookIdx == selection_, palette.uiText, palette.uiTitle);
+        DrawTextItem(ctx, {0, itemY, screenW, itemH}, label.c_str(), font_, labelSize,
+                     bookIdx == selection_, palette.uiText, palette.uiTitle);
     }
 
     Vector2 mouse = GetMousePosition();
@@ -247,9 +245,8 @@ bool BookListScreen::HandleInput(float /*deltaTime*/) {
                 }
                 theword::core::platform::HideKeyboard();
                 navStack_.Push(std::make_unique<ChapterGridScreen>(
-                    font_, fontSize_, navStack_, eventBus_,
-                    book.code, BOOK_NAMES_PT[selection_], book.chapterCount, uiScale_, currentCh,
-                    themeManager_
+                    navStack_, eventBus_,
+                    book.code, BOOK_NAMES_PT[selection_], book.chapterCount, uiScale_, currentCh
                 ));
                 return true;
             }
@@ -298,9 +295,8 @@ bool BookListScreen::HandleInput(float /*deltaTime*/) {
                 }
                 theword::core::platform::HideKeyboard();
                 navStack_.Push(std::make_unique<ChapterGridScreen>(
-                    font_, fontSize_, navStack_, eventBus_,
-                    book.code, BOOK_NAMES_PT[selection_], book.chapterCount, uiScale_, currentCh,
-                    themeManager_
+                    navStack_, eventBus_,
+                    book.code, BOOK_NAMES_PT[selection_], book.chapterCount, uiScale_, currentCh
                 ));
                 return true;
             }

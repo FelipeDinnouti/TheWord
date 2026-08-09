@@ -3,7 +3,6 @@
 
 #include "Screen.h"
 #include "core/UIScale.h"
-#include "core/ThemeManager.h"
 #include "TapDetector.h"
 #include <string>
 #include <memory>
@@ -16,27 +15,22 @@ namespace theword::ui {
 
 class ChapterGridScreen : public Screen {
 public:
-    ChapterGridScreen(const Font& font, float fontSize,
-                      NavigationStack& navStack,
+    ChapterGridScreen(NavigationStack& navStack,
                       theword::event::EventBus& eventBus,
                       const std::string& bookCode, const std::string& bookName, int chapterCount,
-                      const theword::core::UIScale& uiScale, int currentChapter,
-                      const theword::core::ThemeManager& themeManager);
+                      const theword::core::UIScale& uiScale, int currentChapter);
     ~ChapterGridScreen() override;
-    void Draw() override;
+    void Draw(theword::renderer::DrawContext& ctx) override;
     bool HandleInput(float deltaTime) override;
     const char* GetTitle() const override { return "ChapterGrid"; }
 
 private:
-    const Font& font_;
-    float fontSize_;
     NavigationStack& navStack_;
     theword::event::EventBus& eventBus_;
     std::string bookCode_;
     std::string bookName_;
     int chapterCount_;
     const theword::core::UIScale& uiScale_;
-    const theword::core::ThemeManager& themeManager_;
 
     int selectedChapter_ = 1;
     float gridScrollY_ = 0.0f;

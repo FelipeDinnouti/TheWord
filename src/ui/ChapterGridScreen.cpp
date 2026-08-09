@@ -10,20 +10,16 @@ namespace theword::ui {
 
 using namespace theword::core;
 
-ChapterGridScreen::ChapterGridScreen(const Font& font, float fontSize,
-                                     NavigationStack& navStack,
+ChapterGridScreen::ChapterGridScreen(NavigationStack& navStack,
                                      theword::event::EventBus& eventBus,
                                      const std::string& bookCode,
                                      const std::string& bookName,
                                      int chapterCount,
                                      const theword::core::UIScale& uiScale,
-                                     int currentChapter,
-                                     const theword::core::ThemeManager& themeManager)
-    : font_(font), fontSize_(fontSize),
-      navStack_(navStack), eventBus_(eventBus),
+                                     int currentChapter)
+    : navStack_(navStack), eventBus_(eventBus),
       bookCode_(bookCode), bookName_(bookName),
       chapterCount_(chapterCount), uiScale_(uiScale),
-      themeManager_(themeManager),
       tapDetector_(uiScale_.dp(10)) {
     if (currentChapter >= 1 && currentChapter <= chapterCount) {
         selectedChapter_ = currentChapter;
@@ -52,10 +48,12 @@ ChapterGridScreen::~ChapterGridScreen() {
     *aliveGuard_ = false;
 }
 
-void ChapterGridScreen::Draw() {
-    const auto& palette = themeManager_.Current();
-    float screenW = static_cast<float>(GetScreenWidth());
-    float screenH = static_cast<float>(GetScreenHeight());
+void ChapterGridScreen::Draw(theword::renderer::DrawContext& ctx) {
+    const auto& palette = ctx.themeManager.Current();
+    float screenW = ctx.uiScale.screenW;
+    float screenH = ctx.uiScale.screenH;
+    const Font& font = ctx.fonts.Get(theword::text::FontKind::Heading);
+    float fontSize = ctx.fonts.HeadingSize();
 
     float headerH = uiScale_.dp(48);
     float padding = uiScale_.dp(12);
@@ -64,7 +62,7 @@ void ChapterGridScreen::Draw() {
     float gap = uiScale_.dp(8);
     int columns = 5;
 
-    DrawHeaderBar(font_, fontSize_, bookName_.c_str(), true, static_cast<int>(screenW), uiScale_, palette);
+    DrawHeaderBar(ctx, font, fontSize, bookName_.c_str(), true);
 
     float gridY = headerH + padding;
     float totalRowWidth = columns * cellW + (columns - 1) * gap;
@@ -76,7 +74,7 @@ void ChapterGridScreen::Draw() {
     float maxScroll = std::max(0.0f, totalGridH - availableH);
     gridScrollY_ = std::clamp(gridScrollY_, 0.0f, maxScroll);
 
-    float labelSize = fontSize_ * 0.6f;
+    float labelSize = fontSize * 0.6f;
 
     // Clip grid content below the header bar
     BeginScissorMode(0, static_cast<int>(headerH), static_cast<int>(screenW),
@@ -95,7 +93,7 @@ void ChapterGridScreen::Draw() {
         if (cy + cellH < 0 || cy > screenH) continue;
 
         std::string num = std::to_string(ch);
-        Vector2 numSize = MeasureTextEx(font_, num.c_str(), labelSize, 1);
+        Vector2 numSize = MeasureTextEx(font, num.c_str(), labelSize, 1);
         float numX = cx + (cellW - numSize.x) / 2.0f;
         float numY = cy + (cellH - numSize.y) / 2.0f;
 
@@ -104,9 +102,9 @@ void ChapterGridScreen::Draw() {
             bg.a = 30;
             DrawRectangleRounded({cx, cy, cellW, cellH}, 0.15f, 8, bg);
             DrawRectangleRoundedLines({cx, cy, cellW, cellH}, 0.15f, 8, 1.5f, palette.accentTeal);
-            DrawTextEx(font_, num.c_str(), {numX, numY}, labelSize, 1, palette.accentTeal);
+            DrawTextEx(font, num.c_str(), {numX, numY}, labelSize, 1, palette.accentTeal);
         } else {
-            DrawTextEx(font_, num.c_str(), {numX, numY}, labelSize, 1, palette.uiText);
+            DrawTextEx(font, num.c_str(), {numX, numY}, labelSize, 1, palette.uiText);
         }
     }
 

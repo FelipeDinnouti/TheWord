@@ -4,10 +4,9 @@
 #include <string>
 #include <vector>
 #include <raylib.h>
+#include "renderer/DrawContext.h"
 #include "text/LayoutTypes.h"
 #include "highlight/PersistenceInterface.h"
-
-namespace theword::core { class ThemeManager; }
 
 namespace theword::renderer {
 
@@ -21,20 +20,12 @@ struct HighlightRect {
 
 class Renderer {
 public:
-    Renderer(const Font& bodyFont, const Font& headingFont,
-             const Font& largeFont, const Font& smallFont,
-             float contentTop,
-             float bodySize, float headingSize,
-             float largeSize, float smallSize,
-             float dpiScale,
-             const theword::core::ThemeManager& themeManager);
+    explicit Renderer(float contentTop);
 
-    void DrawFrame(float scrollY, float totalHeight, float viewportHeight,
+    void DrawFrame(const DrawContext& ctx, float scrollY, float totalHeight, float viewportHeight,
                    const std::vector<std::pair<theword::text::Span, float>>& docSpans,
                    const std::vector<HighlightRect>& highlightRects = {});
-    void DrawScrollbar(float scrollY, float totalHeight, float viewportHeight);
-    void SetFontSizes(float body, float heading, float large, float small);
-    float GetFontSize() const;
+    void DrawScrollbar(const DrawContext& ctx, float scrollY, float totalHeight, float viewportHeight);
 
     void DrawFpsCounter(int x, int y);
 
@@ -46,19 +37,9 @@ public:
 private:
     static constexpr float MIN_SCROLLBAR_HEIGHT = 20.0f;
 
-    const Font& bodyFont;
-    const Font& headingFont;
-    const Font& largeFont;
-    const Font& smallFont;
     const float contentTop;
-    float bodySize_;
-    float headingSize_;
-    float largeSize_;
-    float smallSize_;
-    const float dpiScale_;
-    const theword::core::ThemeManager& themeManager_;
 
-    void DrawSpan(const theword::text::Span& span, float screenY);
+    void DrawSpan(const DrawContext& ctx, const theword::text::Span& span, float screenY);
 };
 
 } // namespace theword::renderer

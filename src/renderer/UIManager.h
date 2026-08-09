@@ -4,9 +4,9 @@
 #include <memory>
 #include <string>
 #include <raylib.h>
+#include "renderer/DrawContext.h"
 
 namespace theword::highlight { class Highlighter; }
-namespace theword::core { class ThemeManager; }
 
 namespace theword::renderer {
 
@@ -26,8 +26,7 @@ struct RadialMenuActionResult {
 
 class UIManager {
 public:
-    UIManager(theword::highlight::Highlighter& highlighter, const Font& uiFont,
-              const theword::core::ThemeManager& themeManager, float dpiScale = 1.0f);
+    UIManager(theword::highlight::Highlighter& highlighter, float dpiScale = 1.0f);
 
     ~UIManager();
 
@@ -39,18 +38,16 @@ public:
     void HideRadialMenu();
 
     void ShowToast(const std::string& text);
-    void DrawToast();
+    void DrawToast(const DrawContext& ctx);
 
     void ShowFootnotePopup(const std::string& text, Vector2 position);
-    void DrawFootnotePopup();
+    void DrawFootnotePopup(const DrawContext& ctx);
     void HideFootnotePopup();
     bool IsFootnotePopupActive() const;
 
 private:
     std::unique_ptr<RadialMenu> radialMenu;
     theword::highlight::Highlighter& highlighter_;
-    const Font& uiFont_;
-    const theword::core::ThemeManager& themeManager_;
     float dpiScale_;
 
     std::string toastText_;

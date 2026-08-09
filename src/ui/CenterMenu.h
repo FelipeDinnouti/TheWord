@@ -28,7 +28,7 @@ public:
                float& currentFontSize, int& currentBibleId, bool& immersiveMode,
                const theword::core::ThemeManager& themeManager,
                const std::string& currentChapterRef = "");
-    void Draw() override;
+    void Draw(theword::renderer::DrawContext& ctx) override;
     bool HandleInput(float deltaTime) override;
     const char* GetTitle() const override { return theword::core::Locale::Get("Menu"); }
     bool IsOverlay() const override { return true; }

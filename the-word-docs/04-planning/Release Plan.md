@@ -1,8 +1,24 @@
 # Release Plan
 
-> Status: v1.8.0-alpha complete | Last Updated: 2026-07-31
+> Status: v1.9.0-alpha released 2026-08-09 (audit pending) | Last Updated: 2026-08-09
 
 ## Past Releases
+
+### v1.9.0-alpha (2026-08-09)
+
+**Theme:** Architecture Refactor — findings A2, A4, A5, A9 + fresh audit
+
+> Architecture remediation complete; APK device-verified by user (no regressions,
+> no visual alteration). Code Quality Assurance audit remains (next workstream).
+
+- [x] A2 — LayoutTypes extraction: `Span`/`Line`/`ChapterLayout` → `text/LayoutTypes.h`; no renderer→data include
+- [x] A5 — TextMeasureFn abstraction: `text/` layer raylib-free, LayoutEngine testable/portable
+- [x] A9.1 — selection-hop removal: InputHandler emits SelectionEvent, only Highlighter listens
+- [x] A9.2-3 — FontManager extraction: App slimmed; Settings font-size bug fixed
+- [x] A4 — DrawContext: ~80 direct raylib draw calls removed, `Screen::Draw(DrawContext&)`, Renderer ctor 9→1 params
+- [x] Desktop preflight: 0 warnings, 78/80 tests (baseline)
+- [x] Android device verification (arm64-v8a APK): theme toggle, font size, all screens/overlays, reader interactions
+- [x] Tag: `git tag -am "v1.9.0-alpha" "v1.9.0-alpha"`
 
 ### v1.8.0-alpha (2026-07-20)
 
@@ -97,17 +113,20 @@
 
 **Theme:** Architecture Refactor + Code Quality Assurance — findings A2, A4, A5, A9 + fresh audit
 
+> Architecture remediation (A2, A4, A5, A9) **released and device-verified
+> 2026-08-09**. The fresh code-quality audit below is the remaining release item.
+
 > Full scope confirmed 2026-07-31: the Roadmap scope wins over the earlier
 > Architecture-Analysis deferral — A4 and A9.2-3 are in this release.
 > See `memory/Architecture-Analysis.md` for details on each finding.
 
-### Feature: Architectural Remediation
+### Feature: Architectural Remediation (released 2026-08-09)
 
-- [ ] A2: Extract Span/Line/ChapterLayout from `data/ChapterProvider.h` to `text/LayoutTypes.h` (Medium)
-- [ ] A5: Abstract `MeasureTextEx` behind TextMeasureFn interface (Medium)
-- [ ] A9.1: Remove selection re-emission hop through App (Small)
-- [ ] A9.2-3: Extract FontManager, move resize handling from App (Medium-Large)
-- [ ] A4: Introduce DrawContext, eliminate direct raylib calls from all screens (Large)
+- [x] A2: Extract Span/Line/ChapterLayout from `data/ChapterProvider.h` to `text/LayoutTypes.h` (Medium)
+- [x] A5: Abstract `MeasureTextEx` behind TextMeasureFn interface (Medium)
+- [x] A9.1: Remove selection re-emission hop through App (Small)
+- [x] A9.2-3: Extract FontManager, move resize handling from App (Medium-Large)
+- [x] A4: Introduce DrawContext, eliminate direct raylib calls from all screens (Large)
 
 ### Feature: Code Quality Assurance
 
@@ -116,10 +135,10 @@
 
 ### Release Steps
 
-- [ ] Bump version in `CMakeLists.txt` (1.8.0 → 1.9.0-alpha), reconfigure, build
-- [ ] Full test suite passes
-- [ ] Manual verification on Android
-- [ ] Tag release `v1.9.0-alpha`
+- [x] Bump version in `CMakeLists.txt` (1.8.0 → 1.9.0-alpha), reconfigure, build
+- [x] Full test suite passes (78/80 baseline)
+- [x] Manual verification on Android (2026-08-09)
+- [x] Tag release `v1.9.0-alpha`
 
 ## Planned: v1.10.0-alpha
 

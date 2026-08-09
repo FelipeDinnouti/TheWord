@@ -8,38 +8,17 @@ using namespace theword::core;
 using namespace theword::data;
 using namespace theword::text;
 
-Renderer::Renderer(const Font& bodyFont, const Font& headingFont,
-                   const Font& largeFont, const Font& smallFont,
-                   float contentTop,
-                   float bodySize, float headingSize,
-                   float largeSize, float smallSize,
-                   float dpiScale,
-                   const ThemeManager& themeManager)
-    : bodyFont(bodyFont), headingFont(headingFont),
-      largeFont(largeFont), smallFont(smallFont),
-      contentTop(contentTop),
-      bodySize_(bodySize), headingSize_(headingSize),
-      largeSize_(largeSize), smallSize_(smallSize),
-      dpiScale_(dpiScale), themeManager_(themeManager) {}
-
-void Renderer::SetFontSizes(float body, float heading, float large, float small) {
-    bodySize_ = body;
-    headingSize_ = heading;
-    largeSize_ = large;
-    smallSize_ = small;
-}
-
-float Renderer::GetFontSize() const {
-    return bodySize_;
-}
+Renderer::Renderer(float contentTop)
+    : contentTop(contentTop) {}
 
 float Renderer::GetContentTop() const {
     return contentTop;
 }
 
-void Renderer::DrawFrame(float scrollY, float totalHeight, float viewportHeight,
-                          const std::vector<std::pair<Span, float>>& docSpans,
-                          const std::vector<HighlightRect>& highlightRects) {
+void Renderer::DrawFrame(const DrawContext& ctx, float scrollY, float totalHeight,
+                         float viewportHeight,
+                         const std::vector<std::pair<Span, float>>& docSpans,
+                         const std::vector<HighlightRect>& highlightRects) {
     for (const auto& hr : highlightRects) {
         if (hr.y < -CULL_MARGIN || hr.y > GetScreenHeight()) continue;
         DrawRectangle(hr.x, hr.y, hr.width, hr.height,
@@ -49,49 +28,50 @@ void Renderer::DrawFrame(float scrollY, float totalHeight, float viewportHeight,
     for (const auto& [span, docY] : docSpans) {
         float screenY = docY - scrollY + contentTop;
         if (screenY < -CULL_MARGIN || screenY > GetScreenHeight()) continue;
-        DrawSpan(span, screenY);
+        DrawSpan(ctx, span, screenY);
     }
 
     if (totalHeight > viewportHeight) {
-        DrawScrollbar(scrollY, totalHeight, viewportHeight);
+        DrawScrollbar(ctx, scrollY, totalHeight, viewportHeight);
     }
 }
 
-void Renderer::DrawSpan(const Span& span, float screenY) {
-    const auto& palette = themeManager_.Current();
+void Renderer::DrawSpan(const DrawContext& ctx, const Span& span, float screenY) {
+    const auto& palette = ctx.themeManager.Current();
+    const FontManager& fonts = ctx.fonts;
     Color color = palette.docBody;
-    float drawSize = bodySize_;
-    Font useFont = bodyFont;
+    float drawSize = fonts.BodySize();
+    Font useFont = fonts.Get(FontKind::Body);
 
     switch (span.type) {
         case SegmentType::BookTitle:
             color = palette.docBookTitle;
-            drawSize = largeSize_;
-            useFont = largeFont;
+            drawSize = fonts.LargeSize();
+            useFont = fonts.Get(FontKind::Large);
             break;
         case SegmentType::ChapterLabel:
             color = palette.docChapterLabel;
-            drawSize = largeSize_;
-            useFont = largeFont;
+            drawSize = fonts.LargeSize();
+            useFont = fonts.Get(FontKind::Large);
             break;
         case SegmentType::SectionHeading:
             color = palette.docHeading;
-            drawSize = headingSize_;
-            useFont = headingFont;
+            drawSize = fonts.HeadingFontSize();
+            useFont = fonts.Get(FontKind::Heading);
             break;
         case SegmentType::PoetryLine:
             color = palette.docPoetry;
-            drawSize = bodySize_;
+            drawSize = fonts.BodySize();
             break;
         case SegmentType::VerseNumber:
             color = palette.docVerseNumber;
-            drawSize = smallSize_;
-            useFont = smallFont;
+            drawSize = fonts.SmallSize();
+            useFont = fonts.Get(FontKind::Small);
             break;
         case SegmentType::FootnoteMarker:
             color = palette.docFootnoteCaller;
-            drawSize = smallSize_;
-            useFont = smallFont;
+            drawSize = fonts.SmallSize();
+            useFont = fonts.Get(FontKind::Small);
             break;
         default:
             break;
@@ -104,17 +84,19 @@ void Renderer::DrawSpan(const Span& span, float screenY) {
     DrawTextEx(useFont, span.text.c_str(), pos, drawSize, 1, color);
 }
 
-void Renderer::DrawScrollbar(float scrollY, float totalHeight, float viewportHeight) {
+void Renderer::DrawScrollbar(const DrawContext& ctx, float scrollY, float totalHeight,
+                             float viewportHeight) {
+    float dpiScale = ctx.scale;
     float scrollBarHeight = viewportHeight * (viewportHeight / totalHeight);
-    float minH = MIN_SCROLLBAR_HEIGHT * dpiScale_;
+    float minH = MIN_SCROLLBAR_HEIGHT * dpiScale;
     if (scrollBarHeight < minH) scrollBarHeight = minH;
 
     float scrollBarY = contentTop + (scrollY / totalHeight) * (viewportHeight - scrollBarHeight);
-    float barWidth = 6.0f * dpiScale_;
-    float rightGap = 8.0f * dpiScale_;
+    float barWidth = 6.0f * dpiScale;
+    float rightGap = 8.0f * dpiScale;
     float roundness = 2.0f / (barWidth * 0.5f);
     if (roundness > 1.0f) roundness = 1.0f;
-    const auto& palette = themeManager_.Current();
+    const auto& palette = ctx.themeManager.Current();
     DrawRectangleRounded(
         {GetScreenWidth() - rightGap, scrollBarY, barWidth, scrollBarHeight},
         roundness, 8, palette.scrollbarThumb);

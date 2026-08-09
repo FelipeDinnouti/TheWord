@@ -14,7 +14,7 @@ public:
     void PopAll();
     Screen* GetActive();
     const Screen* GetActive() const;
-    void DrawActive();
+    void DrawActive(theword::renderer::DrawContext& ctx);
     bool HandleInput(float deltaTime);
     bool IsOnRoot() const;
     int Size() const { return static_cast<int>(stack_.size()); }

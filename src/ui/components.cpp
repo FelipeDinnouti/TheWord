@@ -14,9 +14,11 @@ static float RadiusToRoundness(float radius, float w, float h) {
     return std::min(radius / halfMin, 1.0f);
 }
 
-void DrawHeaderBar(const Font& font, float fontSize, const char* title,
-                   bool hasBack, int screenWidth, const theword::core::UIScale& uiScale,
-                   const ThemePalette& palette) {
+void DrawHeaderBar(const theword::renderer::DrawContext& ctx, const Font& font, float fontSize,
+                   const char* title, bool hasBack) {
+    const auto& palette = ctx.themeManager.Current();
+    const auto& uiScale = ctx.uiScale;
+    int screenWidth = static_cast<int>(uiScale.screenW);
     float barHeight = uiScale.dp(48);
     float labelSize = fontSize * 0.7f;
 
@@ -45,8 +47,9 @@ bool StartsWithIgnoreCase(const std::string& str, const std::string& prefix) {
     return true;
 }
 
-bool DrawButton(Rectangle bounds, const char* text, const Font& font, float fontSize,
-                const ThemePalette& palette, bool enabled, Color textColor, Color bgColor) {
+bool DrawButton(const theword::renderer::DrawContext& ctx, Rectangle bounds, const char* text,
+                const Font& font, float fontSize, bool enabled, Color textColor, Color bgColor) {
+    const auto& palette = ctx.themeManager.Current();
     Vector2 mouse = GetMousePosition();
     bool hovered = enabled && CheckCollisionPointRec(mouse, bounds);
     bool pressed = hovered && IsMouseButtonDown(MOUSE_LEFT_BUTTON);
@@ -94,8 +97,10 @@ void DrawPanel(Rectangle bounds, Color bgColor, Color borderColor,
     DrawRectangleRounded(inner, innerRoundness, 8, bgColor);
 }
 
-bool DrawTextItem(Rectangle bounds, const char* text, const Font& font, float fontSize,
-                  const ThemePalette& palette, bool selected, Color textColor, Color selTextColor) {
+bool DrawTextItem(const theword::renderer::DrawContext& ctx, Rectangle bounds, const char* text,
+                  const Font& font, float fontSize, bool selected, Color textColor,
+                  Color selTextColor) {
+    const auto& palette = ctx.themeManager.Current();
     Vector2 mouse = GetMousePosition();
     bool hovered = CheckCollisionPointRec(mouse, bounds);
     bool pressed = hovered && IsMouseButtonDown(MOUSE_LEFT_BUTTON);
@@ -126,8 +131,9 @@ bool DrawTextItem(Rectangle bounds, const char* text, const Font& font, float fo
     return hovered && IsMouseButtonReleased(MOUSE_LEFT_BUTTON);
 }
 
-bool DrawToggle(Rectangle bounds, const ThemePalette& palette,
+bool DrawToggle(const theword::renderer::DrawContext& ctx, Rectangle bounds,
                 Color accentColor, bool& value) {
+    const auto& palette = ctx.themeManager.Current();
     Vector2 mouse = GetMousePosition();
     bool hovered = CheckCollisionPointRec(mouse, bounds);
     bool clicked = hovered && IsMouseButtonReleased(MOUSE_LEFT_BUTTON);
@@ -149,8 +155,9 @@ bool DrawToggle(Rectangle bounds, const ThemePalette& palette,
     return clicked;
 }
 
-bool DrawColorSwatch(Rectangle bounds, Color color, const ThemePalette& palette,
+bool DrawColorSwatch(const theword::renderer::DrawContext& ctx, Rectangle bounds, Color color,
                      bool selected) {
+    const auto& palette = ctx.themeManager.Current();
     Vector2 mouse = GetMousePosition();
     bool hovered = CheckCollisionPointRec(mouse, bounds);
     bool clicked = hovered && IsMouseButtonReleased(MOUSE_LEFT_BUTTON);

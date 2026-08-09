@@ -31,7 +31,7 @@ public:
                    const theword::core::UIScale& uiScale, float& currentFontSize, int& currentBibleId, bool& immersiveMode,
                    const theword::core::ThemeManager& themeManager);
     ~ReaderScreen() override;
-    void Draw() override;
+    void Draw(theword::renderer::DrawContext& ctx) override;
     bool HandleInput(float deltaTime) override;
     const char* GetTitle() const override { return "Reader"; }
 
@@ -65,7 +65,7 @@ private:
     void OnNavigateToHighlight(const theword::event::NavigateToHighlightEvent& e);
     float FindLineYForWord(int wordId) const;
     void UpdateBottomBar(float deltaTime);
-    void DrawBottomBarContent();
+    void DrawBottomBarContent(const theword::renderer::DrawContext& ctx);
     bool HandleBottomBarClick();
     void OpenCenterMenu();
 };

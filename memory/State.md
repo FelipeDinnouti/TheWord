@@ -1,21 +1,21 @@
 # Project State
 
-> Last updated: 2026-07-31
+> Last updated: 2026-08-09
 >
 > Previous: `memory/archive/2026-07-20_v1.8.0-alpha-active.md`
 
 ## Version
 
-- **Base**: `1.8.0-alpha`
-- **Latest tag**: `v1.8.0-alpha`
+- **Base**: `1.9.0-alpha`
+- **Latest tag**: `v1.9.0-alpha` (2026-08-09)
 
 ## Build Status
 
 | Platform | Status | Notes |
 |----------|--------|-------|
 | Linux (desktop) | ✅ Builds + runs | GCC/C++17, raylib 5.0, 0 warnings |
-| Android (APK) | ✅ Builds + verified | arm64-v8a, VSYNC, lifecycle, footnotes working |
-| Windows (cross) | ✅ Builds | `dist/theword-1.6.3-alpha-windows-x86_64.zip` |
+| Android (APK) | ✅ Builds + device-verified | arm64-v8a, v1.9.0-alpha, VSYNC, lifecycle, footnotes working |
+| Windows (cross) | ⏳ Not rebuilt since v1.6.3 | `dist/theword-1.6.3-alpha-windows-x86_64.zip` |
 | WASM | ⏳ Not verified | Previously built |
 
 ## Tests
@@ -27,32 +27,35 @@
 
 ## Current Focus
 
-v1.8.0-alpha "Customization & Navigation" complete (released 2026-07-20).
+v1.9.0-alpha "Architecture Refactor" complete and device-verified (released 2026-08-09).
 
-Next release: **v1.9.0-alpha — Architecture Refactor + Code Quality Assurance** (A2, A4, A5, A9 + fresh audit). Full scope confirmed 2026-07-31 — Roadmap wins over the earlier Architecture-Analysis deferral of A4/A9.2-3.
+Remaining release-scope item: **Code Quality Assurance — fresh full audit**
+across all `src/` (Feature 6 in `memory/Active.md`). Then v1.10.0-alpha
+(Animations & UI Polish + Web Deployment).
 
 ### Completed
 
-- [x] Doc Fixes (release startup)
-- [x] Code Quality Audit (all 8 steps)
-- [x] Architectural Analysis (9 findings in `memory/Architecture-Analysis.md`)
-- [x] Architectural Remediation: A1, A3, A6, A7, A8
-- [x] Fuzzy Finder (Book Selection)
-- [x] Bible Version Switcher
-- [x] Modular Theme System
+- [x] A2: LayoutTypes extraction (`text/LayoutTypes.h`) — renderer→data layer skip fixed
+- [x] A5: TextMeasureFn abstraction — text/ layer raylib-free
+- [x] A9.1: selection-hop removal — InputHandler → App → Highlighter
+- [x] A9.2-3: FontManager extraction — App slimming, Settings font-size bug fixed
+- [x] A4: DrawContext — all screens/renderer draw through one context bundle
+- [x] Device verification of full refactor (theme, font size, all screens, reader interactions)
 
 ### Queued
 
 | Workstream | Status |
 |------------|--------|
-| v1.9.0-alpha — Architecture Refactor + Code Quality Assurance (A2, A4, A5, A9 + fresh audit) | 🔲 Planned (documented in `memory/Active.md`) |
+| Code Quality Assurance — fresh full audit (Feature 6) | 🔲 Planned (documented in `memory/Active.md`) |
 | v1.10.0-alpha — Animations & UI Polish + Web Deployment (WASM verification + `scripts/serve-web.sh`) | 🔲 Planned (documented in `memory/Active.md`) |
 
-### What Changed (v1.8.0-alpha)
+### What Changed (v1.9.0-alpha)
 
-- **Fuzzy Finder**: `FuzzyMatcher` with character-sequence scoring + `StripAccents()` for Portuguese UTF-8. Replaced `StartsWithIgnoreCase` in `BookListScreen`.
-- **Bible Version Switcher**: 4 versions (BSB, WEB, ASV, BLV). CompositeProvider simplified. Version selection in SettingsScreen.
-- **Modular Theme System**: `ThemeManager` + `ThemePalette` (Light/Dark). 34-color palette injected via `const&` across all draw sites. Theme toggle in SettingsScreen. `dark_mode` preference persisted.
+- **A2**: `Span`/`Line`/`ChapterLayout` moved to `text/LayoutTypes.h`; `data/ChapterProvider.h` slimmed; no renderer→data include.
+- **A5**: `TextMeasureFn` (`text/TextMeasure.h`) replaces `MeasureTextEx` in LayoutEngine — `text/` no longer includes raylib.
+- **A9.1**: `InputHandler` emits `SelectionEvent` directly; App's re-emission hop removed; only Highlighter listens.
+- **A9.2-3**: `FontManager` (5 fonts, codepoints, sizes, reload) extracted from App; `FontKind` enum; fixed SettingsScreen font-size setting never applying.
+- **A4**: `renderer/DrawContext.h` (ThemeManager + FontManager + UIScale) built fresh each frame in App; `Screen::Draw(DrawContext&)`; ~80 direct raylib draw calls removed; Renderer ctor 9 params → 1; draw-side only (input consolidation deferred to Feature 6).
 
 ### Known Issues
 
@@ -71,3 +74,5 @@ Next release: **v1.9.0-alpha — Architecture Refactor + Code Quality Assurance*
 | Search Across Books deferred | Online-primary app can't ship offline-only search |
 | v1.9 = full Roadmap scope (A2, A4, A5, A9 + fresh audit) | Confirmed 2026-07-31 — Roadmap scope wins over Analysis deferral |
 | v1.10 = Animations & UI Polish + Web Deployment | Web version never tested; simple static server suffices |
+| A4 draw-side only | Input consolidation is a separate concern — Feature 6 |
+| Release-alpha approval gate | User proves APK on device before tag/commit — no regressions, no visual alteration |

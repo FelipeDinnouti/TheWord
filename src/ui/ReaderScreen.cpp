@@ -28,10 +28,10 @@ ReaderScreen::ReaderScreen(theword::event::EventBus& eventBus,
                            theword::persistence::PersistenceManager& persistence,
                            const Font& uiFont, float uiFontSize,
                            float contentTop,
-                           NavigationStack& navStack,
-                            const theword::core::UIScale& uiScale,
-                             float& currentFontSize, int& currentBibleId, bool& immersiveMode,
-                             const theword::core::ThemeManager& themeManager)
+                            NavigationStack& navStack,
+                             const theword::core::UIScale& uiScale,
+                              float& currentFontSize, int& currentBibleId, bool& immersiveMode,
+                              const theword::core::ThemeManager& themeManager)
     : eventBus_(eventBus)
     , docManager_(docManager)
     , renderer_(renderer)
@@ -82,7 +82,7 @@ void ReaderScreen::UpdateBottomBar(float deltaTime) {
     }
 }
 
-void ReaderScreen::Draw() {
+void ReaderScreen::Draw(theword::renderer::DrawContext& ctx) {
     float scrollY = docManager_.GetScrollY();
     float totalHeight = docManager_.GetTotalHeight();
     float viewHeight = docManager_.GetViewportHeight();
@@ -111,7 +111,7 @@ void ReaderScreen::Draw() {
         }
     }
 
-    renderer_.DrawFrame(scrollY, totalHeight, viewHeight, docSpans, hlRects);
+    renderer_.DrawFrame(ctx, scrollY, totalHeight, viewHeight, docSpans, hlRects);
 
     // Determine active selection range (during drag or committed)
     int selMin = -1, selMax = -1;
@@ -156,7 +156,7 @@ void ReaderScreen::Draw() {
             if (span.startWord >= 0 && span.endWord >= selMin && span.startWord <= selMax
                 && span.bookId == selBookId && span.chapterNum == selChapterNum) {
                 float screenY = docY - scrollY + contentTop_;
-                if (screenY < -Renderer::CULL_MARGIN || screenY > GetScreenHeight()) continue;
+                if (screenY < -Renderer::CULL_MARGIN || screenY > ctx.uiScale.screenH) continue;
                 DrawRectangle(static_cast<int>(span.x),
                               static_cast<int>(screenY),
                               static_cast<int>(span.width),
@@ -178,11 +178,11 @@ void ReaderScreen::Draw() {
     float deltaTime = GetFrameTime();
     UpdateBottomBar(deltaTime);
 
-    DrawBottomBarContent();
+    DrawBottomBarContent(ctx);
 
     // Cursor: hand over bottom bar, I-beam only during active selection
     Vector2 mouse = GetMousePosition();
-    float screenH = static_cast<float>(GetScreenHeight());
+    float screenH = ctx.uiScale.screenH;
     float bottomTop = screenH - barAnimation_ - bottomMargin_;
     if (mouse.y > bottomTop) {
         SetMouseCursor(MOUSE_CURSOR_POINTING_HAND);
@@ -283,10 +283,10 @@ float ReaderScreen::FindLineYForWord(int wordId) const {
     return -1.0f;
 }
 
-void ReaderScreen::DrawBottomBarContent() {
-    const auto& palette = themeManager_.Current();
-    float screenW = static_cast<float>(GetScreenWidth());
-    float screenH = static_cast<float>(GetScreenHeight());
+void ReaderScreen::DrawBottomBarContent(const theword::renderer::DrawContext& ctx) {
+    const auto& palette = ctx.themeManager.Current();
+    float screenW = ctx.uiScale.screenW;
+    float screenH = ctx.uiScale.screenH;
 
     float bottomHeight = barAnimation_ + bottomMargin_;
     float bottomTop = screenH - bottomHeight;

@@ -4,7 +4,6 @@
 #include "Screen.h"
 #include "core/UIScale.h"
 #include "core/Locale.h"
-#include "core/ThemeManager.h"
 #include "TapDetector.h"
 #include <raylib.h>
 
@@ -14,21 +13,18 @@ namespace theword::ui {
 
 class CreditsOverlay : public Screen {
 public:
-    CreditsOverlay(const Font& font, float fontSize,
+    CreditsOverlay(float fontSize,
                    NavigationStack& navStack,
-                   const theword::core::UIScale& uiScale,
-                   const theword::core::ThemeManager& themeManager);
-    void Draw() override;
+                   const theword::core::UIScale& uiScale);
+    void Draw(theword::renderer::DrawContext& ctx) override;
     bool HandleInput(float deltaTime) override;
     const char* GetTitle() const override { return theword::core::Locale::Get("Credits"); }
     bool IsOverlay() const override { return true; }
 
 private:
-    const Font& font_;
     float fontSize_;
     NavigationStack& navStack_;
     const theword::core::UIScale& uiScale_;
-    const theword::core::ThemeManager& themeManager_;
 
     double showTime_;
     double fadeOutStartTime_ = 0;

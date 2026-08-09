@@ -167,12 +167,7 @@ bool App::Init(const std::string& title) {
                                                    fontManager_->BodySize(), fontManager_->HeadingFontSize(),
                                                    fontManager_->LargeSize(), fontManager_->SmallSize(),
                                                    config::LINE_SPACING, scale_);
-    renderer_ = std::make_unique<Renderer>(fontManager_->Body(), fontManager_->Heading(),
-                                            fontManager_->Large(), fontManager_->Small(),
-                                            contentTop,
-                                            fontManager_->BodySize(), fontManager_->HeadingFontSize(),
-                                            fontManager_->LargeSize(), fontManager_->SmallSize(), scale_,
-                                            *themeManager_);
+    renderer_ = std::make_unique<Renderer>(contentTop);
 
     float viewportHeight = renderH - contentTop;
 
@@ -205,7 +200,7 @@ bool App::Init(const std::string& title) {
 
     highlighter_->SetProvider(currentBibleId_ > 0 ? "BibleClient" : "USFMParser");
 
-    uiManager_ = std::make_unique<UIManager>(*highlighter_, fontManager_->Small(), *themeManager_, scale_);
+    uiManager_ = std::make_unique<UIManager>(*highlighter_, scale_);
 
     {
         std::string im = persistence_->GetPreference("immersive_mode", "0");
@@ -303,7 +298,6 @@ void App::WireEvents() {
         layoutEngine_->SetFontSizes(bodyF, headingF, largeF, smallF);
         layoutEngine_->InvalidateCache();
         docManager_->InvalidateLayouts();
-        renderer_->SetFontSizes(bodyF, headingF, largeF, smallF);
     });
 
     eventBus_->On<theword::event::BibleVersionSwitchEvent>([this](const auto& e) {
@@ -383,7 +377,7 @@ void App::HandleShortcuts() {
 
     if (IsKeyPressed(key::S)) {
         navStack_->Push(std::make_unique<theword::ui::SettingsScreen>(
-            fontManager_->Heading(), fontManager_->HeadingSize(), *navStack_, *eventBus_,
+            *navStack_, *eventBus_,
             *persistence_,
             uiScale_, currentFontSize_, currentBibleId_, immersiveMode_,
             *themeManager_
@@ -391,8 +385,7 @@ void App::HandleShortcuts() {
     }
     if (IsKeyPressed(key::A)) {
         navStack_->Push(std::make_unique<theword::ui::CreditsOverlay>(
-            fontManager_->Heading(), fontManager_->HeadingSize(), *navStack_, uiScale_,
-            *themeManager_
+            fontManager_->HeadingSize(), *navStack_, uiScale_
         ));
     }
     if (IsKeyPressed(key::I)) {
@@ -401,10 +394,7 @@ void App::HandleShortcuts() {
     }
     if (IsKeyPressed(KEY_D)) {
         navStack_->Push(std::make_unique<theword::ui::FontDiagnostic>(
-            fontManager_->Body(), fontManager_->Heading(),
-            fontManager_->Large(), fontManager_->Small(), fontManager_->Bold(),
-            scale_, *navStack_,
-            *themeManager_
+            *navStack_
         ));
     }
     if (IsKeyDown(KEY_LEFT_CONTROL) && IsKeyPressed(KEY_C) && accumStartWord_ >= 0) {
@@ -495,11 +485,13 @@ void App::MainLoop() {
             BeginDrawing();
             ClearBackground(pal.windowBg);
 
-            navStack_->DrawActive();
+            theword::renderer::DrawContext ctx{*themeManager_, *fontManager_, uiScale_, scale_};
+
+            navStack_->DrawActive(ctx);
 
             uiManager_->DrawRadialMenu();
-            uiManager_->DrawToast();
-            uiManager_->DrawFootnotePopup();
+            uiManager_->DrawToast(ctx);
+            uiManager_->DrawFootnotePopup(ctx);
             renderer_->DrawFpsCounter(GetScreenWidth() / 2, GetScreenHeight() - 30);
 
             EndDrawing();

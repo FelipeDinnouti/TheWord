@@ -11,18 +11,17 @@ namespace theword::ui {
 
 using namespace theword::core;
 
-CreditsOverlay::CreditsOverlay(const Font& font, float fontSize, NavigationStack& navStack,
-                               const theword::core::UIScale& uiScale,
-                               const theword::core::ThemeManager& themeManager)
-    : font_(font), fontSize_(fontSize), navStack_(navStack), uiScale_(uiScale),
-      themeManager_(themeManager),
+CreditsOverlay::CreditsOverlay(float fontSize, NavigationStack& navStack,
+                               const theword::core::UIScale& uiScale)
+    : fontSize_(fontSize), navStack_(navStack), uiScale_(uiScale),
       showTime_(GetTime()),
       tapDetector_(uiScale_.dp(10)) {}
 
-void CreditsOverlay::Draw() {
-    const auto& palette = themeManager_.Current();
-    float screenW = static_cast<float>(GetScreenWidth());
-    float screenH = static_cast<float>(GetScreenHeight());
+void CreditsOverlay::Draw(theword::renderer::DrawContext& ctx) {
+    const auto& palette = ctx.themeManager.Current();
+    float screenW = ctx.uiScale.screenW;
+    float screenH = ctx.uiScale.screenH;
+    const Font& font = ctx.fonts.Get(theword::text::FontKind::Heading);
 
     float now = static_cast<float>(GetTime());
     float fadeAlpha;
@@ -63,19 +62,19 @@ void CreditsOverlay::Draw() {
     float y = panelY + padding;
 
     std::string title = std::string("TheWord v") + APP_VERSION;
-    DrawTextEx(font_, title.c_str(), {panelX + padding, y}, labelSize, 1,
+    DrawTextEx(font, title.c_str(), {panelX + padding, y}, labelSize, 1,
                Fade(palette.uiTitle, fadeAlpha));
     y += labelSize + uiScale_.dp(12);
 
-    DrawTextEx(font_, Locale::Get("Built with Raylib & C++17"), {panelX + padding, y},
+    DrawTextEx(font, Locale::Get("Built with Raylib & C++17"), {panelX + padding, y},
                smallSize, 1, Fade(palette.uiText, fadeAlpha));
     y += smallSize + uiScale_.dp(8);
 
-    DrawTextEx(font_, Locale::Get("Data: USFM (offline) + YouVersion API (online)"),
+    DrawTextEx(font, Locale::Get("Data: USFM (offline) + YouVersion API (online)"),
                {panelX + padding, y}, smallSize, 1, Fade(palette.uiText, fadeAlpha));
     y += smallSize + uiScale_.dp(8);
 
-    DrawTextEx(font_, Locale::Get("Press Escape or tap outside to close"),
+    DrawTextEx(font, Locale::Get("Press Escape or tap outside to close"),
                {panelX + padding, y}, smallSize, 1, Fade(palette.uiText, fadeAlpha));
 
     SetMouseCursor(MOUSE_CURSOR_DEFAULT);

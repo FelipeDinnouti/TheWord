@@ -33,15 +33,15 @@ const Screen* NavigationStack::GetActive() const {
     return stack_.empty() ? nullptr : stack_.back().get();
 }
 
-void NavigationStack::DrawActive() {
+void NavigationStack::DrawActive(theword::renderer::DrawContext& ctx) {
     if (stack_.empty()) return;
 
     auto* active = stack_.back().get();
     if (active->IsOverlay() && stack_.size() >= 2) {
         auto* below = stack_[stack_.size() - 2].get();
-        below->Draw();
+        below->Draw(ctx);
     }
-    active->Draw();
+    active->Draw(ctx);
 }
 
 bool NavigationStack::HandleInput(float deltaTime) {

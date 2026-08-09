@@ -23,10 +23,9 @@ public:
                            NavigationStack& navStack,
                            theword::event::EventBus& eventBus,
                            const theword::highlight::Highlighter& highlighter,
-                           const theword::core::UIScale& uiScale,
-                           const theword::core::ThemeManager& themeManager);
+                           const theword::core::UIScale& uiScale);
     ~HighlightBrowserScreen() override;
-    void Draw() override;
+    void Draw(theword::renderer::DrawContext& ctx) override;
     bool HandleInput(float deltaTime) override;
     const char* GetTitle() const override { return theword::core::Locale::Get("Highlights"); }
 
@@ -48,7 +47,6 @@ private:
     theword::event::EventBus& eventBus_;
     const theword::highlight::Highlighter& highlighter_;
     const theword::core::UIScale& uiScale_;
-    const theword::core::ThemeManager& themeManager_;
 
     int activeColorId_ = 0;
     float scrollY_ = 0.0f;

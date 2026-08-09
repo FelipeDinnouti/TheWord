@@ -60,12 +60,10 @@ HighlightBrowserScreen::HighlightBrowserScreen(const Font& font, float fontSize,
                                                NavigationStack& navStack,
                                                theword::event::EventBus& eventBus,
                                                const theword::highlight::Highlighter& highlighter,
-                                               const theword::core::UIScale& uiScale,
-                                               const theword::core::ThemeManager& themeManager)
+                                               const theword::core::UIScale& uiScale)
     : font_(font), fontSize_(fontSize),
       navStack_(navStack), eventBus_(eventBus),
       highlighter_(highlighter), uiScale_(uiScale),
-      themeManager_(themeManager),
       tapDetector_(uiScale_.dp(10)) {
     eventBus_.On<theword::event::ScrollEvent>(
         [this, alive = aliveGuard_](const theword::event::ScrollEvent& e) {
@@ -153,12 +151,12 @@ void HighlightBrowserScreen::RebuildLayouts(float textWrapWidth) const {
     lastTextWrapWidth_ = textWrapWidth;
 }
 
-void HighlightBrowserScreen::Draw() {
-    const auto& palette = themeManager_.Current();
-    float screenW = static_cast<float>(GetScreenWidth());
-    float screenH = static_cast<float>(GetScreenHeight());
+void HighlightBrowserScreen::Draw(theword::renderer::DrawContext& ctx) {
+    const auto& palette = ctx.themeManager.Current();
+    float screenW = ctx.uiScale.screenW;
+    float screenH = ctx.uiScale.screenH;
 
-    DrawHeaderBar(font_, fontSize_, Locale::Get("Highlights"), true, static_cast<int>(screenW), uiScale_, palette);
+    DrawHeaderBar(ctx, font_, fontSize_, Locale::Get("Highlights"), true);
 
     float headerH = uiScale_.dp(48);
     float controlSize = fontSize_ * 0.65f;
@@ -173,7 +171,7 @@ void HighlightBrowserScreen::Draw() {
     for (size_t i = 0; i < types.size(); ++i) {
         float swatchX = swatchStartX + i * (swatchSize + swatchGap);
         Color c = {types[i].color.r, types[i].color.g, types[i].color.b, 255};
-        DrawColorSwatch({swatchX, swatchRowY, swatchSize, swatchSize}, c, palette, types[i].id == activeColorId_);
+        DrawColorSwatch(ctx, {swatchX, swatchRowY, swatchSize, swatchSize}, c, types[i].id == activeColorId_);
     }
 
     if (activeColorId_ == 0) {

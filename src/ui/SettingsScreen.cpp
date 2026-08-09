@@ -13,29 +13,28 @@ namespace theword::ui {
 
 using namespace theword::core;
 
-SettingsScreen::SettingsScreen(const Font& font, float fontSize,
-                               NavigationStack& navStack,
+SettingsScreen::SettingsScreen(NavigationStack& navStack,
                                theword::event::EventBus& eventBus,
                                theword::persistence::PersistenceManager& persistence,
                                const theword::core::UIScale& uiScale,
                                float& currentFontSize, int& currentBibleId, bool& immersiveMode,
                                const theword::core::ThemeManager& themeManager)
-    : font_(font), fontSize_(fontSize),
-      navStack_(navStack), eventBus_(eventBus),
+    : navStack_(navStack), eventBus_(eventBus),
       persistence_(persistence),
       uiScale_(uiScale), currentFontSize_(currentFontSize), currentBibleId_(currentBibleId), immersiveMode_(immersiveMode),
       themeManager_(themeManager),
       tapDetector_(uiScale_.dp(10)) {}
 
-void SettingsScreen::Draw() {
-    const auto& palette = themeManager_.Current();
-    float screenW = static_cast<float>(GetScreenWidth());
+void SettingsScreen::Draw(theword::renderer::DrawContext& ctx) {
+    const auto& palette = ctx.themeManager.Current();
+    const Font& font = ctx.fonts.Get(theword::text::FontKind::Heading);
+    float fontSize = ctx.fonts.HeadingSize();
 
     float headerH = uiScale_.dp(48);
-    DrawHeaderBar(font_, fontSize_, Locale::Get("Settings"), true, static_cast<int>(screenW), uiScale_, palette);
+    DrawHeaderBar(ctx, font, fontSize, Locale::Get("Settings"), true);
 
-    float labelSize = fontSize_ * 0.7f;
-    float controlSize = fontSize_ * 0.65f;
+    float labelSize = fontSize * 0.7f;
+    float controlSize = fontSize * 0.65f;
 
     float labelX = uiScale_.dp(16);
     float btnW = uiScale_.dp(36);
@@ -48,25 +47,25 @@ void SettingsScreen::Draw() {
     float rowY = headerH + uiScale_.dp(40);
     float rowGap = uiScale_.dp(48);
 
-    DrawTextEx(font_, Locale::Get("Font:"), {labelX, rowY}, labelSize, 1, palette.uiText);
+    DrawTextEx(font, Locale::Get("Font:"), {labelX, rowY}, labelSize, 1, palette.uiText);
 
     bool atMin = currentFontSize_ <= config::FONT_SIZE_MIN;
     bool atMax = currentFontSize_ >= config::FONT_SIZE_MAX;
 
-    DrawButton({decX, rowY, btnW, btnH}, "-", font_, controlSize,
-               palette, !atMin, palette.uiButtonText, palette.buttonBg);
+    DrawButton(ctx, {decX, rowY, btnW, btnH}, "-", font, controlSize,
+               !atMin, palette.uiButtonText, palette.buttonBg);
 
     std::string sizeStr = std::to_string(static_cast<int>(currentFontSize_));
-    Vector2 sz = MeasureTextEx(font_, sizeStr.c_str(), labelSize, 1);
-    DrawTextEx(font_, sizeStr.c_str(), {valX - sz.x / 2.0f, rowY + uiScale_.dp(4)},
+    Vector2 sz = MeasureTextEx(font, sizeStr.c_str(), labelSize, 1);
+    DrawTextEx(font, sizeStr.c_str(), {valX - sz.x / 2.0f, rowY + uiScale_.dp(4)},
                labelSize, 1, palette.uiText);
 
-    DrawButton({incX, rowY, btnW, btnH}, "+", font_, controlSize,
-               palette, !atMax, palette.uiButtonText, palette.buttonBg);
+    DrawButton(ctx, {incX, rowY, btnW, btnH}, "+", font, controlSize,
+               !atMax, palette.uiButtonText, palette.buttonBg);
 
     // Version row
     rowY += rowGap;
-    DrawTextEx(font_, Locale::Get("Version:"), {labelX, rowY}, labelSize, 1, palette.uiText);
+    DrawTextEx(font, Locale::Get("Version:"), {labelX, rowY}, labelSize, 1, palette.uiText);
 
     float verBtnW = uiScale_.dp(52);
     float verBtnH = uiScale_.dp(30);
@@ -76,15 +75,15 @@ void SettingsScreen::Draw() {
     for (int i = 0; i < config::BIBLE_VERSION_COUNT; ++i) {
         float vx = verStartX + i * (verBtnW + verBtnGap);
         bool active = (currentBibleId_ == config::BIBLE_VERSIONS[i].id);
-        DrawButton({vx, rowY, verBtnW, verBtnH}, config::BIBLE_VERSIONS[i].label,
-                   font_, controlSize, palette, true,
+        DrawButton(ctx, {vx, rowY, verBtnW, verBtnH}, config::BIBLE_VERSIONS[i].label,
+                   font, controlSize, true,
                    palette.uiText,
                    active ? palette.switchOn : palette.switchOff);
     }
 
     // Theme row
     rowY += rowGap;
-    DrawTextEx(font_, Locale::Get("Theme:"), {labelX, rowY}, labelSize, 1, palette.uiText);
+    DrawTextEx(font, Locale::Get("Theme:"), {labelX, rowY}, labelSize, 1, palette.uiText);
 
     float thBtnW = uiScale_.dp(80);
     float thBtnH = uiScale_.dp(30);
@@ -92,24 +91,24 @@ void SettingsScreen::Draw() {
     float thDarkX = uiScale_.dp(230);
 
     bool isDark = themeManager_.IsDarkMode();
-    DrawButton({thLightX, rowY, thBtnW, thBtnH}, "Light", font_, controlSize,
-               palette, true, palette.uiText, isDark ? palette.switchOff : palette.switchOn);
-    DrawButton({thDarkX, rowY, thBtnW, thBtnH}, "Dark", font_, controlSize,
-               palette, true, palette.uiText, isDark ? palette.switchOn : palette.switchOff);
+    DrawButton(ctx, {thLightX, rowY, thBtnW, thBtnH}, "Light", font, controlSize,
+               true, palette.uiText, isDark ? palette.switchOff : palette.switchOn);
+    DrawButton(ctx, {thDarkX, rowY, thBtnW, thBtnH}, "Dark", font, controlSize,
+               true, palette.uiText, isDark ? palette.switchOn : palette.switchOff);
 
     // Immersive mode row
     rowY += rowGap;
-    DrawTextEx(font_, "Modo Limpo:", {labelX, rowY}, labelSize, 1, palette.uiText);
+    DrawTextEx(font, "Modo Limpo:", {labelX, rowY}, labelSize, 1, palette.uiText);
 
     float imBtnW = uiScale_.dp(80);
     float imBtnH = uiScale_.dp(30);
     float imOnX = uiScale_.dp(140);
     float imOffX = uiScale_.dp(230);
 
-    DrawButton({imOnX, rowY, imBtnW, imBtnH}, "ON", font_, controlSize,
-               palette, true, palette.uiText, immersiveMode_ ? palette.switchOn : palette.switchOff);
-    DrawButton({imOffX, rowY, imBtnW, imBtnH}, "OFF", font_, controlSize,
-               palette, true, palette.uiText, immersiveMode_ ? palette.switchOff : palette.switchOn);
+    DrawButton(ctx, {imOnX, rowY, imBtnW, imBtnH}, "ON", font, controlSize,
+               true, palette.uiText, immersiveMode_ ? palette.switchOn : palette.switchOff);
+    DrawButton(ctx, {imOffX, rowY, imBtnW, imBtnH}, "OFF", font, controlSize,
+               true, palette.uiText, immersiveMode_ ? palette.switchOff : palette.switchOn);
 
     Vector2 mouse = GetMousePosition();
     float hitW = uiScale_.dp(56);

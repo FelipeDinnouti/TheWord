@@ -1,22 +1,25 @@
 # Roadmap
 
-> Status: Release-Based Planning Active | Last Updated: 2026-07-31
+> Status: Release-Based Planning Active | Last Updated: 2026-08-09
 
 The original 13-phase MVP is complete. All future work is organized by **release** (SemVer) rather than phases.
 
-## Current: v1.9.0-alpha
+## Current: v1.9.0-alpha (released 2026-08-09 — audit pending)
 
 **Theme:** Architecture Refactor + Code Quality Assurance — findings A2, A4, A5, A9 + fresh audit
+
+> Refactor complete and device-verified (APK tested on device 2026-08-09, no
+> regressions). The fresh code-quality audit is the remaining release item.
 
 > Full scope confirmed 2026-07-31: A4 and A9.2-3 are in this release (previously
 > deferred in the Architecture-Analysis remediation roadmap).
 
 | Status | Item |
 |--------|------|
-| 🔲 | A2: Extract Span/Line/ChapterLayout from `data/ChapterProvider.h` to `text/LayoutTypes.h` |
-| 🔲 | A4: Introduce DrawContext, eliminate direct raylib calls from all screens |
-| 🔲 | A5: Abstract MeasureTextEx behind TextMeasureFn |
-| 🔲 | A9: Extract FontManager + simplify selection flow through App |
+| ✅ | A2: Extract Span/Line/ChapterLayout from `data/ChapterProvider.h` to `text/LayoutTypes.h` |
+| ✅ | A4: Introduce DrawContext, eliminate direct raylib calls from all screens |
+| ✅ | A5: Abstract MeasureTextEx behind TextMeasureFn |
+| ✅ | A9: Extract FontManager + simplify selection flow through App |
 | 🔲 | Code Quality Assurance — fresh full audit pass across all `src/` (incl. deferred input consolidation) |
 
 See `memory/Architecture-Analysis.md` for full details on each finding.

@@ -4,7 +4,6 @@
 #include "Screen.h"
 #include "core/UIScale.h"
 #include "core/Locale.h"
-#include "core/ThemeManager.h"
 #include "TapDetector.h"
 #include <string>
 #include <vector>
@@ -22,10 +21,9 @@ public:
                    NavigationStack& navStack,
                    theword::event::EventBus& eventBus,
                    const theword::core::UIScale& uiScale,
-                   const theword::core::ThemeManager& themeManager,
                    const std::string& currentChapterRef = "");
     ~BookListScreen() override;
-    void Draw() override;
+    void Draw(theword::renderer::DrawContext& ctx) override;
     bool HandleInput(float deltaTime) override;
     const char* GetTitle() const override { return theword::core::Locale::Get("Books"); }
 
@@ -35,7 +33,6 @@ private:
     NavigationStack& navStack_;
     theword::event::EventBus& eventBus_;
     const theword::core::UIScale& uiScale_;
-    const theword::core::ThemeManager& themeManager_;
 
     std::string search_;
     std::string currentChapterRef_;

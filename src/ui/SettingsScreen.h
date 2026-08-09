@@ -16,20 +16,17 @@ namespace theword::ui {
 
 class SettingsScreen : public Screen {
 public:
-    SettingsScreen(const Font& font, float fontSize,
-                   NavigationStack& navStack,
+    SettingsScreen(NavigationStack& navStack,
                    theword::event::EventBus& eventBus,
                    theword::persistence::PersistenceManager& persistence,
                    const theword::core::UIScale& uiScale,
                    float& currentFontSize, int& currentBibleId, bool& immersiveMode,
                    const theword::core::ThemeManager& themeManager);
-    void Draw() override;
+    void Draw(theword::renderer::DrawContext& ctx) override;
     bool HandleInput(float deltaTime) override;
     const char* GetTitle() const override { return theword::core::Locale::Get("Settings"); }
 
 private:
-    const Font& font_;
-    float fontSize_;
     NavigationStack& navStack_;
     theword::event::EventBus& eventBus_;
     theword::persistence::PersistenceManager& persistence_;

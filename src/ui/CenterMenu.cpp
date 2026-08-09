@@ -44,10 +44,10 @@ CenterMenu::CenterMenu(const Font& font, float fontSize,
       showTime_(GetTime()), currentChapterRef_(currentChapterRef),
       tapDetector_(uiScale_.dp(10)) {}
 
-void CenterMenu::Draw() {
-    const auto& palette = themeManager_.Current();
-    float screenW = static_cast<float>(GetScreenWidth());
-    float screenH = static_cast<float>(GetScreenHeight());
+void CenterMenu::Draw(theword::renderer::DrawContext& ctx) {
+    const auto& palette = ctx.themeManager.Current();
+    float screenW = ctx.uiScale.screenW;
+    float screenH = ctx.uiScale.screenH;
 
     float now = static_cast<float>(GetTime());
     float fadeAlpha;
@@ -83,7 +83,7 @@ void CenterMenu::Draw() {
 
     for (int i = 0; i < ITEM_COUNT; ++i) {
         Rectangle itemRect = {panelX + padding, itemY, menuW - padding * 2, itemH};
-        DrawTextItem(itemRect, ItemLabel(i), font_, labelSize, palette,
+        DrawTextItem(ctx, itemRect, ItemLabel(i), font_, labelSize,
                      i == selectedIndex_,
                      Fade(palette.uiText, fadeAlpha), Fade(palette.uiTitle, fadeAlpha));
         itemY += itemH;
@@ -170,12 +170,12 @@ void CenterMenu::HandleAction(int action) {
     switch (action) {
         case 0: // Books
             navStack_.Push(std::make_unique<BookListScreen>(
-                font_, fontSize_, navStack_, eventBus_, uiScale_, themeManager_, currentChapterRef_
+                font_, fontSize_, navStack_, eventBus_, uiScale_, currentChapterRef_
             ));
             return;
         case 1: // Settings
             navStack_.Push(std::make_unique<SettingsScreen>(
-                font_, fontSize_, navStack_, eventBus_,
+                navStack_, eventBus_,
                 persistence_,
                 uiScale_, currentFontSize_, currentBibleId_, immersiveMode_,
                 themeManager_
@@ -184,12 +184,12 @@ void CenterMenu::HandleAction(int action) {
         case 2: // Highlights
             navStack_.Push(std::make_unique<HighlightBrowserScreen>(
                 font_, fontSize_, navStack_, eventBus_,
-                highlighter_, uiScale_, themeManager_
+                highlighter_, uiScale_
             ));
             return;
         case 3: // Credits
             navStack_.Push(std::make_unique<CreditsOverlay>(
-                font_, fontSize_, navStack_, uiScale_, themeManager_
+                fontSize_, navStack_, uiScale_
             ));
             return;
     }
