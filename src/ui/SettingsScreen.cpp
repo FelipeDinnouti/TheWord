@@ -110,32 +110,31 @@ void SettingsScreen::Draw(theword::renderer::DrawContext& ctx) {
     DrawButton(ctx, {imOffX, rowY, imBtnW, imBtnH}, "OFF", font, controlSize,
                true, palette.uiText, immersiveMode_ ? palette.switchOff : palette.switchOn);
 
-    Vector2 mouse = GetMousePosition();
     float hitW = uiScale_.dp(56);
-    bool overControls = mouse.y >= headerH + uiScale_.dp(40)
-        || (mouse.y < headerH && mouse.x < hitW);
-    SetMouseCursor(overControls ? MOUSE_CURSOR_POINTING_HAND : MOUSE_CURSOR_DEFAULT);
+    bool overControls = ctx.input.mouseY >= headerH + uiScale_.dp(40)
+        || (ctx.input.mouseY < headerH && ctx.input.mouseX < hitW);
+    ctx.SetCursor(overControls ? MOUSE_CURSOR_POINTING_HAND : MOUSE_CURSOR_DEFAULT);
 }
 
-bool SettingsScreen::HandleInput(float /*deltaTime*/) {
-    if (IsKeyPressed(key::ESCAPE)) {
+bool SettingsScreen::HandleInput(const theword::renderer::DrawContext& ctx, float /*deltaTime*/) {
+    if (ctx.input.KeyPressed(key::ESCAPE)) {
         navStack_.Pop();
         return true;
     }
 
-    if (IsMouseButtonPressed(MOUSE_LEFT_BUTTON))
-        tapDetector_.OnPress(GetMousePosition());
+    if (ctx.input.leftPressed)
+        tapDetector_.OnPress(ctx.input.mouseX, ctx.input.mouseY);
 
-    if (IsMouseButtonReleased(MOUSE_LEFT_BUTTON)) {
-        Vector2 mousePos;
-        auto tr = tapDetector_.OnRelease(GetMousePosition(), mousePos);
+    if (ctx.input.leftReleased) {
+        float tapX, tapY;
+        auto tr = tapDetector_.OnRelease(ctx.input.mouseX, ctx.input.mouseY, tapX, tapY);
         if (tr == TapDetector::Result::Drag) { return false; }
         if (tr == TapDetector::Result::Tap) {
 
         float headerH = uiScale_.dp(48);
         float backW = uiScale_.dp(56);
 
-        if (mousePos.y < headerH && mousePos.x < backW) {
+        if (tapY < headerH && tapX < backW) {
             navStack_.Pop();
             return true;
         }
@@ -150,14 +149,14 @@ bool SettingsScreen::HandleInput(float /*deltaTime*/) {
 
         // Font decrease
         Rectangle decRect = {decX, rowY, btnW, btnH};
-        if (CheckCollisionPointRec(mousePos, decRect)) {
+        if (PointInRect(tapX, tapY, decRect)) {
             ChangeFontSize(-config::FONT_SIZE_STEP);
             return true;
         }
 
         // Font increase
         Rectangle incRect = {incX, rowY, btnW, btnH};
-        if (CheckCollisionPointRec(mousePos, incRect)) {
+        if (PointInRect(tapX, tapY, incRect)) {
             ChangeFontSize(config::FONT_SIZE_STEP);
             return true;
         }
@@ -172,7 +171,7 @@ bool SettingsScreen::HandleInput(float /*deltaTime*/) {
         for (int i = 0; i < config::BIBLE_VERSION_COUNT; ++i) {
             float vx = verStartX + i * (verBtnW + verBtnGap);
             Rectangle verRect = {vx, rowY, verBtnW, verBtnH};
-            if (CheckCollisionPointRec(mousePos, verRect)) {
+            if (PointInRect(tapX, tapY, verRect)) {
                 int newId = config::BIBLE_VERSIONS[i].id;
                 if (newId != currentBibleId_) {
                     currentBibleId_ = newId;
@@ -190,13 +189,13 @@ bool SettingsScreen::HandleInput(float /*deltaTime*/) {
         float thDarkX = uiScale_.dp(230);
         Rectangle thLightRect = {thLightX, rowY, thBtnW, thBtnH};
         Rectangle thDarkRect = {thDarkX, rowY, thBtnW, thBtnH};
-        if (CheckCollisionPointRec(mousePos, thLightRect)) {
+        if (PointInRect(tapX, tapY, thLightRect)) {
             if (themeManager_.IsDarkMode()) {
                 eventBus_.Emit(theword::event::ThemeToggleEvent{});
             }
             return true;
         }
-        if (CheckCollisionPointRec(mousePos, thDarkRect)) {
+        if (PointInRect(tapX, tapY, thDarkRect)) {
             if (!themeManager_.IsDarkMode()) {
                 eventBus_.Emit(theword::event::ThemeToggleEvent{});
             }
@@ -211,12 +210,12 @@ bool SettingsScreen::HandleInput(float /*deltaTime*/) {
         float imOffX = uiScale_.dp(230);
         Rectangle imOnRect = {imOnX, rowY, imBtnW, imBtnH};
         Rectangle imOffRect = {imOffX, rowY, imBtnW, imBtnH};
-        if (CheckCollisionPointRec(mousePos, imOnRect)) {
+        if (PointInRect(tapX, tapY, imOnRect)) {
             immersiveMode_ = true;
             persistence_.SetPreference("immersive_mode", "1");
             return true;
         }
-        if (CheckCollisionPointRec(mousePos, imOffRect)) {
+        if (PointInRect(tapX, tapY, imOffRect)) {
             immersiveMode_ = false;
             persistence_.SetPreference("immersive_mode", "0");
             return true;

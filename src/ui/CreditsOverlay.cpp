@@ -77,10 +77,10 @@ void CreditsOverlay::Draw(theword::renderer::DrawContext& ctx) {
     DrawTextEx(font, Locale::Get("Press Escape or tap outside to close"),
                {panelX + padding, y}, smallSize, 1, Fade(palette.uiText, fadeAlpha));
 
-    SetMouseCursor(MOUSE_CURSOR_DEFAULT);
+    ctx.SetCursor(MOUSE_CURSOR_DEFAULT);
 }
 
-bool CreditsOverlay::HandleInput(float /*deltaTime*/) {
+bool CreditsOverlay::HandleInput(const theword::renderer::DrawContext& ctx, float /*deltaTime*/) {
     if (fadingOut_) {
         if (popPending_) {
             navStack_.Pop();
@@ -89,23 +89,23 @@ bool CreditsOverlay::HandleInput(float /*deltaTime*/) {
         return true;
     }
 
-    if (IsKeyPressed(key::ESCAPE)) {
+    if (ctx.input.KeyPressed(key::ESCAPE)) {
         fadingOut_ = true;
         fadeOutStartTime_ = GetTime();
         return true;
     }
 
-    if (IsMouseButtonPressed(MOUSE_LEFT_BUTTON))
-        tapDetector_.OnPress(GetMousePosition());
+    if (ctx.input.leftPressed)
+        tapDetector_.OnPress(ctx.input.mouseX, ctx.input.mouseY);
 
-    if (IsMouseButtonReleased(MOUSE_LEFT_BUTTON)) {
-        Vector2 mousePos;
-        auto tr = tapDetector_.OnRelease(GetMousePosition(), mousePos);
+    if (ctx.input.leftReleased) {
+        float tapX, tapY;
+        auto tr = tapDetector_.OnRelease(ctx.input.mouseX, ctx.input.mouseY, tapX, tapY);
         if (tr == TapDetector::Result::Drag) { return false; }
         if (tr == TapDetector::Result::Tap) {
 
-        float screenW = static_cast<float>(GetScreenWidth());
-        float screenH = static_cast<float>(GetScreenHeight());
+        float screenW = ctx.uiScale.screenW;
+        float screenH = ctx.uiScale.screenH;
         float panelW = uiScale_.fitScreen(90, 400);
         float panelX = (screenW - panelW) / 2.0f;
         float padding = uiScale_.dp(16);
@@ -115,12 +115,12 @@ bool CreditsOverlay::HandleInput(float /*deltaTime*/) {
         float panelY = (screenH - contentH) / 2.0f;
         Rectangle panelRect = {panelX, panelY, panelW, contentH};
 
-        if (!CheckCollisionPointRec(mousePos, panelRect)) {
+        if (!PointInRect(tapX, tapY, panelRect)) {
             fadingOut_ = true;
             fadeOutStartTime_ = GetTime();
             return true;
         }
-        if (mousePos.x >= panelX + panelW - uiScale_.dp(24) && mousePos.y < panelY + uiScale_.dp(24)) {
+        if (tapX >= panelX + panelW - uiScale_.dp(24) && tapY < panelY + uiScale_.dp(24)) {
             fadingOut_ = true;
             fadeOutStartTime_ = GetTime();
             return true;

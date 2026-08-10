@@ -32,7 +32,7 @@ public:
                    const theword::core::ThemeManager& themeManager);
     ~ReaderScreen() override;
     void Draw(theword::renderer::DrawContext& ctx) override;
-    bool HandleInput(float deltaTime) override;
+    bool HandleInput(const theword::renderer::DrawContext& ctx, float deltaTime) override;
     const char* GetTitle() const override { return "Reader"; }
 
 private:
@@ -66,7 +66,7 @@ private:
     float FindLineYForWord(int wordId) const;
     void UpdateBottomBar(float deltaTime);
     void DrawBottomBarContent(const theword::renderer::DrawContext& ctx);
-    bool HandleBottomBarClick();
+    bool HandleBottomBarClick(const theword::renderer::DrawContext& ctx);
     void OpenCenterMenu();
 };
 

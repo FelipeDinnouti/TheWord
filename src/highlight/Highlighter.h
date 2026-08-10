@@ -64,6 +64,12 @@ public:
                          const std::string& bookId, int chapterNum,
                          const std::vector<theword::data::Word>* words = nullptr);
 
+    // Pure selection-text utilities (shared by app shell and tests)
+    static std::string AssembleSelectedText(const theword::data::ChapterData& data,
+                                            int startWord, int endWord);
+    static void FindVerseRange(const std::vector<theword::data::Word>& words,
+                               int anchorWord, int& verseStart, int& verseEnd);
+
 private:
     theword::event::EventBus& eventBus_;
     PersistenceInterface& persistence;

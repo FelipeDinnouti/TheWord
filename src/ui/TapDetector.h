@@ -1,36 +1,37 @@
 #ifndef TAP_DETECTOR_H
 #define TAP_DETECTOR_H
 
-#include <raylib.h>
-
 namespace theword::ui {
 
 class TapDetector {
 public:
     explicit TapDetector(float slopDp) : slopSq_(slopDp * slopDp) {}
 
-    void OnPress(Vector2 pos) {
-        pressStartPos_ = pos;
+    void OnPress(float x, float y) {
+        pressStartX_ = x;
+        pressStartY_ = y;
         hasPendingPress_ = true;
     }
 
     enum class Result { None, Drag, Tap };
 
-    Result OnRelease(Vector2 releasePos, Vector2& tapPos) {
+    Result OnRelease(float releaseX, float releaseY, float& tapX, float& tapY) {
         if (!hasPendingPress_) return Result::None;
         hasPendingPress_ = false;
-        float dx = releasePos.x - pressStartPos_.x;
-        float dy = releasePos.y - pressStartPos_.y;
+        float dx = releaseX - pressStartX_;
+        float dy = releaseY - pressStartY_;
         if (dx * dx + dy * dy > slopSq_)
             return Result::Drag;
-        tapPos = releasePos;
+        tapX = releaseX;
+        tapY = releaseY;
         return Result::Tap;
     }
 
     void Reset() { hasPendingPress_ = false; }
 
 private:
-    Vector2 pressStartPos_{};
+    float pressStartX_ = 0.0f;
+    float pressStartY_ = 0.0f;
     bool hasPendingPress_ = false;
     float slopSq_;
 };

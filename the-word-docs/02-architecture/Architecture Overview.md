@@ -26,8 +26,8 @@ The system is organized into logical layers. Each layer builds on the one below 
 │       └── components (shared widgets)                │
 ├──────────────────────────────────────────────────────┤
 │                    INPUT LAYER                        │
-│  InputHandler (raw input → EventBus events)          │
-│  No UI dependencies.                                 │
+│  InputHandler (polls once → InputFrame snapshot,     │
+│  emits events/callbacks; no UI dependencies)         │
 ├──────────────────────────────────────────────────────┤
 │                DOCUMENT MANAGER                       │
 │  DocumentManager                                     │
@@ -57,7 +57,7 @@ main.cpp
   ├── App
   │     ├── Renderer         → Config, HighlightRect (SimpleColor)
   │     │     └── UIManager  → Config
-  │     ├── InputHandler     → EventBus only (no UI deps)
+  │     ├── InputHandler     → EventBus, callbacks (no UI deps)
   │     ├── NavigationStack  → Screen base
   │     │     ├── ReaderScreen   → DocMgr, Highlighter, Renderer
   │     │     ├── BookListScreen → UIScale, TapDetector

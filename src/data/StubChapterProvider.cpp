@@ -18,10 +18,6 @@ std::vector<Word> TokenizeText(const std::string& text, int verseId, int& nextId
 }
 } // namespace
 
-bool StubChapterProvider::HasChapter(const std::string& bookId, int chapter) {
-    return (bookId == "JHN" && chapter == 3);
-}
-
 const char* StubChapterProvider::ProviderName() const {
     return "Stub";
 }

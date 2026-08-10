@@ -4,6 +4,7 @@
 #include <raylib.h>
 #include <functional>
 #include <string>
+#include "core/InputFrame.h"
 
 namespace theword::event { class EventBus; }
 
@@ -22,20 +23,20 @@ public:
                  std::function<bool(int)> isHighlightedFn = nullptr,
                  std::function<int(float, float)> hitTestFootnoteFn = nullptr);
 
+    void BeginFrame();
     void Poll(float deltaTime);
     void ResetState();
-    bool IsDialogActive() const { return dialogActive_; }
     bool HasMomentum() const { return false; }
+    const theword::core::InputFrame& Frame() const { return frame_; }
 
     // Semantic callbacks — set before the Poll loop
     std::function<void(HitInfo hit, Vector2 pos, bool isDouble)> onTap;
     std::function<void(Vector2 pos)> onTapEmpty;
-    std::function<void(int startWord, Vector2 pos)> onDragStart;
-    std::function<void(int startWord, int currentWord, Vector2 pos)> onDragUpdate;
     std::function<void(int startWord, int endWord, Vector2 pos)> onDragEnd;
     std::function<void(int wordId, Vector2 pos)> onLongPress;
     std::function<void(int footnoteIndex)> onFootnoteTap;
     std::function<bool()> onDismiss;
+    std::function<void(int key, bool ctrl)> onShortcut;
 
     const HitInfo& GetPressStartHit() const { return pressStartHit; }
 
@@ -47,7 +48,6 @@ private:
     std::function<HitInfo(float, float)> hitTestFn;
     std::function<bool(int)> isHighlightedFn;
     std::function<int(float, float)> hitTestFootnoteFn;
-    bool dialogActive_ = false;
 
     float slopAccumulator = 0.0f;
     static constexpr float SCROLL_SENSITIVITY = 40.0f;
@@ -65,6 +65,8 @@ private:
     int selectStartWord;
     int lastDragWord_;
     bool suppressDragEnd_ = false;
+
+    theword::core::InputFrame frame_;
 
     float touchLastY;
     float touchLaunchVelocity_ = 0.0f;

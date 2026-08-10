@@ -28,7 +28,7 @@ ChapterGridScreen::ChapterGridScreen(NavigationStack& navStack,
     eventBus_.On<theword::event::ScrollEvent>(
         [this, alive = aliveGuard_](const theword::event::ScrollEvent& e) {
         if (!*alive) return;
-        float screenH = static_cast<float>(GetScreenHeight());
+        float screenH = uiScale_.screenH;
         float headerH = uiScale_.dp(48);
         float padding = uiScale_.dp(12);
         float cellH = uiScale_.dp(48);
@@ -77,8 +77,7 @@ void ChapterGridScreen::Draw(theword::renderer::DrawContext& ctx) {
     float labelSize = fontSize * 0.6f;
 
     // Clip grid content below the header bar
-    BeginScissorMode(0, static_cast<int>(headerH), static_cast<int>(screenW),
-                     static_cast<int>(screenH - headerH));
+    ctx.PushClipRect(0, headerH, screenW, screenH - headerH);
 
     float scrollOffset = gridScrollY_;
 
@@ -118,22 +117,21 @@ void ChapterGridScreen::Draw(theword::renderer::DrawContext& ctx) {
                       static_cast<int>(barW), static_cast<int>(barH), {128, 128, 128, 120});
     }
 
-    EndScissorMode();
+    ctx.PopClipRect();
 
-    Vector2 mouse = GetMousePosition();
-    bool overGrid = mouse.y >= gridY && mouse.y < gridY + availableH
-                    && mouse.x >= gridStartX && mouse.x < gridStartX + totalRowWidth;
-    SetMouseCursor(overGrid ? MOUSE_CURSOR_POINTING_HAND : MOUSE_CURSOR_DEFAULT);
+    bool overGrid = ctx.input.mouseY >= gridY && ctx.input.mouseY < gridY + availableH
+                    && ctx.input.mouseX >= gridStartX && ctx.input.mouseX < gridStartX + totalRowWidth;
+    ctx.SetCursor(overGrid ? MOUSE_CURSOR_POINTING_HAND : MOUSE_CURSOR_DEFAULT);
 }
 
-bool ChapterGridScreen::HandleInput(float /*deltaTime*/) {
-    if (IsKeyPressed(key::ESCAPE)) {
+bool ChapterGridScreen::HandleInput(const theword::renderer::DrawContext& ctx, float /*deltaTime*/) {
+    if (ctx.input.KeyPressed(key::ESCAPE)) {
         navStack_.Pop();
         return true;
     }
 
-    float screenW = static_cast<float>(GetScreenWidth());
-    float screenH = static_cast<float>(GetScreenHeight());
+    float screenW = ctx.uiScale.screenW;
+    float screenH = ctx.uiScale.screenH;
     float headerH = uiScale_.dp(48);
     float padding = uiScale_.dp(12);
     float cellW = uiScale_.dp(56);
@@ -148,23 +146,23 @@ bool ChapterGridScreen::HandleInput(float /*deltaTime*/) {
     float maxScroll = std::max(0.0f, totalGridH - availableH);
 
     // Scroll wheel
-    float wheel = GetMouseWheelMove();
+    float wheel = ctx.input.wheel;
     if (wheel != 0.0f) {
         gridScrollY_ = std::clamp(gridScrollY_ - wheel * totalRowH * 2.0f, 0.0f, maxScroll);
         return true;
     }
 
-    if (IsKeyPressed(key::LEFT) && selectedChapter_ > 1) {
+    if (ctx.input.KeyPressed(key::LEFT) && selectedChapter_ > 1) {
         selectedChapter_--;
         KeepSelectionVisible(columns, totalRowH, availableH);
         return true;
     }
-    if (IsKeyPressed(key::RIGHT) && selectedChapter_ < chapterCount_) {
+    if (ctx.input.KeyPressed(key::RIGHT) && selectedChapter_ < chapterCount_) {
         selectedChapter_++;
         KeepSelectionVisible(columns, totalRowH, availableH);
         return true;
     }
-    if (IsKeyPressed(key::UP)) {
+    if (ctx.input.KeyPressed(key::UP)) {
         int target = selectedChapter_ - columns;
         if (target >= 1) {
             selectedChapter_ = target;
@@ -172,7 +170,7 @@ bool ChapterGridScreen::HandleInput(float /*deltaTime*/) {
         }
         return true;
     }
-    if (IsKeyPressed(key::DOWN)) {
+    if (ctx.input.KeyPressed(key::DOWN)) {
         int target = selectedChapter_ + columns;
         if (target <= chapterCount_) {
             selectedChapter_ = target;
@@ -181,7 +179,7 @@ bool ChapterGridScreen::HandleInput(float /*deltaTime*/) {
         return true;
     }
 
-    if (IsKeyPressed(key::ENTER)) {
+    if (ctx.input.KeyPressed(key::ENTER)) {
         std::string ref = bookCode_ + "." + std::to_string(selectedChapter_);
         auto* bus = &eventBus_;
         navStack_.PopAll();
@@ -189,19 +187,19 @@ bool ChapterGridScreen::HandleInput(float /*deltaTime*/) {
         return true;
     }
 
-    if (IsMouseButtonPressed(MOUSE_LEFT_BUTTON))
-        tapDetector_.OnPress(GetMousePosition());
+    if (ctx.input.leftPressed)
+        tapDetector_.OnPress(ctx.input.mouseX, ctx.input.mouseY);
 
-    if (IsMouseButtonReleased(MOUSE_LEFT_BUTTON)) {
-        Vector2 mousePos;
-        auto tr = tapDetector_.OnRelease(GetMousePosition(), mousePos);
+    if (ctx.input.leftReleased) {
+        float tapX, tapY;
+        auto tr = tapDetector_.OnRelease(ctx.input.mouseX, ctx.input.mouseY, tapX, tapY);
         if (tr == TapDetector::Result::Drag) { return false; }
         if (tr == TapDetector::Result::Tap) {
 
         float backW = uiScale_.dp(56);
 
         // Back button
-        if (mousePos.y < headerH && mousePos.x < backW) {
+        if (tapY < headerH && tapX < backW) {
             navStack_.Pop();
             return true;
         }
@@ -210,10 +208,10 @@ bool ChapterGridScreen::HandleInput(float /*deltaTime*/) {
         float totalRowWidth = columns * cellW + (columns - 1) * gap;
         float gridStartX = (screenW - totalRowWidth) / 2.0f;
 
-        if (mousePos.y >= gridY && mousePos.y < gridY + availableH
-            && mousePos.x >= gridStartX && mousePos.x < gridStartX + totalRowWidth) {
-            int col = static_cast<int>((mousePos.x - gridStartX) / (cellW + gap));
-            int row = static_cast<int>((mousePos.y - gridY + gridScrollY_) / totalRowH);
+        if (tapY >= gridY && tapY < gridY + availableH
+            && tapX >= gridStartX && tapX < gridStartX + totalRowWidth) {
+            int col = static_cast<int>((tapX - gridStartX) / (cellW + gap));
+            int row = static_cast<int>((tapY - gridY + gridScrollY_) / totalRowH);
             int chapter = row * columns + col + 1;
 
             if (chapter >= 1 && chapter <= chapterCount_) {

@@ -14,6 +14,15 @@ static float RadiusToRoundness(float radius, float w, float h) {
     return std::min(radius / halfMin, 1.0f);
 }
 
+static bool InRect(float x, float y, Rectangle bounds) {
+    return x >= bounds.x && x <= bounds.x + bounds.width &&
+           y >= bounds.y && y <= bounds.y + bounds.height;
+}
+
+bool PointInRect(float x, float y, Rectangle r) {
+    return InRect(x, y, r);
+}
+
 void DrawHeaderBar(const theword::renderer::DrawContext& ctx, const Font& font, float fontSize,
                    const char* title, bool hasBack) {
     const auto& palette = ctx.themeManager.Current();
@@ -50,9 +59,8 @@ bool StartsWithIgnoreCase(const std::string& str, const std::string& prefix) {
 bool DrawButton(const theword::renderer::DrawContext& ctx, Rectangle bounds, const char* text,
                 const Font& font, float fontSize, bool enabled, Color textColor, Color bgColor) {
     const auto& palette = ctx.themeManager.Current();
-    Vector2 mouse = GetMousePosition();
-    bool hovered = enabled && CheckCollisionPointRec(mouse, bounds);
-    bool pressed = hovered && IsMouseButtonDown(MOUSE_LEFT_BUTTON);
+    bool hovered = enabled && InRect(ctx.input.mouseX, ctx.input.mouseY, bounds);
+    bool pressed = hovered && ctx.input.leftDown;
 
     Color fill;
     Color border;
@@ -84,7 +92,7 @@ bool DrawButton(const theword::renderer::DrawContext& ctx, Rectangle bounds, con
     DrawTextEx(font, text, {tx, ty}, fontSize, 1,
                enabled ? textColor : palette.uiButtonTextDisabled);
 
-    return hovered && IsMouseButtonReleased(MOUSE_LEFT_BUTTON);
+    return hovered && ctx.input.leftReleased;
 }
 
 void DrawPanel(Rectangle bounds, Color bgColor, Color borderColor,
@@ -101,9 +109,8 @@ bool DrawTextItem(const theword::renderer::DrawContext& ctx, Rectangle bounds, c
                   const Font& font, float fontSize, bool selected, Color textColor,
                   Color selTextColor) {
     const auto& palette = ctx.themeManager.Current();
-    Vector2 mouse = GetMousePosition();
-    bool hovered = CheckCollisionPointRec(mouse, bounds);
-    bool pressed = hovered && IsMouseButtonDown(MOUSE_LEFT_BUTTON);
+    bool hovered = InRect(ctx.input.mouseX, ctx.input.mouseY, bounds);
+    bool pressed = hovered && ctx.input.leftDown;
 
     Color bg;
     if (selected && pressed) {
@@ -128,15 +135,14 @@ bool DrawTextItem(const theword::renderer::DrawContext& ctx, Rectangle bounds, c
     DrawTextEx(font, text, {bounds.x + padding, bounds.y + (bounds.height - fontSize) * 0.5f},
                fontSize, 1, c);
 
-    return hovered && IsMouseButtonReleased(MOUSE_LEFT_BUTTON);
+    return hovered && ctx.input.leftReleased;
 }
 
 bool DrawToggle(const theword::renderer::DrawContext& ctx, Rectangle bounds,
                 Color accentColor, bool& value) {
     const auto& palette = ctx.themeManager.Current();
-    Vector2 mouse = GetMousePosition();
-    bool hovered = CheckCollisionPointRec(mouse, bounds);
-    bool clicked = hovered && IsMouseButtonReleased(MOUSE_LEFT_BUTTON);
+    bool hovered = InRect(ctx.input.mouseX, ctx.input.mouseY, bounds);
+    bool clicked = hovered && ctx.input.leftReleased;
 
     if (clicked) {
         value = !value;
@@ -158,12 +164,11 @@ bool DrawToggle(const theword::renderer::DrawContext& ctx, Rectangle bounds,
 bool DrawColorSwatch(const theword::renderer::DrawContext& ctx, Rectangle bounds, Color color,
                      bool selected) {
     const auto& palette = ctx.themeManager.Current();
-    Vector2 mouse = GetMousePosition();
-    bool hovered = CheckCollisionPointRec(mouse, bounds);
-    bool clicked = hovered && IsMouseButtonReleased(MOUSE_LEFT_BUTTON);
+    bool hovered = InRect(ctx.input.mouseX, ctx.input.mouseY, bounds);
+    bool clicked = hovered && ctx.input.leftReleased;
 
     Color fill = color;
-    if (hovered && IsMouseButtonDown(MOUSE_LEFT_BUTTON)) {
+    if (hovered && ctx.input.leftDown) {
         fill = theme::Darken(color, theme::PRESS_DARKEN);
     } else if (hovered) {
         fill = theme::Darken(color, theme::HOVER_DARKEN);

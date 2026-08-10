@@ -48,7 +48,7 @@ BookListScreen::BookListScreen(const Font& font, float fontSize,
         scrollAccumulator_ -= itemDelta * itemH;
         auto indices = GetFilteredIndices();
         float listY = uiScale_.dp(48) + uiScale_.dp(44) + uiScale_.dp(4);
-        float screenH = static_cast<float>(GetScreenHeight());
+        float screenH = uiScale_.screenH;
         float listH = screenH - listY;
         int visibleCount = static_cast<int>(listH / itemH);
         int maxScroll = std::max(0, static_cast<int>(indices.size()) - visibleCount);
@@ -142,14 +142,12 @@ void BookListScreen::Draw(theword::renderer::DrawContext& ctx) {
                      bookIdx == selection_, palette.uiText, palette.uiTitle);
     }
 
-    Vector2 mouse = GetMousePosition();
-    bool overRows = mouse.y >= listY;
-    SetMouseCursor(overRows ? MOUSE_CURSOR_POINTING_HAND : MOUSE_CURSOR_DEFAULT);
+bool overRows = ctx.input.mouseY >= listY;
+    ctx.SetCursor(overRows ? MOUSE_CURSOR_POINTING_HAND : MOUSE_CURSOR_DEFAULT);
 }
 
-bool BookListScreen::HandleInput(float /*deltaTime*/) {
-    int ch = GetCharPressed();
-    while (ch > 0) {
+bool BookListScreen::HandleInput(const theword::renderer::DrawContext& ctx, float /*deltaTime*/) {
+    for (char ch : ctx.input.textInput) {
 #if defined(__ANDROID__)
         if (ch == '\b') {
             if (!search_.empty()) {
@@ -164,16 +162,15 @@ bool BookListScreen::HandleInput(float /*deltaTime*/) {
         } else
 #endif
         if (ch >= 32 && ch <= 126) {
-            search_.push_back(static_cast<char>(ch));
+            search_.push_back(ch);
             scrollOffset_ = 0;
             scrollAccumulator_ = 0;
             selection_ = 0;
         }
-        ch = GetCharPressed();
     }
 
 #if !defined(__ANDROID__)
-    if (IsKeyPressed(key::BACKSPACE)) {
+    if (ctx.input.KeyPressed(key::BACKSPACE)) {
         if (!search_.empty()) {
             search_.pop_back();
             scrollOffset_ = 0;
@@ -186,7 +183,7 @@ bool BookListScreen::HandleInput(float /*deltaTime*/) {
     }
 #endif
 
-    if (IsKeyPressed(key::ESCAPE)) {
+    if (ctx.input.KeyPressed(key::ESCAPE)) {
         navStack_.Pop();
         return true;
     }
@@ -196,11 +193,11 @@ bool BookListScreen::HandleInput(float /*deltaTime*/) {
     float itemH = std::max(uiScale_.dp(44), fontSize_ * 0.65f + uiScale_.dp(10));
 
     // Scroll wheel
-    float wheel = GetMouseWheelMove();
+    float wheel = ctx.input.wheel;
     if (wheel != 0.0f) {
         auto indices = GetFilteredIndices();
         float listY = headerH + searchH + uiScale_.dp(4);
-        float screenH = static_cast<float>(GetScreenHeight());
+        float screenH = ctx.uiScale.screenH;
         float listH = screenH - listY;
         int visibleCount = static_cast<int>(listH / itemH);
         int maxScroll = std::max(0, static_cast<int>(indices.size()) - visibleCount);
@@ -209,11 +206,11 @@ bool BookListScreen::HandleInput(float /*deltaTime*/) {
     }
 
     // Up/down arrow navigation
-    if (IsKeyPressed(key::UP) || IsKeyPressed(key::DOWN)) {
+    if (ctx.input.KeyPressed(key::UP) || ctx.input.KeyPressed(key::DOWN)) {
         auto indices = GetFilteredIndices();
         if (indices.empty()) return true;
 
-        int step = IsKeyPressed(key::DOWN) ? 1 : -1;
+        int step = ctx.input.KeyPressed(key::DOWN) ? 1 : -1;
         int curIdx = 0;
         for (int i = 0; i < static_cast<int>(indices.size()); ++i) {
             if (indices[i] == selection_) { curIdx = i; break; }
@@ -222,7 +219,7 @@ bool BookListScreen::HandleInput(float /*deltaTime*/) {
         selection_ = indices[newIdx];
 
         float listY = headerH + searchH + uiScale_.dp(4);
-        float screenH = static_cast<float>(GetScreenHeight());
+        float screenH = ctx.uiScale.screenH;
         float listH = screenH - listY;
         int visibleCount = static_cast<int>(listH / itemH);
         if (newIdx < scrollOffset_) scrollOffset_ = newIdx;
@@ -230,7 +227,7 @@ bool BookListScreen::HandleInput(float /*deltaTime*/) {
         return true;
     }
 
-    if (IsKeyPressed(key::ENTER)) {
+    if (ctx.input.KeyPressed(key::ENTER)) {
         auto indices = GetFilteredIndices();
         for (int i = 0; i < static_cast<int>(indices.size()); ++i) {
             if (indices[i] == selection_) {
@@ -253,33 +250,33 @@ bool BookListScreen::HandleInput(float /*deltaTime*/) {
         }
     }
 
-    if (IsMouseButtonPressed(MOUSE_LEFT_BUTTON))
-        tapDetector_.OnPress(GetMousePosition());
+    if (ctx.input.leftPressed)
+        tapDetector_.OnPress(ctx.input.mouseX, ctx.input.mouseY);
 
-    if (IsMouseButtonReleased(MOUSE_LEFT_BUTTON)) {
-        Vector2 mousePos;
-        auto tr = tapDetector_.OnRelease(GetMousePosition(), mousePos);
+    if (ctx.input.leftReleased) {
+        float tapX, tapY;
+        auto tr = tapDetector_.OnRelease(ctx.input.mouseX, ctx.input.mouseY, tapX, tapY);
         if (tr == TapDetector::Result::Drag) { return false; }
         if (tr == TapDetector::Result::Tap) {
 
         float backW = uiScale_.dp(56);
 
         // Back button area
-        if (mousePos.y < headerH && mousePos.x < backW) {
+        if (tapY < headerH && tapX < backW) {
             navStack_.Pop();
             return true;
         }
 
         // Search bar tap — show keyboard
-        if (mousePos.y >= headerH && mousePos.y < headerH + searchH) {
+        if (tapY >= headerH && tapY < headerH + searchH) {
             theword::core::platform::ShowKeyboard();
             return true;
         }
 
         // Book list click
         float listY = headerH + searchH + uiScale_.dp(4);
-        if (mousePos.y >= listY) {
-            int itemIdx = static_cast<int>((mousePos.y - listY) / itemH);
+        if (tapY >= listY) {
+            int itemIdx = static_cast<int>((tapY - listY) / itemH);
             auto indices = GetFilteredIndices();
             int bookIdx = scrollOffset_ + itemIdx;
             if (bookIdx >= 0 && bookIdx < static_cast<int>(indices.size())) {

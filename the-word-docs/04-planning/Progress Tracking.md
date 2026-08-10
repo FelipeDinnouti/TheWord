@@ -1,6 +1,6 @@
 # Progress Tracking
 
-> Status: v1.8.0-alpha complete | Last Updated: 2026-07-31
+> Status: v1.9.1-alpha (code audit) in progress | Last Updated: 2026-08-09
 
 ## Overall Progress
 
@@ -25,7 +25,8 @@
 | v1.6.3-alpha (VSYNC + Idle Drain) | ✅ Complete | Android VSYNC fix, time-based idle drain, uncapped FPS on high-refresh |
 | v1.7.0-alpha (Reading Experience) | ✅ Complete | Copy Verse, Footnotes, Open Where You Left Off, Immersive Mode |
 | v1.8.0-alpha (Customization & Navigation) | ✅ Complete | Code Quality Audit, Fuzzy Finder, Bible Version Switcher, Modular Theme System |
-| v1.9.0-alpha (Architecture Refactor + Code Quality Assurance) | 🔲 Planned | A2, A4, A5, A9 + fresh audit — current release |
+| v1.9.0-alpha (Architecture Refactor + Code Quality Assurance) | ✅ Complete | Released v1.9.0-alpha (2026-08-09) |
+| v1.9.1-alpha (Full Code Audit) | 🚧 In progress | 1.9.1 audit — current release |
 | v1.10.0-alpha (Animations & UI Polish + Web Deployment) | 🔲 Planned | WASM verification, `serve-web.sh` static server, animation pass |
 
 ## Phase A — Documentation Restructure ✅
@@ -299,11 +300,32 @@
 - [x] Layout cache invalidation on Bible version switch
 - [x] Tagged as `v1.8.0-alpha`
 
-## v1.9.0-alpha — Architecture Refactor + Code Quality Assurance 🔲 Planned
+## v1.9.0-alpha — Architecture Refactor + Code Quality Assurance ✅
 
-- [ ] A2: LayoutTypes extraction · A4: DrawContext · A5: TextMeasureFn · A9: FontManager + selection flow
-- [ ] Code Quality Assurance — fresh full audit across all src/ (incl. deferred input consolidation)
+- [x] A2: LayoutTypes extraction · A4: DrawContext · A5: TextMeasureFn · A9: FontManager + selection flow
+- [x] Full audit across all src/ — tagged as `v1.9.0-alpha` (2026-08-09)
 - See `memory/Active.md` for the implementation checklist
+
+## v1.9.1-alpha — Full Code Audit (fix-everything scope) 🚧
+
+- [x] Input consolidation: `InputFrame` snapshot + `InputHandler::BeginFrame/Frame/Poll`
+      single-poll design; screens read `ctx.input` via `DrawContext` (zero raylib
+      polling left in `src/ui/`); BookListScreen double-drain bug fixed
+- [x] `key::C` / `key::D` constants added (raw `KEY_D`/`KEY_C` was an Android bug)
+- [x] App slimming: `Init()` split into InitWindow/InitDataServices/InitInput/InitNavigation
+      + ApplyPreferences; selection helpers moved to `Highlighter::` statics; radial
+      menu result handling deduplicated (D6); shortcuts moved to `InputHandler::onShortcut`
+- [x] Event governance (D3/D4): dead `KeyEvent` + self-subscribing `DialogEvent` deleted;
+      event matrix documented in `02-architecture/Event Bus.md`
+- [x] Data layer (D-dead HasChapter): zero-caller `ChapterProvider::HasChapter` interface +
+      4 implementations + 2 cache maps deleted (BibleClient version performed a full
+      network fetch per boolean check); tests converted to LoadChapter semantics
+- [x] New tests: 6 LayoutEngine cases with deterministic FakeMeasure, Highlighter
+      AssembleSelectedText/FindVerseRange cases → 87 cases / 320 assertions
+      (85 pass; 2 known pt_BR locale failures)
+- [x] Dead code removed: `OpenURL`, `GetClipboard`, `onDragStart`/`onDragUpdate`,
+      `ResizeEvent::prevScrollY`
+- [ ] Version bump to 1.9.1-alpha + APK + device sign-off + tag
 
 ## v1.10.0-alpha — Animations & UI Polish + Web Deployment 🔲 Planned
 

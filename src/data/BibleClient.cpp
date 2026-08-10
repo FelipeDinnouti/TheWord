@@ -10,16 +10,6 @@ BibleClient::BibleClient(theword::core::IHttpClient& client, int bibleId)
     : apiClient(client), bibleId(bibleId), baseUrl("https://api.youversion.com/v1") {
 }
 
-bool BibleClient::HasChapter(const std::string& bookId, int chapter) {
-    auto key = bookId + "." + std::to_string(chapter);
-    auto cached = cachedHasChapter.find(key);
-    if (cached != cachedHasChapter.end()) return cached->second;
-
-    auto result = LoadChapter(bookId, chapter);
-    cachedHasChapter[key] = result.has_value();
-    return result.has_value();
-}
-
 const char* BibleClient::ProviderName() const {
     return "BibleClient";
 }

@@ -552,25 +552,6 @@ std::vector<ChapterData> USFMParser::ParseBook(const std::string& bookId) const 
     return chapters;
 }
 
-bool USFMParser::HasChapter(const std::string& bookId, int chapter) {
-    auto key = bookId + "." + std::to_string(chapter);
-    auto cached = cachedHasChapter.find(key);
-    if (cached != cachedHasChapter.end()) {
-        return cached->second;
-    }
-
-    auto chapters = ParseBook(bookId);
-    for (const auto& ch : chapters) {
-        if (ch.chapterNum == chapter) {
-            cachedHasChapter[key] = true;
-            return true;
-        }
-    }
-
-    cachedHasChapter[key] = false;
-    return false;
-}
-
 std::optional<ChapterData> USFMParser::LoadChapter(
         const std::string& bookId, int chapter) {
     auto chapters = ParseBook(bookId);

@@ -2,6 +2,7 @@
 #define APP_H
 
 #include "core/UIScale.h"
+#include "core/Platform.h"
 #include <memory>
 #include <string>
 #include <vector>
@@ -10,7 +11,7 @@
 namespace theword::event { class EventBus; }
 namespace theword::text { class LayoutEngine; }
 namespace theword::document { class DocumentManager; }
-namespace theword::renderer { class Renderer; class UIManager; class FontManager; }
+namespace theword::renderer { class Renderer; class UIManager; class FontManager; struct RadialMenuActionResult; }
 namespace theword::input { struct HitInfo; class InputHandler; }
 namespace theword::highlight { class Highlighter; }
 namespace theword::core { class IHttpClient; class ThemeManager; }
@@ -28,17 +29,25 @@ public:
     void Run();
 
 private:
+    bool InitWindow();
+    void InitDataServices();
+    void InitInput();
+    void InitNavigation();
+    void ApplyPreferences();
     void WireEvents();
     void WireInputCallbacks();
     void MainLoop();
-    void HandleShortcuts();
     void OnTap(theword::input::HitInfo hit, Vector2 pos, bool isDouble);
     void OnTapEmpty(Vector2 pos);
     void OnDragEnd(int startWord, int endWord, Vector2 pos);
     void OnLongPress(int wordId, Vector2 pos);
     bool OnDismiss();
+    void HandleRadialMenuResult(const theword::renderer::RadialMenuActionResult& result,
+                                const theword::data::ChapterData* cd);
     void CopySelection(const theword::data::ChapterData& data, int startWord, int endWord);
 
+    theword::core::platform::Info platInfo_;
+    float contentTop_ = 0.0f;
     float scale_ = 1.0f;
     theword::core::UIScale uiScale_{1.0f, 0, 0, 0};
 

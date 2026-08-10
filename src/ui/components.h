@@ -12,6 +12,8 @@ void DrawHeaderBar(const theword::renderer::DrawContext& ctx, const Font& font, 
 
 bool StartsWithIgnoreCase(const std::string& str, const std::string& prefix);
 
+bool PointInRect(float x, float y, Rectangle r);
+
 bool DrawButton(const theword::renderer::DrawContext& ctx, Rectangle bounds, const char* text,
                 const Font& font, float fontSize, bool enabled = true,
                 Color textColor = WHITE, Color bgColor = WHITE);

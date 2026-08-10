@@ -34,6 +34,7 @@ the-word-docs/
 │   ├── Data Structures.md              # Core types: Word, Span, Segment, ChapterData, Highlight
 │   ├── Coordinate Spaces.md            # Document space vs Screen space
 │   ├── Data Flow.md                    # End-to-end request pipeline
+│   ├── Event Bus.md                    # Event matrix: emitters, subscribers, governance
 │   └── UI Philosophy.md                # Navigation model, screens, bottom bar, design principles
 ├── 03-modules/                         # Module specifications
 │   ├── Core.md                         # Config, APIClient, EnvLoader

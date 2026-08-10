@@ -1,13 +1,65 @@
 #include "Highlighter.h"
 #include "event/EventBus.h"
 #include "event/Events.h"
+#include "core/BibleBooks.h"
 #include "core/Logger.h"
 #include <algorithm>
+#include <sstream>
 
 namespace theword::highlight {
 namespace {
 const HighlightType DEFAULT_HIGHLIGHT_TYPE { 1, "Amarelo", {255, 255, 0, 100} };
 } // namespace
+
+std::string Highlighter::AssembleSelectedText(const theword::data::ChapterData& data,
+                                              int startWord, int endWord) {
+    int s = (std::min)(startWord, endWord);
+    int e = (std::max)(startWord, endWord);
+    if (s < 0 || e >= static_cast<int>(data.words.size())) return {};
+
+    // Determine verse range
+    int firstVerse = data.words[s].verseId;
+    int lastVerse = data.words[e].verseId;
+
+    // Build citation prefix
+    int idx = theword::core::FindBookIndex(data.bookId);
+    std::string bookName = (idx >= 0) ? theword::core::BOOK_NAMES_PT[idx] : data.bookId;
+    std::ostringstream citation;
+    citation << bookName << " " << data.chapterNum << ":" << firstVerse;
+    if (lastVerse > firstVerse) citation << "-" << lastVerse;
+    citation << "\n\n";
+
+    // Build body text
+    std::ostringstream body;
+    for (const auto& w : data.words) {
+        if (w.id >= s && w.id <= e) {
+            if (body.tellp() > 0) body << " ";
+            body << w.text;
+        }
+    }
+    return citation.str() + body.str();
+}
+
+void Highlighter::FindVerseRange(const std::vector<theword::data::Word>& words,
+                                 int anchorWord, int& verseStart, int& verseEnd) {
+    int targetVerse = -1;
+    for (const auto& w : words) {
+        if (w.id == anchorWord) {
+            targetVerse = w.verseId;
+            break;
+        }
+    }
+    if (targetVerse < 0) { verseStart = anchorWord; verseEnd = anchorWord; return; }
+
+    verseStart = anchorWord;
+    verseEnd = anchorWord;
+    for (const auto& w : words) {
+        if (w.verseId == targetVerse) {
+            if (w.id < verseStart) verseStart = w.id;
+            if (w.id > verseEnd) verseEnd = w.id;
+        }
+    }
+}
 
 Highlighter::Highlighter(theword::event::EventBus& eventBus, PersistenceInterface& persistence)
     : eventBus_(eventBus), persistence(persistence)

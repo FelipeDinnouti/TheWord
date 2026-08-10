@@ -29,9 +29,21 @@
 
 v1.9.0-alpha "Architecture Refactor" complete and device-verified (released 2026-08-09).
 
-Remaining release-scope item: **Code Quality Assurance — fresh full audit**
-across all `src/` (Feature 6 in `memory/Active.md`). Then v1.10.0-alpha
-(Animations & UI Polish + Web Deployment).
+**v1.9.1-alpha (current):** full code audit — input consolidation (InputFrame
+snapshot, zero polling in `src/ui/`), App slimming + `onShortcut`, event
+governance (`KeyEvent`/`DialogEvent` deleted, matrix doc added), dead
+`HasChapter` interface chain deleted, 7 new test cases (87 total / 320
+assertions). Code complete; pending version bump + APK + device sign-off + tag.
+
+### In Progress (v1.9.1-alpha)
+
+- [x] Input consolidation (Phases 2): `InputFrame` core struct; `BeginFrame/Frame/Poll`
+- [x] App slimming (Phase 3): Init split ×5, Highlighter statics, D6 dedup, onShortcut
+- [x] Event governance (Phase 4): KeyEvent/DialogEvent deleted, Event Bus.md
+- [x] Data-layer (Phase 5): HasChapter chain deleted, tests converted
+- [x] Tests (Phase 6): 6 LayoutEngine FakeMeasure cases, Highlighter statics cases
+- [x] Clean-code (Phase 7a): OpenURL/GetClipboard/onDragStart/onDragUpdate/prevScrollY removed
+- [ ] Version bump to 1.9.1-alpha + APK + device sign-off + tag
 
 ### Completed
 

@@ -18,19 +18,12 @@ struct SelectionEvent {
 struct ResizeEvent {
     int width;
     int height;
-    float prevScrollY;
 };
 
 struct FontSizeEvent     { float newSize; float delta; };
 struct BibleVersionSwitchEvent { int bibleId; };
 struct ThemeToggleEvent {};
 
-struct DialogEvent {
-    enum class Type { GoTo, Settings, About, ContextMenu } type;
-    enum class Action { Show, Hide, Toggle } action;
-};
-
-struct KeyEvent          { int key; };
 struct NavigateEvent     { std::string chapterRef; };
 
 struct NavigateToHighlightEvent {

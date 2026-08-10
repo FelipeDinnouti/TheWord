@@ -13,6 +13,7 @@
 #include "MockHttpClient.h"
 #include "data/ChapterProvider.h"
 #include "text/LayoutTypes.h"
+#include "text/LayoutEngine.h"
 #include "data/BibleClient.h"
 #include "data/CompositeProvider.h"
 #include "data/StubChapterProvider.h"
@@ -189,10 +190,10 @@ TEST_CASE("StubChapterProvider returns nullopt for unknown chapter") {
     CHECK_FALSE(stub.LoadChapter("JHN", 4).has_value());
 }
 
-TEST_CASE("StubChapterProvider HasChapter") {
+TEST_CASE("StubChapterProvider reports chapter via LoadChapter") {
     StubChapterProvider stub;
-    CHECK(stub.HasChapter("JHN", 3));
-    CHECK_FALSE(stub.HasChapter("GEN", 1));
+    CHECK(stub.LoadChapter("JHN", 3).has_value());
+    CHECK_FALSE(stub.LoadChapter("GEN", 1).has_value());
     CHECK(stub.ProviderName() == std::string("Stub"));
 }
 
@@ -262,6 +263,183 @@ TEST_CASE("ChapterLayout stores lines") {
     CHECK(layout.totalHeight == 100.0f);
 }
 
+// ── Highlighter selection-text utilities ───────────────────────────────
+
+TEST_CASE("Highlighter FindVerseRange spans full verse") {
+    theword::data::ChapterData data;
+    data.bookId = "JHN";
+    data.chapterNum = 3;
+    for (int i = 0; i < 6; ++i) {
+        theword::data::Word w;
+        w.id = i;
+        w.verseId = (i < 3) ? 1 : 2;
+        w.text = "w";
+        data.words.push_back(w);
+    }
+    int s = -1, e = -1;
+    theword::highlight::Highlighter::FindVerseRange(data.words, 1, s, e);
+    CHECK(s == 0);
+    CHECK(e == 2);
+    theword::highlight::Highlighter::FindVerseRange(data.words, 5, s, e);
+    CHECK(s == 3);
+    CHECK(e == 5);
+    theword::highlight::Highlighter::FindVerseRange(data.words, 99, s, e);
+    CHECK(s == 99);
+    CHECK(e == 99);
+}
+
+TEST_CASE("Highlighter AssembleSelectedText builds citation and body") {
+    theword::data::ChapterData data;
+    data.bookId = "GEN";
+    data.chapterNum = 1;
+    for (int i = 0; i < 3; ++i) {
+        theword::data::Word w;
+        w.id = i;
+        w.verseId = 1;
+        w.text = (i == 0) ? "No" : (i == 1) ? "principio" : "criou";
+        data.words.push_back(w);
+    }
+    std::string text = theword::highlight::Highlighter::AssembleSelectedText(data, 0, 2);
+    CHECK(text.find("Gênesis 1:1") != std::string::npos);
+    CHECK(text.find("No principio criou") != std::string::npos);
+    CHECK(text.find("No princípio") == std::string::npos);
+
+    std::string reversed = theword::highlight::Highlighter::AssembleSelectedText(data, 2, 0);
+    CHECK(reversed == text);
+
+    CHECK(theword::highlight::Highlighter::AssembleSelectedText(data, -1, 2).empty());
+    CHECK(theword::highlight::Highlighter::AssembleSelectedText(data, 0, 99).empty());
+}
+
+// ── LayoutEngine Tests (deterministic FakeMeasure, no raylib) ──────────
+
+namespace {
+theword::text::TextExtent FakeMeasure(theword::text::FontKind, const std::string& text, float size) {
+    return {static_cast<float>(text.size()) * 10.0f, size};
+}
+
+theword::data::ChapterData MakeProseData(int wordCount, int wordsPerVerse, int startVerse = 1) {
+    theword::data::ChapterData data;
+    data.bookId = "TST";
+    data.chapterNum = 1;
+    for (int i = 0; i < wordCount; ++i) {
+        theword::data::Word w;
+        w.id = i;
+        w.verseId = startVerse + i / wordsPerVerse;
+        w.text = "aaa";
+        data.words.push_back(w);
+    }
+    theword::data::Segment seg;
+    seg.type = theword::data::SegmentType::VerseText;
+    seg.startWordIndex = 0;
+    seg.wordCount = data.words.size();
+    data.segments.push_back(seg);
+    return data;
+}
+} // namespace
+
+TEST_CASE("LayoutEngine wraps text at maxWidth") {
+    theword::event::EventBus bus;
+    theword::text::LayoutEngine engine(bus, 200.0f, FakeMeasure,
+                                       16.0f, 24.0f, 20.0f, 12.0f, 1.2f);
+    auto data = MakeProseData(12, 4);
+    auto layout = engine.LayoutChapter("TST.1", data);
+
+    REQUIRE_FALSE(layout.lines.empty());
+    REQUIRE(layout.lines.size() >= 2);
+
+    int wordSpans = 0;
+    int verseNumberSpans = 0;
+    float prevY = 0.0f;
+    for (const auto& line : layout.lines) {
+        CHECK(line.y >= prevY);
+        prevY = line.y;
+        for (const auto& span : line.spans) {
+            if (span.type == theword::data::SegmentType::VerseText) wordSpans++;
+            if (span.type == theword::data::SegmentType::VerseNumber) verseNumberSpans++;
+        }
+    }
+    CHECK(wordSpans == 12);
+    CHECK(verseNumberSpans == 3);
+    CHECK(layout.totalHeight > 0.0f);
+}
+
+TEST_CASE("LayoutEngine single line when text fits") {
+    theword::event::EventBus bus;
+    theword::text::LayoutEngine engine(bus, 2000.0f, FakeMeasure,
+                                       16.0f, 24.0f, 20.0f, 12.0f, 1.2f);
+    auto data = MakeProseData(5, 2);
+    auto layout = engine.LayoutChapter("TST.1", data);
+    REQUIRE(layout.lines.size() == 1);
+}
+
+TEST_CASE("LayoutEngine HitTestLine maps screen coords to word") {
+    theword::event::EventBus bus;
+    theword::text::LayoutEngine engine(bus, 2000.0f, FakeMeasure,
+                                       16.0f, 24.0f, 20.0f, 12.0f, 1.2f);
+    auto data = MakeProseData(3, 3);
+    auto layout = engine.LayoutChapter("TST.1", data);
+    REQUIRE(layout.lines.size() == 1);
+
+    const auto& line = layout.lines[0];
+    const theword::text::Span* first = nullptr;
+    for (const auto& s : line.spans) {
+        if (s.type == theword::data::SegmentType::VerseText) { first = &s; break; }
+    }
+    REQUIRE(first != nullptr);
+    CHECK(engine.HitTestLine(layout, line.y + line.height / 2,
+                             first->x + first->width / 2) == first->startWord);
+    CHECK(engine.HitTestLine(layout, 999.0f, 0.0f) == -1);
+}
+
+TEST_CASE("LayoutEngine caches layouts and bumps generation on invalidation") {
+    theword::event::EventBus bus;
+    theword::text::LayoutEngine engine(bus, 2000.0f, FakeMeasure,
+                                       16.0f, 24.0f, 20.0f, 12.0f, 1.2f);
+    auto data = MakeProseData(2, 2);
+    auto a = engine.LayoutChapter("TST.1", data);
+    int gen = engine.GetGeneration();
+    engine.InvalidateCache();
+    CHECK(engine.GetGeneration() == gen + 1);
+    auto b = engine.LayoutChapter("TST.1", data);
+    CHECK(b.lines.size() == a.lines.size());
+    CHECK(engine.GetMaxWidth() == 2000.0f);
+}
+
+TEST_CASE("LayoutEngine poetry indent reduces line width") {
+    theword::event::EventBus bus;
+    theword::text::LayoutEngine engine(bus, 200.0f, FakeMeasure,
+                                       16.0f, 24.0f, 20.0f, 12.0f, 1.2f);
+    auto data = MakeProseData(8, 8);
+    data.segments[0].type = theword::data::SegmentType::PoetryLine;
+    data.segments[0].level = 0;
+    auto flat = engine.LayoutChapter("TST.1", data);
+
+    data.segments[0].level = 1;
+    auto indented = engine.LayoutChapter("TST.1", data, true);
+    // level 1 → indent 20 → availableWidth 140 → 3 words/line vs 4
+    CHECK(indented.lines.size() > flat.lines.size());
+}
+
+TEST_CASE("LayoutEngine ResizeEvent invalidates cache") {
+    theword::event::EventBus bus;
+    theword::text::LayoutEngine engine(bus, 2000.0f, FakeMeasure,
+                                       16.0f, 24.0f, 20.0f, 12.0f, 1.2f);
+    auto data = MakeProseData(6, 6);
+    engine.LayoutChapter("TST.1", data);
+    int gen = engine.GetGeneration();
+
+    theword::event::ResizeEvent resize;
+    resize.width = 100;
+    resize.height = 800;
+    bus.Emit(resize);
+    CHECK(engine.GetGeneration() == gen + 1);
+
+    auto relaid = engine.LayoutChapter("TST.1", data);
+    // 100 - 40 = 60 available → 1 word/line → 6 lines
+    CHECK(relaid.lines.size() == 6);
+}
+
 TEST_CASE("USFMParser loads Genesis 1 from file") {
     USFMParser parser(config::USFM_DIR);
     auto result = parser.LoadChapter("GEN", 1);
@@ -301,14 +479,14 @@ TEST_CASE("USFMParser Genesis 1 verse content") {
     CHECK_FALSE(result->words[0].text.empty());
 }
 
-TEST_CASE("USFMParser HasChapter") {
+TEST_CASE("USFMParser chapter existence via LoadChapter") {
     USFMParser parser(config::USFM_DIR);
-    CHECK(parser.HasChapter("GEN", 1));
-    CHECK(parser.HasChapter("GEN", 50));
-    CHECK(parser.HasChapter("PSA", 150));
-    CHECK(parser.HasChapter("REV", 22));
-    CHECK_FALSE(parser.HasChapter("GEN", 999));
-    CHECK_FALSE(parser.HasChapter("NONEXISTENT", 1));
+    CHECK(parser.LoadChapter("GEN", 1).has_value());
+    CHECK(parser.LoadChapter("GEN", 50).has_value());
+    CHECK(parser.LoadChapter("PSA", 150).has_value());
+    CHECK(parser.LoadChapter("REV", 22).has_value());
+    CHECK_FALSE(parser.LoadChapter("GEN", 999).has_value());
+    CHECK_FALSE(parser.LoadChapter("NONEXISTENT", 1).has_value());
 }
 
 TEST_CASE("USFMParser missing file returns nullopt") {
@@ -530,7 +708,6 @@ TEST_CASE("BibleClient parses multiple verses in a chapter") {
 namespace {
     class FailingProvider : public ChapterProvider {
     public:
-        bool HasChapter(const std::string&, int) override { return false; }
         std::optional<ChapterData> LoadChapter(const std::string&, int) override {
             return std::nullopt;
         }
@@ -539,7 +716,6 @@ namespace {
 
     class AlwaysGenesisProvider : public ChapterProvider {
     public:
-        bool HasChapter(const std::string&, int) override { return true; }
         std::optional<ChapterData> LoadChapter(const std::string& bookId, int chapter) override {
             ChapterData data;
             data.bookId = bookId;
@@ -579,16 +755,6 @@ TEST_CASE("CompositeProvider SetPrimary changes active provider") {
     CHECK(composite.LoadChapter("GEN", 1).has_value());
     composite.SetPrimary(b);
     CHECK_FALSE(composite.LoadChapter("GEN", 1).has_value());
-}
-
-TEST_CASE("CompositeProvider HasChapter delegates to primary") {
-    AlwaysGenesisProvider hasIt;
-    CompositeProvider composite(hasIt);
-    CHECK(composite.HasChapter("GEN", 1));
-
-    FailingProvider doesNot;
-    CompositeProvider composite2(doesNot);
-    CHECK_FALSE(composite2.HasChapter("GEN", 999));
 }
 
 TEST_CASE("CompositeProvider ProviderName delegates to primary") {

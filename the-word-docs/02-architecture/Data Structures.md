@@ -116,7 +116,6 @@ Abstract interface for both data sources. Defined in `src/data/ChapterProvider.h
 class ChapterProvider {
 public:
     virtual ~ChapterProvider() = default;
-    virtual bool HasChapter(const std::string& bookId, int chapter) const = 0;
     virtual std::optional<ChapterData> LoadChapter(
         const std::string& bookId, int chapter) = 0;
     virtual const char* ProviderName() const = 0;

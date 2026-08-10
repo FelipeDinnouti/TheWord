@@ -8,7 +8,7 @@ if(POLICY CMP0169)
     cmake_policy(SET CMP0169 OLD)
 endif()
 
-project(theword VERSION 1.9.0 LANGUAGES C CXX)
+project(theword VERSION 1.9.1 LANGUAGES C CXX)
 
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
@@ -205,6 +205,8 @@ set(CORE_BASE_SOURCES
     src/core/FileAssetProvider.h
     src/core/FuzzyMatcher.cpp
     src/core/FuzzyMatcher.h
+    src/core/InputFrame.cpp
+    src/core/InputFrame.h
     src/core/Platform.cpp
     src/core/Platform.h
     src/core/Config.h
@@ -285,6 +287,8 @@ set(INPUT_SOURCES
 )
 
 set(RENDERER_SOURCES
+    src/renderer/DrawContext.cpp
+    src/renderer/DrawContext.h
     src/renderer/FontManager.cpp
     src/renderer/FontManager.h
     src/renderer/Renderer.cpp

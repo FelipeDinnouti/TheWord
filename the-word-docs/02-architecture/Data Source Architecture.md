@@ -28,7 +28,6 @@ The app supports two data sources that produce identical output formats. The `Do
 class ChapterProvider {
 public:
     virtual ~ChapterProvider() = default;
-    virtual bool HasChapter(const std::string& bookId, int chapter) const = 0;
     virtual std::optional<ChapterData> LoadChapter(
         const std::string& bookId, int chapter) = 0;
     virtual const char* ProviderName() const = 0;

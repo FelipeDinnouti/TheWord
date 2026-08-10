@@ -21,7 +21,7 @@ public:
                       const theword::core::UIScale& uiScale, int currentChapter);
     ~ChapterGridScreen() override;
     void Draw(theword::renderer::DrawContext& ctx) override;
-    bool HandleInput(float deltaTime) override;
+    bool HandleInput(const theword::renderer::DrawContext& ctx, float deltaTime) override;
     const char* GetTitle() const override { return "ChapterGrid"; }
 
 private:

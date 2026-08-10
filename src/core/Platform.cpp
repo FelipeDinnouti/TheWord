@@ -140,59 +140,6 @@ bool IsWindowAvailable() {
 #endif
 }
 
-bool OpenURL(const char* url) {
-#if defined(__ANDROID__)
-    android_app* app = GetAndroidApp();
-    JNIEnv* env = nullptr;
-    app->activity->vm->AttachCurrentThread(&env, nullptr);
-
-    jclass activityClass = env->GetObjectClass(app->activity->clazz);
-    jmethodID startActivity = env->GetMethodID(
-        activityClass, "startActivity", "(Landroid/content/Intent;)V");
-
-    jclass intentClass = env->FindClass("android/content/Intent");
-    jmethodID intentCtor = env->GetMethodID(intentClass, "<init>", "(Ljava/lang/String;)V");
-    jstring actionView = env->NewStringUTF("android.intent.action.VIEW");
-    jobject intent = env->NewObject(intentClass, intentCtor, actionView);
-
-    jclass uriClass = env->FindClass("android/net/Uri");
-    jmethodID parse = env->GetStaticMethodID(
-        uriClass, "parse", "(Ljava/lang/String;)Landroid/net/Uri;");
-    jstring uriStr = env->NewStringUTF(url);
-    jobject uri = env->CallStaticObjectMethod(uriClass, parse, uriStr);
-
-    jmethodID setData = env->GetMethodID(
-        intentClass, "setData", "(Landroid/net/Uri;)Landroid/content/Intent;");
-    env->CallObjectMethod(intent, setData, uri);
-
-    env->CallVoidMethod(app->activity->clazz, startActivity, intent);
-
-    env->DeleteLocalRef(uriStr);
-    env->DeleteLocalRef(uri);
-    env->DeleteLocalRef(intent);
-    env->DeleteLocalRef(actionView);
-
-    app->activity->vm->DetachCurrentThread();
-    return true;
-
-#elif defined(__EMSCRIPTEN__)
-    std::string js = std::string("window.open('") + url + "', '_blank')";
-    emscripten_run_script(js.c_str());
-    return true;
-
-#elif defined(_WIN32)
-    // Windows: use ShellExecute
-    char cmd[1024];
-    snprintf(cmd, sizeof(cmd), "start \"\" \"%s\"", url);
-    return system(cmd) == 0;
-
-#else
-    // Linux/macOS: use xdg-open / open
-    std::string cmd = std::string("xdg-open \"") + url + "\" 2>/dev/null || open \"" + url + "\" 2>/dev/null";
-    return system(cmd.c_str()) == 0;
-#endif
-}
-
 void WriteLog(LogLevel level, const char* message) {
 #if defined(__ANDROID__)
     int androidPriority;
@@ -211,51 +158,6 @@ void WriteLog(LogLevel level, const char* message) {
     }
     fprintf(out, "%s\n", message);
     fflush(out);
-#endif
-}
-
-std::string GetClipboard() {
-#if defined(__ANDROID__)
-    android_app* app = GetAndroidApp();
-    JNIEnv* env = nullptr;
-    app->activity->vm->AttachCurrentThread(&env, nullptr);
-
-    jclass ctxClass = env->GetObjectClass(app->activity->clazz);
-    jmethodID getSystemService = env->GetMethodID(
-        ctxClass, "getSystemService", "(Ljava/lang/String;)Ljava/lang/Object;");
-    jstring clipService = env->NewStringUTF("clipboard");
-    jobject clipboardMgr = env->CallObjectMethod(
-        app->activity->clazz, getSystemService, clipService);
-
-    jclass cmClass = env->FindClass("android/content/ClipboardManager");
-    jmethodID getText = env->GetMethodID(
-        cmClass, "getText", "()Ljava/lang/CharSequence;");
-    jobject charSeq = env->CallObjectMethod(clipboardMgr, getText);
-
-    std::string result;
-    if (charSeq) {
-        jclass charSeqClass = env->GetObjectClass(charSeq);
-        jmethodID toString = env->GetMethodID(
-            charSeqClass, "toString", "()Ljava/lang/String;");
-        jstring jstr = (jstring)env->CallObjectMethod(charSeq, toString);
-        const char* utf = env->GetStringUTFChars(jstr, nullptr);
-        if (utf) {
-            result = utf;
-            env->ReleaseStringUTFChars(jstr, utf);
-        }
-        env->DeleteLocalRef(jstr);
-    }
-
-    env->DeleteLocalRef(clipService);
-    env->DeleteLocalRef(clipboardMgr);
-    if (charSeq) env->DeleteLocalRef(charSeq);
-
-    app->activity->vm->DetachCurrentThread();
-    return result;
-
-#else
-    const char* text = GetClipboardText();
-    return text ? std::string(text) : std::string();
 #endif
 }
 

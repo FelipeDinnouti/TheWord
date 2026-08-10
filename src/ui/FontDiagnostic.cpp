@@ -57,8 +57,7 @@ void FontDiagnostic::Draw(theword::renderer::DrawContext& ctx) {
 
     // Clipping region for scrollable content (leave room for header + footer)
     float clipY = 30.0f;
-    BeginScissorMode(0, static_cast<int>(clipY), static_cast<int>(screenW),
-                     static_cast<int>(screenH - clipY - 24.0f));
+    ctx.PushClipRect(0, clipY, screenW, screenH - clipY - 24.0f);
 
     float bodySz = (float)bodyFont.baseSize;
     float headingSz = (float)headingFont.baseSize;
@@ -157,7 +156,7 @@ void FontDiagnostic::Draw(theword::renderer::DrawContext& ctx) {
     SetFilter(largeMut, TEXTURE_FILTER_POINT);
     SetFilter(smallMut, TEXTURE_FILTER_POINT);
 
-    EndScissorMode();
+    ctx.PopClipRect();
 
     // --- Non-scrolling header & footer ---
     DrawTextAt(GetFontDefault(), Locale::Get("Font Diagnostic"), 10.0f, 8.0f, 14.0f, pal.uiTitle);
@@ -171,13 +170,13 @@ void FontDiagnostic::Draw(theword::renderer::DrawContext& ctx) {
     DrawTextAt(GetFontDefault(), footer, 10.0f, screenH - 20.0f, 12.0f, pal.uiText);
 }
 
-bool FontDiagnostic::HandleInput(float /*deltaTime*/) {
-    if (IsKeyPressed(key::ESCAPE)) {
+bool FontDiagnostic::HandleInput(const theword::renderer::DrawContext& ctx, float /*deltaTime*/) {
+    if (ctx.input.KeyPressed(key::ESCAPE)) {
         navStack_.Pop();
         return true;
     }
 
-    float wheel = GetMouseWheelMove();
+    float wheel = ctx.input.wheel;
     if (wheel != 0.0f) {
         scrollY_ += wheel * 40.0f;
         return true;

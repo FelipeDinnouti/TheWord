@@ -68,12 +68,12 @@ HighlightBrowserScreen::HighlightBrowserScreen(const Font& font, float fontSize,
     eventBus_.On<theword::event::ScrollEvent>(
         [this, alive = aliveGuard_](const theword::event::ScrollEvent& e) {
         if (!*alive) return;
-        float textWrapWidth = static_cast<float>(GetScreenWidth()) - uiScale_.dp(20) * 2;
+        float textWrapWidth = static_cast<float>(uiScale_.screenW) - uiScale_.dp(20) * 2;
         RebuildLayouts(textWrapWidth);
         if (layouts_.empty()) return;
         float totalH = 0;
         for (const auto& layout : layouts_) totalH += layout.height;
-        float screenH = static_cast<float>(GetScreenHeight());
+        float screenH = uiScale_.screenH;
         float listY = uiScale_.dp(48) + uiScale_.dp(8) + uiScale_.dp(28) + uiScale_.dp(8);
         float listH = screenH - listY;
         float maxScroll = std::max(0.0f, totalH - listH);
@@ -200,7 +200,7 @@ void HighlightBrowserScreen::Draw(theword::renderer::DrawContext& ctx) {
         float x = (screenW - dims.x) / 2.0f;
         float y = listY + (listH - dims.y) / 2.0f;
         DrawTextEx(font_, msg, {x, y}, msgSize, 1, GRAY);
-        SetMouseCursor(MOUSE_CURSOR_DEFAULT);
+        ctx.SetCursor(MOUSE_CURSOR_DEFAULT);
         return;
     }
 
@@ -213,8 +213,7 @@ void HighlightBrowserScreen::Draw(theword::renderer::DrawContext& ctx) {
     scrollY_ = std::min(scrollY_, maxScroll);
 
     // Clip list content below the swatch row
-    BeginScissorMode(0, static_cast<int>(listY), static_cast<int>(screenW),
-                     static_cast<int>(listH));
+    ctx.PushClipRect(0, listY, screenW, listH);
 
     // Draw visible items with pixel-based positioning
     float subSize = controlSize * 0.85f;
@@ -242,21 +241,20 @@ void HighlightBrowserScreen::Draw(theword::renderer::DrawContext& ctx) {
         relY += layout.height;
     }
 
-    EndScissorMode();
+    ctx.PopClipRect();
 
-    Vector2 mouse = GetMousePosition();
-    bool overInteractive = mouse.y > listY;
-    SetMouseCursor(overInteractive ? MOUSE_CURSOR_POINTING_HAND : MOUSE_CURSOR_DEFAULT);
+    bool overInteractive = ctx.input.mouseY > listY;
+    ctx.SetCursor(overInteractive ? MOUSE_CURSOR_POINTING_HAND : MOUSE_CURSOR_DEFAULT);
 }
 
-bool HighlightBrowserScreen::HandleInput(float /*deltaTime*/) {
-    if (IsKeyPressed(key::ESCAPE)) {
+bool HighlightBrowserScreen::HandleInput(const theword::renderer::DrawContext& ctx, float /*deltaTime*/) {
+    if (ctx.input.KeyPressed(key::ESCAPE)) {
         navStack_.Pop();
         return true;
     }
 
-    float screenW = static_cast<float>(GetScreenWidth());
-    float screenH = static_cast<float>(GetScreenHeight());
+    float screenW = ctx.uiScale.screenW;
+    float screenH = ctx.uiScale.screenH;
     float headerH = uiScale_.dp(48);
     float swatchRowY = headerH + uiScale_.dp(8);
     float swatchSize = uiScale_.dp(28);
@@ -268,17 +266,17 @@ bool HighlightBrowserScreen::HandleInput(float /*deltaTime*/) {
 
     const auto& types = highlighter_.GetTypes();
 
-    if (IsMouseButtonPressed(MOUSE_LEFT_BUTTON))
-        tapDetector_.OnPress(GetMousePosition());
+    if (ctx.input.leftPressed)
+        tapDetector_.OnPress(ctx.input.mouseX, ctx.input.mouseY);
 
-    if (IsMouseButtonReleased(MOUSE_LEFT_BUTTON)) {
-        Vector2 mousePos;
-        auto tr = tapDetector_.OnRelease(GetMousePosition(), mousePos);
+    if (ctx.input.leftReleased) {
+        float tapX, tapY;
+        auto tr = tapDetector_.OnRelease(ctx.input.mouseX, ctx.input.mouseY, tapX, tapY);
         if (tr == TapDetector::Result::Drag) { return false; }
         if (tr == TapDetector::Result::Tap) {
 
         // Back button via header bar tap
-        if (mousePos.y < headerH && mousePos.x < uiScale_.dp(56)) {
+        if (tapY < headerH && tapX < uiScale_.dp(56)) {
             navStack_.Pop();
             return true;
         }
@@ -287,7 +285,7 @@ bool HighlightBrowserScreen::HandleInput(float /*deltaTime*/) {
         for (size_t i = 0; i < types.size(); ++i) {
             float swatchX = swatchStartX + i * (swatchSize + swatchGap);
             Rectangle swatchRect = {swatchX, swatchRowY, swatchSize, swatchSize};
-            if (CheckCollisionPointRec(mousePos, swatchRect)) {
+            if (PointInRect(tapX, tapY, swatchRect)) {
                 activeColorId_ = (types[i].id == activeColorId_) ? 0 : types[i].id;
                 scrollY_ = 0.0f;
                 return true;
@@ -295,12 +293,12 @@ bool HighlightBrowserScreen::HandleInput(float /*deltaTime*/) {
         }
 
         // List item tap (pixel-based)
-        if (mousePos.y >= listY) {
+        if (tapY >= listY) {
             RebuildLayouts(textWrapWidth);
             float relY = 0;
             for (size_t i = 0; i < layouts_.size(); ++i) {
                 float screenY = listY + relY - scrollY_;
-                if (mousePos.y >= screenY && mousePos.y < screenY + layouts_[i].height) {
+                if (tapY >= screenY && tapY < screenY + layouts_[i].height) {
                     OnItemTapped(static_cast<int>(i));
                     return true;
                 }
@@ -311,7 +309,7 @@ bool HighlightBrowserScreen::HandleInput(float /*deltaTime*/) {
     }
 
     // Scroll wheel
-    float wheel = GetMouseWheelMove();
+    float wheel = ctx.input.wheel;
     if (wheel != 0.0f) {
         RebuildLayouts(textWrapWidth);
         if (!layouts_.empty()) {

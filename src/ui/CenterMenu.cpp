@@ -89,12 +89,12 @@ void CenterMenu::Draw(theword::renderer::DrawContext& ctx) {
         itemY += itemH;
     }
 
-    Vector2 mouse = GetMousePosition();
-    bool overPanel = CheckCollisionPointRec(mouse, {panelX, panelY, menuW, totalHeight});
-    SetMouseCursor(overPanel ? MOUSE_CURSOR_POINTING_HAND : MOUSE_CURSOR_DEFAULT);
+    bool overPanel = PointInRect(ctx.input.mouseX, ctx.input.mouseY,
+                                 {panelX, panelY, menuW, totalHeight});
+    ctx.SetCursor(overPanel ? MOUSE_CURSOR_POINTING_HAND : MOUSE_CURSOR_DEFAULT);
 }
 
-bool CenterMenu::HandleInput(float /*deltaTime*/) {
+bool CenterMenu::HandleInput(const theword::renderer::DrawContext& ctx, float /*deltaTime*/) {
     if (fadingOut_) {
         if (popPending_) {
             navStack_.Pop();
@@ -103,38 +103,38 @@ bool CenterMenu::HandleInput(float /*deltaTime*/) {
         return true;
     }
 
-    if (IsKeyPressed(key::ESCAPE)) {
+    if (ctx.input.KeyPressed(key::ESCAPE)) {
         fadingOut_ = true;
         fadeOutStartTime_ = GetTime();
         return true;
     }
 
-    if (IsKeyPressed(key::UP)) {
+    if (ctx.input.KeyPressed(key::UP)) {
         selectedIndex_ = (selectedIndex_ - 1 + ITEM_COUNT) % ITEM_COUNT;
         return true;
     }
 
-    if (IsKeyPressed(key::DOWN)) {
+    if (ctx.input.KeyPressed(key::DOWN)) {
         selectedIndex_ = (selectedIndex_ + 1) % ITEM_COUNT;
         return true;
     }
 
-    if (IsKeyPressed(key::ENTER)) {
+    if (ctx.input.KeyPressed(key::ENTER)) {
         HandleAction(selectedIndex_);
         return true;
     }
 
-    if (IsMouseButtonPressed(MOUSE_LEFT_BUTTON))
-        tapDetector_.OnPress(GetMousePosition());
+    if (ctx.input.leftPressed)
+        tapDetector_.OnPress(ctx.input.mouseX, ctx.input.mouseY);
 
-    if (IsMouseButtonReleased(MOUSE_LEFT_BUTTON)) {
-        Vector2 mousePos;
-        auto tr = tapDetector_.OnRelease(GetMousePosition(), mousePos);
+    if (ctx.input.leftReleased) {
+        float tapX, tapY;
+        auto tr = tapDetector_.OnRelease(ctx.input.mouseX, ctx.input.mouseY, tapX, tapY);
         if (tr == TapDetector::Result::Drag) { return false; }
         if (tr == TapDetector::Result::Tap) {
 
-        float screenW = static_cast<float>(GetScreenWidth());
-        float screenH = static_cast<float>(GetScreenHeight());
+        float screenW = ctx.uiScale.screenW;
+        float screenH = ctx.uiScale.screenH;
 
         float menuW = uiScale_.fitScreen(85, 320);
         float padding = uiScale_.dp(12);
@@ -144,7 +144,7 @@ bool CenterMenu::HandleInput(float /*deltaTime*/) {
         float panelY = (screenH - totalHeight) / 2.0f;
         Rectangle panelRect = {panelX, panelY, menuW, totalHeight};
 
-        if (!CheckCollisionPointRec(mousePos, panelRect)) {
+        if (!PointInRect(tapX, tapY, panelRect)) {
             fadingOut_ = true;
             fadeOutStartTime_ = GetTime();
             return true;
@@ -154,7 +154,7 @@ bool CenterMenu::HandleInput(float /*deltaTime*/) {
         for (int i = 0; i < ITEM_COUNT; ++i) {
             Rectangle itemRect = {panelX + padding, itemY,
                                   menuW - padding * 2, itemH};
-            if (CheckCollisionPointRec(mousePos, itemRect)) {
+            if (PointInRect(tapX, tapY, itemRect)) {
                 HandleAction(i);
                 return true;
             }

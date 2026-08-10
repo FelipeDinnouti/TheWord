@@ -17,7 +17,7 @@ public:
                    NavigationStack& navStack,
                    const theword::core::UIScale& uiScale);
     void Draw(theword::renderer::DrawContext& ctx) override;
-    bool HandleInput(float deltaTime) override;
+    bool HandleInput(const theword::renderer::DrawContext& ctx, float deltaTime) override;
     const char* GetTitle() const override { return theword::core::Locale::Get("Credits"); }
     bool IsOverlay() const override { return true; }
 

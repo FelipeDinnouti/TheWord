@@ -29,7 +29,7 @@ public:
                const theword::core::ThemeManager& themeManager,
                const std::string& currentChapterRef = "");
     void Draw(theword::renderer::DrawContext& ctx) override;
-    bool HandleInput(float deltaTime) override;
+    bool HandleInput(const theword::renderer::DrawContext& ctx, float deltaTime) override;
     const char* GetTitle() const override { return theword::core::Locale::Get("Menu"); }
     bool IsOverlay() const override { return true; }
 

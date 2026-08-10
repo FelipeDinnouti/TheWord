@@ -44,9 +44,9 @@ void NavigationStack::DrawActive(theword::renderer::DrawContext& ctx) {
     active->Draw(ctx);
 }
 
-bool NavigationStack::HandleInput(float deltaTime) {
+bool NavigationStack::HandleInput(const theword::renderer::DrawContext& ctx, float deltaTime) {
     if (stack_.empty()) return false;
-    return stack_.back()->HandleInput(deltaTime);
+    return stack_.back()->HandleInput(ctx, deltaTime);
 }
 
 bool NavigationStack::IsOnRoot() const {

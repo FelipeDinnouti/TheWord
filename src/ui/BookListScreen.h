@@ -24,7 +24,7 @@ public:
                    const std::string& currentChapterRef = "");
     ~BookListScreen() override;
     void Draw(theword::renderer::DrawContext& ctx) override;
-    bool HandleInput(float deltaTime) override;
+    bool HandleInput(const theword::renderer::DrawContext& ctx, float deltaTime) override;
     const char* GetTitle() const override { return theword::core::Locale::Get("Books"); }
 
 private:

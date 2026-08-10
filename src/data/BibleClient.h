@@ -3,7 +3,6 @@
 
 #include <string>
 #include <optional>
-#include <unordered_map>
 #include "ChapterProvider.h"
 
 namespace theword::core { class IHttpClient; }
@@ -16,7 +15,6 @@ class BibleClient : public ChapterProvider {
 public:
     BibleClient(theword::core::IHttpClient& apiClient, int bibleId);
 
-    bool HasChapter(const std::string& bookId, int chapter) override;
     std::optional<ChapterData> LoadChapter(
         const std::string& bookId, int chapter) override;
     const char* ProviderName() const override;
@@ -27,7 +25,6 @@ private:
     theword::core::IHttpClient& apiClient;
     const int bibleId;
     const std::string baseUrl;
-    std::unordered_map<std::string, bool> cachedHasChapter;
 
     static std::string ExtractJsonString(const std::string& json, const std::string& key);
     std::optional<ChapterData> ParseHtmlChapter(const std::string& html,

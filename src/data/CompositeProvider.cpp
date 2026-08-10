@@ -9,10 +9,6 @@ void CompositeProvider::SetPrimary(ChapterProvider& provider) {
     primary = &provider;
 }
 
-bool CompositeProvider::HasChapter(const std::string& bookId, int chapter) {
-    return primary->HasChapter(bookId, chapter);
-}
-
 std::optional<ChapterData> CompositeProvider::LoadChapter(
         const std::string& bookId, int chapter) {
     return primary->LoadChapter(bookId, chapter);

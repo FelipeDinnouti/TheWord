@@ -181,28 +181,27 @@ void ReaderScreen::Draw(theword::renderer::DrawContext& ctx) {
     DrawBottomBarContent(ctx);
 
     // Cursor: hand over bottom bar, I-beam only during active selection
-    Vector2 mouse = GetMousePosition();
     float screenH = ctx.uiScale.screenH;
     float bottomTop = screenH - barAnimation_ - bottomMargin_;
-    if (mouse.y > bottomTop) {
-        SetMouseCursor(MOUSE_CURSOR_POINTING_HAND);
+    if (ctx.input.mouseY > bottomTop) {
+        ctx.SetCursor(MOUSE_CURSOR_POINTING_HAND);
     } else if (highlighter_.IsSelecting()) {
-        SetMouseCursor(MOUSE_CURSOR_IBEAM);
+        ctx.SetCursor(MOUSE_CURSOR_IBEAM);
     } else {
-        SetMouseCursor(MOUSE_CURSOR_DEFAULT);
+        ctx.SetCursor(MOUSE_CURSOR_DEFAULT);
     }
 }
 
-bool ReaderScreen::HandleInput(float /*deltaTime*/) {
-    if (HandleBottomBarClick()) return true;
+bool ReaderScreen::HandleInput(const theword::renderer::DrawContext& ctx, float /*deltaTime*/) {
+    if (HandleBottomBarClick(ctx)) return true;
 
-    if (IsKeyPressed(key::G)) {
+    if (ctx.input.KeyPressed(key::G)) {
         OpenCenterMenu();
         return true;
     }
 
     // Arrow key chapter navigation
-    if (IsKeyPressed(key::LEFT)) {
+    if (ctx.input.KeyPressed(key::LEFT)) {
         std::string ref = docManager_.GetCurrentChapterId();
         std::string prev = GetPreviousChapter(ref);
         if (!prev.empty()) {
@@ -210,7 +209,7 @@ bool ReaderScreen::HandleInput(float /*deltaTime*/) {
         }
         return true;
     }
-    if (IsKeyPressed(key::RIGHT)) {
+    if (ctx.input.KeyPressed(key::RIGHT)) {
         std::string ref = docManager_.GetCurrentChapterId();
         std::string next = GetNextChapter(ref);
         if (!next.empty()) {
@@ -222,18 +221,17 @@ bool ReaderScreen::HandleInput(float /*deltaTime*/) {
     return false;
 }
 
-bool ReaderScreen::HandleBottomBarClick() {
+bool ReaderScreen::HandleBottomBarClick(const theword::renderer::DrawContext& ctx) {
     if (barAnimation_ < 1.0f) return false;
-    if (!IsMouseButtonPressed(MOUSE_LEFT_BUTTON)) return false;
+    if (!ctx.input.leftPressed) return false;
 
-    Vector2 mousePos = GetMousePosition();
-    float screenH = static_cast<float>(GetScreenHeight());
+    float screenH = ctx.uiScale.screenH;
     float barY = screenH - barAnimation_ - bottomMargin_;
 
-    if (mousePos.y < barY) return false;
+    if (ctx.input.mouseY < barY) return false;
 
     float hitArea = uiScale_.dp(56);
-    if (mousePos.x < hitArea) {
+    if (ctx.input.mouseX < hitArea) {
         std::string ref = docManager_.GetCurrentChapterId();
         std::string prev = GetPreviousChapter(ref);
         if (!prev.empty()) {
@@ -242,7 +240,7 @@ bool ReaderScreen::HandleBottomBarClick() {
         return true;
     }
 
-    if (mousePos.x >= static_cast<float>(GetScreenWidth()) - hitArea) {
+    if (ctx.input.mouseX >= ctx.uiScale.screenW - hitArea) {
         std::string ref = docManager_.GetCurrentChapterId();
         std::string next = GetNextChapter(ref);
         if (!next.empty()) {
@@ -312,7 +310,7 @@ void ReaderScreen::DrawBottomBarContent(const theword::renderer::DrawContext& ct
     float alpha = std::clamp((fadeRatio - 0.4f) / 0.6f, 0.0f, 1.0f);
     Color textColor = Fade(palette.uiText, alpha);
 
-    Vector2 mouse = GetMousePosition();
+    Vector2 mouse{ctx.input.mouseX, ctx.input.mouseY};
     float hitArea = uiScale_.dp(56);
     bool overLeft = mouse.y > bottomTop && mouse.x < hitArea;
     bool overRight = mouse.y > bottomTop && mouse.x >= screenW - hitArea;
@@ -321,14 +319,14 @@ void ReaderScreen::DrawBottomBarContent(const theword::renderer::DrawContext& ct
     Color arrowColorRight = textColor;
 
     if (overLeft) {
-        if (IsMouseButtonDown(MOUSE_LEFT_BUTTON)) {
+        if (ctx.input.leftDown) {
             arrowColorLeft = Fade(palette.uiText, alpha * 0.3f);
         } else {
             arrowColorLeft = Fade(palette.uiTitle, alpha);
         }
     }
     if (overRight) {
-        if (IsMouseButtonDown(MOUSE_LEFT_BUTTON)) {
+        if (ctx.input.leftDown) {
             arrowColorRight = Fade(palette.uiText, alpha * 0.3f);
         } else {
             arrowColorRight = Fade(palette.uiTitle, alpha);

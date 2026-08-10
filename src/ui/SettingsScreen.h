@@ -23,7 +23,7 @@ public:
                    float& currentFontSize, int& currentBibleId, bool& immersiveMode,
                    const theword::core::ThemeManager& themeManager);
     void Draw(theword::renderer::DrawContext& ctx) override;
-    bool HandleInput(float deltaTime) override;
+    bool HandleInput(const theword::renderer::DrawContext& ctx, float deltaTime) override;
     const char* GetTitle() const override { return theword::core::Locale::Get("Settings"); }
 
 private:

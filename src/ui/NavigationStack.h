@@ -15,7 +15,7 @@ public:
     Screen* GetActive();
     const Screen* GetActive() const;
     void DrawActive(theword::renderer::DrawContext& ctx);
-    bool HandleInput(float deltaTime);
+    bool HandleInput(const theword::renderer::DrawContext& ctx, float deltaTime);
     bool IsOnRoot() const;
     int Size() const { return static_cast<int>(stack_.size()); }
 

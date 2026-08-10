@@ -16,7 +16,6 @@ USFM (Unfolding Scripture Format Marked) is a plain-text markup format for encod
 class USFMParser : public ChapterProvider {
 public:
     explicit USFMParser(const std::string& usfmDir);
-    bool HasChapter(const std::string& bookId, int chapter) const override;
     std::optional<ChapterData> LoadChapter(
         const std::string& bookId, int chapter) override;
     const char* ProviderName() const override;

@@ -24,9 +24,7 @@ bool ShouldQuit();
 bool IsWindowAvailable();
 bool HasTouchInput();
 
-bool OpenURL(const char* url);
 void WriteLog(LogLevel level, const char* message);
-std::string GetClipboard();
 void SetClipboard(const std::string& text);
 
 void EnsureDirectoryExists(const std::string& path);

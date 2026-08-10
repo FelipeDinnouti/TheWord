@@ -1,28 +1,29 @@
 # Active
 
-> Current version: v1.9.0-alpha (released 2026-08-09, device-verified)
-> Next: Code Quality Assurance — fresh full audit (remaining v1.9.0-alpha scope)
+> Current version: v1.9.1-alpha (code audit, in progress)
+> Next: version bump + APK + device sign-off + tag → then v1.10.0-alpha
 >
 > Previous: `memory/archive/2026-07-20_v1.8.0-alpha-active.md`
 >
 > Recon audit: 2026-07-31 — all findings verified against current code, granular
 > checklists below. See `memory/Architecture-Analysis.md` for finding details.
 
-## Workstream: v1.9.0-alpha — Architecture Refactor + Code Quality Assurance
+## Workstream: v1.9.1-alpha — Full Code Audit (fix-everything scope)
 
-**Theme:** Layer enforcement and platform decoupling (A2, A4, A5, A9) + fresh code-quality audit
+**Theme:** 7-phase audit: evidence → input consolidation → App slimming → event governance → data layer → tests → clean pass + release
 
 ### Implementation Order
 
 | # | Feature | Scope | Status |
 |---|---------|-------|--------|
 | 0 | **Release planning + doc sync** | Roadmap, Release Plan, memory/ | ✅ Complete |
-| 1 | **A2: LayoutTypes extraction** | 7 files | ✅ Complete |
-| 2 | **A5: TextMeasureFn abstraction** | LayoutEngine + App + FontManager | ✅ Complete |
-| 3 | **A9.1: selection-hop removal** | InputHandler + App + Highlighter | ✅ Complete |
-| 4 | **A9.2-3: FontManager extraction** | new FontManager, App slimming | ✅ Complete |
-| 5 | **A4: DrawContext** | all ui/ screens + renderer | ✅ Complete (device-verified 2026-08-09) |
-| 6 | **Code Quality Assurance** | fresh full audit across all src/ | 🔲 Planned |
+| 1 | **Evidence sweep** | dead code, layer map, input inventory, naming, ownership | ✅ Complete |
+| 2 | **Input consolidation S1–S9** | InputFrame snapshot, single-poll, screens on HandleInput(ctx) | ✅ Complete |
+| 3 | **App slimming** | Init split ×5, Highlighter statics, D6 dedup, onShortcut | ✅ Complete |
+| 4 | **Event governance (D3/D4)** | KeyEvent + DialogEvent deleted, Event Bus.md | ✅ Complete |
+| 5 | **Data layer (D-dead HasChapter)** | interface chain + cache maps deleted | ✅ Complete |
+| 6 | **Tests** | 6 LayoutEngine FakeMeasure + 2 Highlighter cases | ✅ Complete |
+| 7 | **Clean-code + release** | dead code sweep, docs, bump 1.9.1-alpha, APK, sign-off, tag | 🚧 In progress |
 
 ### Feature 1: A2 — LayoutTypes extraction ✅ Complete (2026-07-31)
 
@@ -175,21 +176,70 @@ struct DrawContext {
 
 **Files touched (14):** new `renderer/DrawContext.h` + `renderer/Renderer.h/cpp`, `renderer/UIManager.h/cpp`, `renderer/RadialMenu.h/cpp`, `ui/Screen.h`, `ui/NavigationStack.h/cpp`, `ui/components.h/cpp`, 9 screens, `app/App.cpp/h`.
 
-### Feature 6: Code Quality Assurance (fresh full audit) — remaining v1.9.0-alpha scope
+### Feature 6: Code Quality Assurance (fresh full audit) ✅ Complete (as v1.9.1-alpha)
 
-> v1.9.0-alpha tagged 2026-08-09 with the architecture refactor complete and
-> device-verified. This audit is the outstanding release item; do it before
-> calling v1.9 done (or fold into v1.9.1-alpha).
+> Status: COMPLETE — v1.9.1-alpha (2026-08-09). Full-scope audit + fix.
+> User decisions: fix everything found; full FrameState input consolidation;
+> new LayoutEngine tests (A5 payoff).
+
+**Phase 1 — Evidence sweep (done):**
+- Baseline green: 0 warnings, 78/80 tests (2 locale-only failures)
+- Layer compliance verify: only legal cross-layer includes remain
+  (renderer→text/highlight, ui→renderer); no renderer/input/ui → data
+- Dead code: `KeyEvent` (Events.h:33) — 0 emitters, 0 subscribers
+- `DialogEvent` — self-subscribe only (InputHandler.cpp:27)
+- No raw new/delete; no naming violations; `static` helpers in 5 files
+  (convention prefers anonymous namespace — minor, Phase 6)
+- `LoadFontCodepointsFromData` used internally (not dead)
+- Input inventory (D1): GetScreenWidth/H ×8 files, GetMousePosition ×8,
+  IsMouseButton* ×7, IsKeyPressed ×7, GetCharPressed ×1, GetMouseWheelMove ×3
+- components.cpp hovers poll mouse at draw time (needs ctx.input)
+- BookListScreen double-drains GetCharPressed (151+172) — latent bug, fixed by snapshot
+
+**Phase 2 — Input consolidation design (approved 2026-08-09):**
+- New `core/InputFrame.h` (portable, no raylib): mouseX/Y, wheel, leftPressed/Down/
+  Released, rightPressed, keysPressed (drained), textInput (drained chars),
+  `KeyPressed(int)` helper
+- `InputHandler::BeginFrame()` — ONLY poller (input layer = authority): captures
+  snapshot; `Poll()` consumes the same frame (consistency win); touch/held-key
+  paths (GetTouchPosition, IsKeyDown arrows) stay as legal input-layer calls
+- `DrawContext` gains `const InputFrame& input` + `PushClipRect/PopClipRect`
+  (new DrawContext.cpp; replaces BeginScissorMode/EndScissorMode ×3 screens)
+- `Screen::HandleInput(const DrawContext&, float)` + NavigationStack pass-through
+- `TapDetector` → float x/y (drops raylib Vector2)
+- components hover/click → ctx.input (CheckCollisionPointRec → inline rect test)
+- Screens ×9: replace all polling; viewport reads → ctx.uiScale
+- **Scope note**: Font/Color/Rectangle stay as draw-boundary vocabulary in
+  components (A4 D4 decision; FontKind has no Bold — FontDiagnostic needs it).
+  Zero-polling gate is about input+scissor, not resource types.
+
+**Implementation order (build+test after each stage):**
+- [x] S1: core/InputFrame.h (mouseX/Y, wheel, left/right edge booleans, keysPressed,
+      textInput, touchActive, ctrlDown, KeyPressed helper)
+- [x] S2: InputHandler BeginFrame/Frame/Poll rewire (single poll point; double-drain
+      bug in BookListScreen fixed by snapshot semantics)
+- [x] S3: DrawContext member + clip/cursor helpers + CMakeLists (new DrawContext.cpp)
+- [x] S4: Screen.h + NavigationStack signatures
+- [x] S5: TapDetector → floats
+- [x] S6: components.cpp → ctx.input (InRect + public PointInRect helpers)
+- [x] S7: screens ×9 (BookList→CenterMenu→Settings→Credits→ChapterGrid→
+        HighlightBrowser→FontDiagnostic→ReaderScreen; UIManager/RadialMenu left as
+        renderer-boundary polling per A4 D4 — same as held-key scroll in InputHandler)
+- [x] S8: App loop wiring (BeginFrame + shared ctx + frame-based HandleShortcuts/
+      footnote popup; ctrlDown added for Ctrl+C path)
+- [x] S9: grep verify (zero polling in ui/; App.cpp only window-size capture) +
+      build (0 warnings in our code; 14 in vendored raylib/doctest) + tests
+      (78/78 non-locale; 80 total with the 2 known pt_BR failures)
 
 After the refactor, run the same 8-step audit as v1.8 across all `src/`:
 
-- [ ] `-Wall -Wextra -Wpedantic` clean build (0 warnings)
-- [ ] Dead code / unused members removal (e.g., leftover App selection fields, `GetFontSize()` if unused)
-- [ ] Include pruning + forward declarations (esp. after LayoutTypes/FontManager/DrawContext land)
-- [ ] Const-correctness pass on refactored surfaces
-- [ ] Input consolidation (deferred from v1.8): TapDetector + mouse/press boilerplate across screens
-- [ ] Naming consistency (PascalCase convention)
-- [ ] Optional/pointer error-handling check on new APIs (TextMeasureFn, FontManager getters)
+- [x] `-Wall -Wextra -Wpedantic` clean build (0 warnings)
+- [x] Dead code / unused members removal (OpenURL, GetClipboard, onDragStart/onDragUpdate, ResizeEvent::prevScrollY, KeyEvent, DialogEvent, HasChapter chain)
+- [x] Include pruning + forward declarations (esp. after LayoutTypes/FontManager/DrawContext land)
+- [x] Const-correctness pass on refactored surfaces
+- [x] Input consolidation (deferred from v1.8): TapDetector + mouse/press boilerplate across screens
+- [x] Naming consistency (PascalCase convention)
+- [x] Optional/pointer error-handling check on new APIs (TextMeasureFn, FontManager getters)
 
 ## Planned: v1.10.0-alpha — Animations & UI Polish + Web Deployment
 
@@ -197,3 +247,42 @@ After the refactor, run the same 8-step audit as v1.8 across all `src/`:
 - **Animations & UI Polish**: animation/transition pass across screens and overlays; polish items TBD
 
 See `the-word-docs/04-planning/Release Plan.md` and `the-word-docs/04-planning/Roadmap.md`.
+
+## v1.9.1-alpha — Remaining Phase 3–7 checklist
+
+**Phase 3 (App slimming) — done:**
+- [x] D6 dedup: `HandleRadialMenuResult` (copy/delete/highlight paths share one handler)
+- [x] Selection statics `AssembleSelectedText`/`FindVerseRange` → Highlighter public statics
+- [x] `Init()` split: InitWindow/InitDataServices/InitInput/InitNavigation/ApplyPreferences (+ `platInfo_`, `contentTop_` members)
+- [x] Shortcuts → `InputHandler::onShortcut` (S/A/I/D + Ctrl+C drain in Poll after FSM; App.cpp 691→617 lines)
+- [x] `key::C`/`key::D` constants in core/Config.h (KEY_C_ANDROID=31, KEY_D_ANDROID=32) — fixes latent Android raw-key bug
+- [x] Live smoke (DISPLAY=:0): GEN load + S/D/A/I/Escape verified
+
+**Phase 4 (event governance) — done:**
+- [x] `KeyEvent` deleted (0 emitters/subscribers)
+- [x] `DialogEvent` self-subscribe loop deleted (emitted+subscribed only by InputHandler behind unreachable `dialogActive_`); removed `IsDialogActive()`/`dialogActive_`
+- [x] `hasUiOverlay` = radial + navstack only
+- [x] New `the-word-docs/02-architecture/Event Bus.md` (9-event matrix + governance); 00-INDEX + Architecture Overview updated
+
+**Phase 5 (data layer) — done:**
+- [x] Zero-caller `ChapterProvider::HasChapter` deleted: interface + USFMParser/BibleClient (each had `cachedHasChapter` maps) + CompositeProvider + StubChapterProvider
+- [x] 4 test cases converted to LoadChapter semantics
+- [x] Data Structures.md / Data Source Architecture.md / USFM Parser.md updated
+- [x] Note: BibleClient HasChapter did a full network fetch per boolean check — deletion is a correctness win
+
+**Phase 6 (tests) — done (87 cases, 320 assertions; 85 pass, 2 known pt_BR locale failures):**
+- [x] 6 LayoutEngine cases with deterministic FakeMeasure (char width ×10): wraps+verses, single line, HitTestLine, cache invalidation + generation, poetry indent, ResizeEvent invalidation (initial line-count assertion was wrong — engine was right, rewrote to span/wrap invariants)
+- [x] 2 Highlighter cases: FindVerseRange + AssembleSelectedText (incl. Gênesis citation, bounds cases)
+
+## v1.9.1-alpha — Phase 7: Clean-code sweep + Release
+
+- [x] Dead code sweep: OpenURL + GetClipboard (Platform.cpp incl. Android JNI blocks, Platform.h) — verified 0 grep hits
+- [x] `onDragStart`/`onDragUpdate` deleted (InputHandler callbacks + emit sites; SelectionEvent flow untouched)
+- [x] `ResizeEvent::prevScrollY` deleted (had 0 consumers; emit site updated)
+- [x] Docs sync: Progress Tracking.md + memory/State.md + Active.md
+- [x] Version bump to 1.9.1-alpha (CMakeLists + regenerated Version.h, reconfigured)
+- [x] Build + full test run (0 warnings ours, 87 cases / 85 pass / 2 known pt_BR locale)
+- [x] Live smoke (DISPLAY=:0): GEN.1 load, s/d/a/i/Escape/g/q, EXO.1 navigation — all crash-free, no ASan, no regressions
+- [x] APK build → `dist/theword-arm64-v8a-v1.9.1-alpha.apk` (19 MB, signed)
+- [ ] Device sign-off (user installs APK, confirms no regressions)
+- [ ] Annotated tag `v1.9.1-alpha`

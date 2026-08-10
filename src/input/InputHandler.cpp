@@ -23,10 +23,6 @@ InputHandler::InputHandler(theword::event::EventBus& eventBus,
       pressState(PressState::Idle), pressStartTime(0.0),
       pressStartPos{0, 0}, pressStartHit{}, selectStartWord(-1),
       touchLastY(0.0f), lastPinchDist(0.0f) {
-
-    eventBus_.On<theword::event::DialogEvent>([this](const theword::event::DialogEvent& e) {
-        dialogActive_ = (e.action != theword::event::DialogEvent::Action::Hide);
-    });
 }
 
 void InputHandler::ResetState() {
@@ -46,23 +42,50 @@ void InputHandler::ResetState() {
     slopAccumulator = 0.0f;
     suppressDragEnd_ = false;
     // Preserve double-click tracking (lastClickTime_, lastClickPos_)
-    // Preserve dialogActive_ (controlled by DialogEvent subscriber)
+}
+
+void InputHandler::BeginFrame() {
+    bool isPressed = platform::HasTouchInput() ? (GetTouchPointCount() >= 1)
+                                               : IsMouseButtonDown(MOUSE_LEFT_BUTTON);
+    frame_.touchActive = platform::HasTouchInput() && isPressed;
+    frame_.leftPressed = isPressed && !prevPressed_;
+    frame_.leftReleased = !isPressed && prevPressed_;
+    frame_.leftDown = isPressed;
+    prevPressed_ = isPressed;
+
+    Vector2 mouse = GetMousePosition();
+    frame_.mouseX = mouse.x;
+    frame_.mouseY = mouse.y;
+    frame_.wheel = GetMouseWheelMove();
+    frame_.rightPressed = IsMouseButtonPressed(MOUSE_BUTTON_RIGHT);
+    frame_.ctrlDown = IsKeyDown(KEY_LEFT_CONTROL) || IsKeyDown(KEY_RIGHT_CONTROL);
+
+    frame_.keysPressed.clear();
+    int key = GetKeyPressed();
+    while (key != 0) {
+        frame_.keysPressed.push_back(key);
+        key = GetKeyPressed();
+    }
+
+    frame_.textInput.clear();
+    int ch = GetCharPressed();
+    while (ch != 0) {
+        frame_.textInput.push_back(static_cast<char>(ch));
+        ch = GetCharPressed();
+    }
 }
 
 void InputHandler::Poll(float /*deltaTime*/) {
-    // Capture press state at top so early-return paths update prevPressed_
-    // correctly, preventing stale-justPressed on the next frame.
-    bool isPressed = platform::HasTouchInput() ? (GetTouchPointCount() >= 1)
-                                               : IsMouseButtonDown(MOUSE_LEFT_BUTTON);
-    bool justPressed = isPressed && !prevPressed_;
-    bool justReleased = !isPressed && prevPressed_;
+    // Press edges are captured by BeginFrame() into the frame snapshot.
+    bool isPressed = frame_.leftDown;
+    bool justPressed = frame_.leftPressed;
+    bool justReleased = frame_.leftReleased;
 
     // ── Poll execution order ───────────────────────────────────────────────
     //  1. Escape → onDismiss (radial menu / context dismiss, consumed)
-    //  2. Dialog guard (G/S/A hotkeys only, resets FSM)
-    //  3. Scroll / pinch / right-click (platform-specific)
-    //  4. RunUnifiedFSM (word tap / drag / long-press)
-    //  5. HandleWindowResize (viewport change)
+    //  2. Scroll / pinch / right-click (platform-specific)
+    //  3. RunUnifiedFSM (word tap / drag / long-press)
+    //  4. HandleWindowResize (viewport change)
     //
     // Screens handle input before this point (NavigationStack::HandleInput runs
     // in App's main loop prior to Poll). This means screens consume button-area
@@ -70,18 +93,7 @@ void InputHandler::Poll(float /*deltaTime*/) {
     // ────────────────────────────────────────────────────────────────────────
 
     // Escape → onDismiss (radial menu dismiss)
-    if (IsKeyPressed(key::ESCAPE) && onDismiss && onDismiss()) {
-        prevPressed_ = isPressed;
-        return;
-    }
-
-    if (dialogActive_) {
-        // Dialog opened mid-gesture — reset FSM to prevent stuck state (P7)
-        pressState = PressState::Idle;
-        prevPressed_ = false;
-        if (IsKeyPressed(key::G)) { eventBus_.Emit(theword::event::DialogEvent{theword::event::DialogEvent::Type::GoTo, theword::event::DialogEvent::Action::Toggle}); return; }
-        if (IsKeyPressed(key::S)) { eventBus_.Emit(theword::event::DialogEvent{theword::event::DialogEvent::Type::Settings, theword::event::DialogEvent::Action::Toggle}); return; }
-        if (IsKeyPressed(key::A)) { eventBus_.Emit(theword::event::DialogEvent{theword::event::DialogEvent::Type::About, theword::event::DialogEvent::Action::Toggle}); return; }
+    if (frame_.KeyPressed(key::ESCAPE) && onDismiss && onDismiss()) {
         return;
     }
 
@@ -94,12 +106,21 @@ void InputHandler::Poll(float /*deltaTime*/) {
     }
 
     RunUnifiedFSM(isPressed, justPressed, justReleased);
-    prevPressed_ = isPressed;
     HandleWindowResize();
+
+    // App shortcuts (S/A/I/D/C). Screens already consumed their keys in
+    // NavigationStack::HandleInput before Poll ran; overlaps cannot double-fire.
+    if (onShortcut) {
+        for (int k : frame_.keysPressed) {
+            if (k == key::S || k == key::A || k == key::I || k == key::D || k == key::C) {
+                onShortcut(k, frame_.ctrlDown);
+            }
+        }
+    }
 }
 
 void InputHandler::HandleScroll() {
-    float wheel = GetMouseWheelMove();
+    float wheel = frame_.wheel;
     if (wheel != 0) {
         eventBus_.Emit(theword::event::ScrollEvent{-wheel * SCROLL_SENSITIVITY});
         return;
@@ -116,12 +137,10 @@ void InputHandler::HandleScroll() {
 }
 
 void InputHandler::HandleRightClick() {
-    if (IsMouseButtonPressed(MOUSE_BUTTON_RIGHT)) {
-        Vector2 mousePos = GetMousePosition();
-        HitInfo hi = hitTestFn ? hitTestFn(mousePos.x, mousePos.y) : HitInfo{};
-        if (hi.wordId >= 0 && onTap)
-            onTap(hi, mousePos, false);
-    }
+    if (!frame_.rightPressed) return;
+    HitInfo hi = hitTestFn ? hitTestFn(frame_.mouseX, frame_.mouseY) : HitInfo{};
+    if (hi.wordId >= 0 && onTap)
+        onTap(hi, Vector2{frame_.mouseX, frame_.mouseY}, false);
 }
 
 void InputHandler::HandleTouchScroll() {
@@ -167,7 +186,8 @@ void InputHandler::HandleTouchScroll() {
 }
 
 void InputHandler::RunUnifiedFSM(bool isPressed, bool justPressed, bool justReleased) {
-    Vector2 pos = platform::HasTouchInput() ? GetTouchPosition(0) : GetMousePosition();
+    Vector2 pos = platform::HasTouchInput() ? GetTouchPosition(0)
+                                            : Vector2{frame_.mouseX, frame_.mouseY};
     if (platform::HasTouchInput() && isPressed)
         lastTouchPos_ = pos;
     Vector2 cbPos = platform::HasTouchInput() ? lastTouchPos_ : pos;
@@ -246,7 +266,6 @@ void InputHandler::RunUnifiedFSM(bool isPressed, bool justPressed, bool justRele
                                 theword::event::SelectionEvent::Action::Start,
                                 pressStartHit.wordId, pressStartHit.wordId,
                                 pressStartHit.bookId, pressStartHit.chapterNum});
-                            if (onDragStart) onDragStart(pressStartHit.wordId, cbPos);
                             pressState = PressState::Dragging;
                         }
                     } else {
@@ -259,12 +278,11 @@ void InputHandler::RunUnifiedFSM(bool isPressed, bool justPressed, bool justRele
         case PressState::Dragging:
             if (isPressed) {
                 HitInfo hi = hitTestFn ? hitTestFn(pos.x, pos.y) : HitInfo{};
-                if (hi.wordId >= 0 && onDragUpdate) {
+                if (hi.wordId >= 0) {
                     eventBus_.Emit(theword::event::SelectionEvent{
                         theword::event::SelectionEvent::Action::Update,
                         pressStartHit.wordId, hi.wordId,
                         pressStartHit.bookId, pressStartHit.chapterNum});
-                    onDragUpdate(pressStartHit.wordId, hi.wordId, cbPos);
                     lastDragWord_ = hi.wordId;
                 }
             }
@@ -292,7 +310,6 @@ void InputHandler::RunUnifiedFSM(bool isPressed, bool justPressed, bool justRele
                     eventBus_.Emit(theword::event::SelectionEvent{
                         theword::event::SelectionEvent::Action::Update,
                         selectStartWord, hi.wordId, hi.bookId, hi.chapterNum});
-                    if (onDragUpdate) onDragUpdate(selectStartWord, hi.wordId, cbPos);
                 }
             }
             if (justReleased) {
@@ -336,7 +353,7 @@ void InputHandler::HandlePinch() {
 
 void InputHandler::HandleWindowResize() {
     if (IsWindowResized()) {
-        eventBus_.Emit(theword::event::ResizeEvent{GetScreenWidth(), GetScreenHeight(), 0.0f});
+        eventBus_.Emit(theword::event::ResizeEvent{GetScreenWidth(), GetScreenHeight()});
     }
 }
 

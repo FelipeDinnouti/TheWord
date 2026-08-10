@@ -29,7 +29,6 @@
 #include "ui/FontDiagnostic.h"
 
 #include <algorithm>
-#include <sstream>
 
 namespace theword::app {
 
@@ -48,100 +47,56 @@ App::~App() {
     CloseWindow();
 }
 
-static std::string AssembleSelectedText(const ChapterData& data, int startWord, int endWord) {
-    int s = (std::min)(startWord, endWord);
-    int e = (std::max)(startWord, endWord);
-    if (s < 0 || e >= static_cast<int>(data.words.size())) return {};
-
-    // Determine verse range
-    int firstVerse = data.words[s].verseId;
-    int lastVerse = data.words[e].verseId;
-
-    // Build citation prefix
-    int idx = FindBookIndex(data.bookId);
-    std::string bookName = (idx >= 0) ? BOOK_NAMES_PT[idx] : data.bookId;
-    std::ostringstream citation;
-    citation << bookName << " " << data.chapterNum << ":" << firstVerse;
-    if (lastVerse > firstVerse) citation << "-" << lastVerse;
-    citation << "\n\n";
-
-    // Build body text
-    std::ostringstream body;
-    for (const auto& w : data.words) {
-        if (w.id >= s && w.id <= e) {
-            if (body.tellp() > 0) body << " ";
-            body << w.text;
-        }
-    }
-    return citation.str() + body.str();
-}
-
-static void FindVerseRange(const std::vector<Word>& words, int anchorWord, int& verseStart, int& verseEnd) {
-    int targetVerse = -1;
-    for (const auto& w : words) {
-        if (w.id == anchorWord) {
-            targetVerse = w.verseId;
-            break;
-        }
-    }
-    if (targetVerse < 0) { verseStart = anchorWord; verseEnd = anchorWord; return; }
-
-    verseStart = anchorWord;
-    verseEnd = anchorWord;
-    for (const auto& w : words) {
-        if (w.verseId == targetVerse) {
-            if (w.id < verseStart) verseStart = w.id;
-            if (w.id > verseEnd) verseEnd = w.id;
-        }
-    }
-}
-
 bool App::Init(const std::string& title) {
     Logger::Info("Starting TheWord");
 
-    auto plat = platform::Init(title.c_str());
-    scale_ = plat.dpiScale;
+    platInfo_ = platform::Init(title.c_str());
+    scale_ = platInfo_.dpiScale;
+    uiScale_ = {scale_, (float)GetScreenWidth(), (float)GetScreenHeight(),
+                (float)platInfo_.bottomInset};
 
-    eventBus_ = std::make_unique<theword::event::EventBus>();
+    InitWindow();
+    InitDataServices();
+    InitInput();
+    InitNavigation();
+
+    WireEvents();
+
+    Logger::Info("Entering main loop");
+    return true;
+}
+
+bool App::InitWindow() {
+    eventBus_ = std::make_unique<theword::event::EventBus>();    themeManager_ = std::make_unique<ThemeManager>();
 
     Logger::Info("Window initialized");
     SetTargetFPS(config::TARGET_FPS);
 
-    int renderW = GetScreenWidth();
-    int renderH = GetScreenHeight();
-    uiScale_ = {scale_, (float)renderW, (float)renderH, (float)plat.bottomInset};
+    const auto& pal = themeManager_->Current();
+    const char* splashTitle = "TheWord";
+    const char* subtitle = Locale::Get("Loading...");
+    float titleSize = 48.0f * scale_;
+    float subSize = 20.0f * scale_;
+    Vector2 titleDims = MeasureTextEx(GetFontDefault(), splashTitle, titleSize, 1);
+    Vector2 subDims = MeasureTextEx(GetFontDefault(), subtitle, subSize, 1);
+    BeginDrawing();
+    ClearBackground(pal.windowBg);
+    DrawTextEx(GetFontDefault(), splashTitle,
+               {(uiScale_.screenW - titleDims.x) / 2.0f,
+                (uiScale_.screenH - titleDims.y) / 2.0f - 20.0f * scale_},
+               titleSize, 1, pal.splashTitle);
+    DrawTextEx(GetFontDefault(), subtitle,
+               {(uiScale_.screenW - subDims.x) / 2.0f,
+                (uiScale_.screenH - subDims.y) / 2.0f + 20.0f * scale_},
+               subSize, 1, pal.splashSubtitle);
+    EndDrawing();
+    return true;
+}
 
-    themeManager_ = std::make_unique<ThemeManager>();
-
-    {
-        const auto& pal = themeManager_->Current();
-        const char* splashTitle = "TheWord";
-        const char* subtitle = Locale::Get("Loading...");
-        float titleSize = 48.0f * scale_;
-        float subSize = 20.0f * scale_;
-        Vector2 titleDims = MeasureTextEx(GetFontDefault(), splashTitle, titleSize, 1);
-        Vector2 subDims = MeasureTextEx(GetFontDefault(), subtitle, subSize, 1);
-        BeginDrawing();
-        ClearBackground(pal.windowBg);
-        DrawTextEx(GetFontDefault(), splashTitle,
-                   {(renderW - titleDims.x) / 2.0f,
-                    (renderH - titleDims.y) / 2.0f - 20.0f * scale_},
-                   titleSize, 1, pal.splashTitle);
-        DrawTextEx(GetFontDefault(), subtitle,
-                   {(renderW - subDims.x) / 2.0f,
-                    (renderH - subDims.y) / 2.0f + 20.0f * scale_},
-                   subSize, 1, pal.splashSubtitle);
-        EndDrawing();
-    }
-
-    Logger::Info("Opening database: " + plat.dbPath);
-    persistence_ = std::make_unique<PersistenceManager>(plat.dbPath);
-    highlighter_ = std::make_unique<Highlighter>(*eventBus_, *persistence_);
-
+void App::ApplyPreferences() {
     std::string savedDarkMode = persistence_->GetPreference("dark_mode", "0");
     if (savedDarkMode == "1") themeManager_->SetDarkMode(true);
 
-    Logger::Info("Database initialized");
     currentFontSize_ = config::FONT_SIZE;
     std::string savedFontSize = persistence_->GetPreference("font_size", "");
     if (!savedFontSize.empty()) {
@@ -151,13 +106,29 @@ bool App::Init(const std::string& title) {
     std::string savedBibleId = persistence_->GetPreference("bible_id", std::to_string(config::DEFAULT_BIBLE_ID));
     try { currentBibleId_ = std::stoi(savedBibleId); } catch (...) { currentBibleId_ = config::DEFAULT_BIBLE_ID; }
 
+    immersiveMode_ = persistence_->GetPreference("immersive_mode", "0") == "1";
+
+    std::string savedColor = persistence_->GetPreference("active_color", "");
+    if (!savedColor.empty()) {
+        try { highlighter_->SetActiveTypeId(std::stoi(savedColor)); } catch (...) {}
+    }
+}
+
+void App::InitDataServices() {
+    Logger::Info("Opening database: " + platInfo_.dbPath);
+    persistence_ = std::make_unique<PersistenceManager>(platInfo_.dbPath);
+    highlighter_ = std::make_unique<Highlighter>(*eventBus_, *persistence_);
+    Logger::Info("Database initialized");
+
+    ApplyPreferences();
+
     Logger::Info("Loading fonts");
     fontManager_ = std::make_unique<FontManager>(scale_);
-    fontManager_->Init(*plat.assets, currentFontSize_);
+    fontManager_->Init(*platInfo_.assets, currentFontSize_);
     Logger::Info("Fonts loaded");
 
-    float contentTop = 0.0f;
-    float contentWidth = static_cast<float>(renderW);
+    contentTop_ = 0.0f;
+    float contentWidth = uiScale_.screenW;
 
     layoutEngine_ = std::make_unique<LayoutEngine>(*eventBus_, contentWidth,
                                                    TextMeasureFn{[this](FontKind kind, const std::string& text, float size) {
@@ -167,14 +138,14 @@ bool App::Init(const std::string& title) {
                                                    fontManager_->BodySize(), fontManager_->HeadingFontSize(),
                                                    fontManager_->LargeSize(), fontManager_->SmallSize(),
                                                    config::LINE_SPACING, scale_);
-    renderer_ = std::make_unique<Renderer>(contentTop);
+    renderer_ = std::make_unique<Renderer>(contentTop_);
 
-    float viewportHeight = renderH - contentTop;
+    float viewportHeight = uiScale_.screenH - contentTop_;
 
     std::string apiKey = EnvLoader::Get(config::YVP_APP_KEY);
 
     Logger::Info("Creating USFM parser");
-    usfmParser_ = std::make_unique<USFMParser>(config::USFM_DIR, std::move(plat.assets));
+    usfmParser_ = std::make_unique<USFMParser>(config::USFM_DIR, std::move(platInfo_.assets));
 
     if (!apiKey.empty()) {
         Logger::Info("API key found, creating online client");
@@ -196,22 +167,14 @@ bool App::Init(const std::string& title) {
         activeProv_ = compositeProv_.get();
     }
 
-    docManager_ = std::make_unique<DocumentManager>(*eventBus_, *layoutEngine_, viewportHeight, *activeProv_, contentTop);
+    docManager_ = std::make_unique<DocumentManager>(*eventBus_, *layoutEngine_, viewportHeight, *activeProv_, contentTop_);
 
     highlighter_->SetProvider(currentBibleId_ > 0 ? "BibleClient" : "USFMParser");
 
     uiManager_ = std::make_unique<UIManager>(*highlighter_, scale_);
+}
 
-    {
-        std::string im = persistence_->GetPreference("immersive_mode", "0");
-        immersiveMode_ = (im == "1");
-    }
-
-    std::string savedColor = persistence_->GetPreference("active_color", "");
-    if (!savedColor.empty()) {
-        try { highlighter_->SetActiveTypeId(std::stoi(savedColor)); } catch (...) {}
-    }
-
+void App::InitInput() {
     auto hitTestFn = [this](float x, float y) -> theword::input::HitInfo {
         if (!navStack_->IsOnRoot()) return {};
         auto result = docManager_->HitTestWithChapter(x, y);
@@ -222,12 +185,12 @@ bool App::Init(const std::string& title) {
     auto isHighlightedFn = [this](int wordId) {
         return highlighter_->IsWordHighlighted(wordId);
     };
-    auto hitTestFootnoteFn = [this, contentTop](float x, float y) -> int {
+    auto hitTestFootnoteFn = [this](float x, float y) -> int {
         std::vector<std::pair<theword::text::Span, float>> spans;
         docManager_->GetVisibleSpans(spans);
         for (const auto& [span, docY] : spans) {
             if (span.type != SegmentType::FootnoteMarker || span.footnoteIndex < 0) continue;
-            float screenY = docY - docManager_->GetScrollY() + contentTop;
+            float screenY = docY - docManager_->GetScrollY() + contentTop_;
             if (y >= screenY && y <= screenY + span.height &&
                 x >= span.x && x <= span.x + span.width) {
                 return span.footnoteIndex;
@@ -236,44 +199,39 @@ bool App::Init(const std::string& title) {
         return -1;
     };
     inputHandler_ = std::make_unique<InputHandler>(*eventBus_, hitTestFn, isHighlightedFn, hitTestFootnoteFn);
+}
 
+void App::InitNavigation() {
     navStack_ = std::make_unique<theword::ui::NavigationStack>();
     navStack_->Push(std::make_unique<theword::ui::ReaderScreen>(
         *eventBus_, *docManager_, *renderer_, *highlighter_, *persistence_,
-        fontManager_->Heading(), fontManager_->HeadingSize(), contentTop,
+        fontManager_->Heading(), fontManager_->HeadingSize(), contentTop_,
         *navStack_, uiScale_, currentFontSize_, currentBibleId_, immersiveMode_,
         *themeManager_
     ));
 
-    {
-        std::string startChapter = persistence_->GetPreference("last_chapter", "GEN.1");
-        Logger::Info("Loading initial chapter: " + startChapter);
-        docManager_->LoadInitialChapterSync(startChapter);
-        auto* chapterData = docManager_->GetCurrentChapterData();
-        std::string book;
-        int chapter = 0;
-        ParseChapterRef(startChapter, book, chapter);
-        highlighter_->SetChapterContext(book, chapter,
-            chapterData ? &chapterData->words : nullptr);
+    std::string startChapter = persistence_->GetPreference("last_chapter", "GEN.1");
+    Logger::Info("Loading initial chapter: " + startChapter);
+    docManager_->LoadInitialChapterSync(startChapter);
+    auto* chapterData = docManager_->GetCurrentChapterData();
+    std::string book;
+    int chapter = 0;
+    ParseChapterRef(startChapter, book, chapter);
+    highlighter_->SetChapterContext(book, chapter,
+        chapterData ? &chapterData->words : nullptr);
 
-        // Restore scroll position from pre-pause save (OS kill recovery)
-        std::string savedScroll = persistence_->GetPreference("lifecycle_scroll", "");
-        if (!savedScroll.empty()) {
-            docManager_->ScrollTo(std::stof(savedScroll));
-            persistence_->SetPreference("lifecycle_scroll", "");
-        }
-
-        // Load last known scroll for deferred restore on first MainLoop frame
-        std::string lastScroll = persistence_->GetPreference("last_scroll", "");
-        if (!lastScroll.empty()) {
-            pendingScrollY_ = std::stof(lastScroll);
-        }
+    // Restore scroll position from pre-pause save (OS kill recovery)
+    std::string savedScroll = persistence_->GetPreference("lifecycle_scroll", "");
+    if (!savedScroll.empty()) {
+        docManager_->ScrollTo(std::stof(savedScroll));
+        persistence_->SetPreference("lifecycle_scroll", "");
     }
 
-    WireEvents();
-
-    Logger::Info("Entering main loop");
-    return true;
+    // Load last known scroll for deferred restore on first MainLoop frame
+    std::string lastScroll = persistence_->GetPreference("last_scroll", "");
+    if (!lastScroll.empty()) {
+        pendingScrollY_ = std::stof(lastScroll);
+    }
 }
 
 void App::WireEvents() {
@@ -364,43 +322,39 @@ void App::WireInputCallbacks() {
         if (cd && fi >= 0 && fi < static_cast<int>(cd->footnotes.size())) {
             const auto& fn = cd->footnotes[fi];
             std::string text = fn.callerRef.empty() ? fn.text : fn.callerRef + " " + fn.text;
-            uiManager_->ShowFootnotePopup(text, GetMousePosition());
+            const auto& frame = inputHandler_->Frame();
+uiManager_->ShowFootnotePopup(text, Vector2{frame.mouseX, frame.mouseY});
         }
     };
     inputHandler_->onDismiss = [this]() -> bool {
         return OnDismiss();
     };
-}
+    inputHandler_->onShortcut = [this](int key, bool ctrl) {
+        if (!navStack_->IsOnRoot()) return;
 
-void App::HandleShortcuts() {
-    if (!navStack_->IsOnRoot()) return;
-
-    if (IsKeyPressed(key::S)) {
-        navStack_->Push(std::make_unique<theword::ui::SettingsScreen>(
-            *navStack_, *eventBus_,
-            *persistence_,
-            uiScale_, currentFontSize_, currentBibleId_, immersiveMode_,
-            *themeManager_
-        ));
-    }
-    if (IsKeyPressed(key::A)) {
-        navStack_->Push(std::make_unique<theword::ui::CreditsOverlay>(
-            fontManager_->HeadingSize(), *navStack_, uiScale_
-        ));
-    }
-    if (IsKeyPressed(key::I)) {
-        immersiveMode_ = !immersiveMode_;
-        persistence_->SetPreference("immersive_mode", immersiveMode_ ? "1" : "0");
-    }
-    if (IsKeyPressed(KEY_D)) {
-        navStack_->Push(std::make_unique<theword::ui::FontDiagnostic>(
-            *navStack_
-        ));
-    }
-    if (IsKeyDown(KEY_LEFT_CONTROL) && IsKeyPressed(KEY_C) && accumStartWord_ >= 0) {
-        auto* cd = docManager_->GetCurrentChapterData();
-        if (cd) CopySelection(*cd, accumStartWord_, accumEndWord_);
-    }
+        if (!ctrl && key == key::S) {
+            navStack_->Push(std::make_unique<theword::ui::SettingsScreen>(
+                *navStack_, *eventBus_,
+                *persistence_,
+                uiScale_, currentFontSize_, currentBibleId_, immersiveMode_,
+                *themeManager_
+            ));
+        } else if (!ctrl && key == key::A) {
+            navStack_->Push(std::make_unique<theword::ui::CreditsOverlay>(
+                fontManager_->HeadingSize(), *navStack_, uiScale_
+            ));
+        } else if (!ctrl && key == key::I) {
+            immersiveMode_ = !immersiveMode_;
+            persistence_->SetPreference("immersive_mode", immersiveMode_ ? "1" : "0");
+        } else if (!ctrl && key == key::D) {
+            navStack_->Push(std::make_unique<theword::ui::FontDiagnostic>(
+                *navStack_
+            ));
+        } else if (ctrl && key == key::C && accumStartWord_ >= 0) {
+            auto* cd = docManager_->GetCurrentChapterData();
+            if (cd) CopySelection(*cd, accumStartWord_, accumEndWord_);
+        }
+    };
 }
 
 void App::MainLoop() {
@@ -448,20 +402,21 @@ void App::MainLoop() {
         float deltaTime = (float)(currentTime - lastTime);
         lastTime = currentTime;
 
-        if (!navStack_->HandleInput(deltaTime)) {
+        inputHandler_->BeginFrame();
+        theword::renderer::DrawContext ctx{*themeManager_, *fontManager_, uiScale_,
+                                           inputHandler_->Frame(), scale_};
+
+        if (!navStack_->HandleInput(ctx, deltaTime)) {
             inputHandler_->Poll(deltaTime);
         }
         docManager_->Update(deltaTime);
 
-        HandleShortcuts();
-
         bool isAnimating = inputHandler_->HasMomentum()
                         || docManager_->HasMomentum()
                         || docManager_->HasPendingLoads();
-        bool hasUiOverlay = inputHandler_->IsDialogActive()
-                         || uiManager_->IsRadialMenuActive()
+        bool hasUiOverlay = uiManager_->IsRadialMenuActive()
                          || !navStack_->IsOnRoot();
-        bool hasActiveInput = GetTouchPointCount() > 0;
+        bool hasActiveInput = ctx.input.touchActive;
 
         static double lastIdleDrawTime = 0.0;
 
@@ -485,14 +440,13 @@ void App::MainLoop() {
             BeginDrawing();
             ClearBackground(pal.windowBg);
 
-            theword::renderer::DrawContext ctx{*themeManager_, *fontManager_, uiScale_, scale_};
-
             navStack_->DrawActive(ctx);
 
             uiManager_->DrawRadialMenu();
             uiManager_->DrawToast(ctx);
             uiManager_->DrawFootnotePopup(ctx);
-            renderer_->DrawFpsCounter(GetScreenWidth() / 2, GetScreenHeight() - 30);
+            renderer_->DrawFpsCounter(static_cast<int>(uiScale_.screenW) / 2,
+                                      static_cast<int>(uiScale_.screenH) - 30);
 
             EndDrawing();
         } else {
@@ -519,39 +473,12 @@ void App::OnTap(theword::input::HitInfo hit, Vector2 pos, bool isDouble) {
         if (result.consumed) {
             accumStartWord_ = -1;
             accumEndWord_ = -1;
-            if (result.isCopy) {
-                if (cd) CopySelection(*cd, result.startWord, result.endWord);
-            } else if (result.isDelete) {
-                if (cd) {
-                    int s = (std::min)(result.startWord, result.endWord);
-                    int e = (std::max)(result.startWord, result.endWord);
-                    for (const auto& h : highlighter_->GetHighlights()) {
-                        if (h.bookId == cd->bookId &&
-                            h.chapterNum == cd->chapterNum &&
-                            h.startWord <= e && h.endWord >= s) {
-                            highlighter_->RemoveHighlight(h.id);
-                        }
-                    }
-                }
-            } else if (result.isHighlight) {
-                const auto& types = highlighter_->GetTypes();
-                if (result.colorIndex >= 0 && result.colorIndex < static_cast<int>(types.size())) {
-                    const auto* existing = highlighter_->HighlightOverlapping(result.startWord, result.endWord, result.bookId, result.chapterNum);
-                    if (existing) {
-                        highlighter_->RecolorHighlight(existing->id, types[result.colorIndex].id);
-                    } else {
-                        auto* hcd = docManager_->GetChapterData(result.bookId, result.chapterNum);
-                        highlighter_->CreateHighlight(result.startWord, result.endWord, types[result.colorIndex].id,
-                            result.bookId, result.chapterNum, hcd ? &hcd->words : nullptr);
-                    }
-                }
-                uiManager_->HideRadialMenu();
-            }
+            HandleRadialMenuResult(result, cd);
             return;
         }
         if (wordId >= 0 && accumStartWord_ >= 0 && cd) {
             int vStart, vEnd;
-            FindVerseRange(cd->words, wordId, vStart, vEnd);
+            Highlighter::FindVerseRange(cd->words, wordId, vStart, vEnd);
             accumStartWord_ = (std::min)(accumStartWord_, vStart);
             accumEndWord_ = (std::max)(accumEndWord_, vEnd);
             highlighter_->CommitSelection(accumStartWord_, accumEndWord_, cd->bookId, cd->chapterNum);
@@ -582,7 +509,7 @@ void App::OnTap(theword::input::HitInfo hit, Vector2 pos, bool isDouble) {
 
     if (isDouble) {
         int vStart, vEnd;
-        FindVerseRange(cd->words, wordId, vStart, vEnd);
+        Highlighter::FindVerseRange(cd->words, wordId, vStart, vEnd);
         accumStartWord_ = accumStartWord_ >= 0
             ? (std::min)(accumStartWord_, vStart) : vStart;
         accumEndWord_ = accumEndWord_ >= 0
@@ -607,33 +534,7 @@ void App::OnTapEmpty(Vector2 pos) {
         if (result.consumed) {
             accumStartWord_ = -1;
             accumEndWord_ = -1;
-            if (result.isCopy) {
-                auto* cd = docManager_->GetCurrentChapterData();
-                if (cd) CopySelection(*cd, result.startWord, result.endWord);
-            } else if (result.isDelete) {
-                int s = (std::min)(result.startWord, result.endWord);
-                int e = (std::max)(result.startWord, result.endWord);
-                for (const auto& h : highlighter_->GetHighlights()) {
-                    if (h.bookId == result.bookId && h.chapterNum == result.chapterNum
-                        && h.startWord <= e && h.endWord >= s) {
-                        highlighter_->RemoveHighlight(h.id);
-                    }
-                }
-            } else if (result.isHighlight) {
-                const auto& types = highlighter_->GetTypes();
-                if (result.colorIndex >= 0 && result.colorIndex < static_cast<int>(types.size())) {
-                    const auto* existing = highlighter_->HighlightOverlapping(result.startWord, result.endWord,
-                        result.bookId, result.chapterNum);
-                    if (existing) {
-                        highlighter_->RecolorHighlight(existing->id, types[result.colorIndex].id);
-                    } else {
-                        auto* hcd = docManager_->GetChapterData(result.bookId, result.chapterNum);
-                        highlighter_->CreateHighlight(result.startWord, result.endWord, types[result.colorIndex].id,
-                            result.bookId, result.chapterNum, hcd ? &hcd->words : nullptr);
-                    }
-                }
-                uiManager_->HideRadialMenu();
-            }
+            HandleRadialMenuResult(result, docManager_->GetCurrentChapterData());
             return;
         }
         uiManager_->HideRadialMenu();
@@ -669,11 +570,41 @@ bool App::OnDismiss() {
 }
 
 void App::CopySelection(const ChapterData& data, int startWord, int endWord) {
-    std::string text = AssembleSelectedText(data, startWord, endWord);
+    std::string text = Highlighter::AssembleSelectedText(data, startWord, endWord);
     if (!text.empty()) {
         platform::SetClipboard(text);
         Logger::Debug("Copied to clipboard: " + text);
         if (uiManager_) uiManager_->ShowToast("Copiado!");
+    }
+}
+
+void App::HandleRadialMenuResult(const RadialMenuActionResult& result,
+                                 const ChapterData* cd) {
+    if (result.isCopy) {
+        if (cd) CopySelection(*cd, result.startWord, result.endWord);
+    } else if (result.isDelete) {
+        int s = (std::min)(result.startWord, result.endWord);
+        int e = (std::max)(result.startWord, result.endWord);
+        for (const auto& h : highlighter_->GetHighlights()) {
+            if (h.bookId == result.bookId && h.chapterNum == result.chapterNum
+                && h.startWord <= e && h.endWord >= s) {
+                highlighter_->RemoveHighlight(h.id);
+            }
+        }
+    } else if (result.isHighlight) {
+        const auto& types = highlighter_->GetTypes();
+        if (result.colorIndex >= 0 && result.colorIndex < static_cast<int>(types.size())) {
+            const auto* existing = highlighter_->HighlightOverlapping(result.startWord, result.endWord,
+                result.bookId, result.chapterNum);
+            if (existing) {
+                highlighter_->RecolorHighlight(existing->id, types[result.colorIndex].id);
+            } else {
+                auto* hcd = docManager_->GetChapterData(result.bookId, result.chapterNum);
+                highlighter_->CreateHighlight(result.startWord, result.endWord, types[result.colorIndex].id,
+                    result.bookId, result.chapterNum, hcd ? &hcd->words : nullptr);
+            }
+        }
+        uiManager_->HideRadialMenu();
     }
 }
 
