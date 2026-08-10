@@ -1,6 +1,6 @@
 # Progress Tracking
 
-> Status: v1.9.1-alpha (code audit) in progress | Last Updated: 2026-08-09
+> Status: v1.9.1-alpha complete (2026-08-10) | Last Updated: 2026-08-10
 
 ## Overall Progress
 
@@ -26,7 +26,7 @@
 | v1.7.0-alpha (Reading Experience) | ✅ Complete | Copy Verse, Footnotes, Open Where You Left Off, Immersive Mode |
 | v1.8.0-alpha (Customization & Navigation) | ✅ Complete | Code Quality Audit, Fuzzy Finder, Bible Version Switcher, Modular Theme System |
 | v1.9.0-alpha (Architecture Refactor + Code Quality Assurance) | ✅ Complete | Released v1.9.0-alpha (2026-08-09) |
-| v1.9.1-alpha (Full Code Audit) | 🚧 In progress | 1.9.1 audit — current release |
+| v1.9.1-alpha (Full Code Audit) | ✅ Complete | Tagged `v1.9.1-alpha` (2026-08-10), device-verified |
 | v1.10.0-alpha (Animations & UI Polish + Web Deployment) | 🔲 Planned | WASM verification, `serve-web.sh` static server, animation pass |
 
 ## Phase A — Documentation Restructure ✅
@@ -325,7 +325,8 @@
       (85 pass; 2 known pt_BR locale failures)
 - [x] Dead code removed: `OpenURL`, `GetClipboard`, `onDragStart`/`onDragUpdate`,
       `ResizeEvent::prevScrollY`
-- [ ] Version bump to 1.9.1-alpha + APK + device sign-off + tag
+- [x] Version bump + APK `dist/theword-arm64-v8a-v1.9.1-alpha.apk` + device sign-off
+      (no regressions) + tagged `v1.9.1-alpha` (2026-08-10)
 
 ## v1.10.0-alpha — Animations & UI Polish + Web Deployment 🔲 Planned
 

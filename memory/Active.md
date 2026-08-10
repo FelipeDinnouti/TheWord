@@ -284,5 +284,5 @@ See `the-word-docs/04-planning/Release Plan.md` and `the-word-docs/04-planning/R
 - [x] Build + full test run (0 warnings ours, 87 cases / 85 pass / 2 known pt_BR locale)
 - [x] Live smoke (DISPLAY=:0): GEN.1 load, s/d/a/i/Escape/g/q, EXO.1 navigation — all crash-free, no ASan, no regressions
 - [x] APK build → `dist/theword-arm64-v8a-v1.9.1-alpha.apk` (19 MB, signed)
-- [ ] Device sign-off (user installs APK, confirms no regressions)
-- [ ] Annotated tag `v1.9.1-alpha`
+- [x] Device sign-off (2026-08-10): installed, no regressions, all features nominal
+- [x] Annotated tag `v1.9.1-alpha` (commit 714d294)
